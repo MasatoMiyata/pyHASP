@@ -1,3 +1,9 @@
 *.exe
+*.csv
+*.txt
+*.hasH
+*.dat
+*.err
+*.md
 /newHASP/*
 /Prog_ACLD_HEX15

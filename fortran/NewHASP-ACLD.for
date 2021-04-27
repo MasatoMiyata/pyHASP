@@ -13,18 +13,26 @@
 *
       CHARACTER  QVER*8    ! バージョン情報
       PARAMETER (QVER='20200403')                                               ! rev 20200403(T.Nagai)
-      PARAMETER (NUB= 1,NUW=11,NUO=12,NUOT=20)   ! NUOT:テキスト出力先装置番号
+*
+      PARAMETER (NUB=1)    ! 建物データの装置番号
+      PARAMETER (NUW=11)   ! 気象データの装置番号
+      PARAMETER (NUO=12)   ! ACLD連携のためのファイルの装置番号
+      PARAMETER (NUOT=20)  ! CSVファイル出力先装置番号
       PARAMETER (NUWN=2)   ! 窓データファイル装置番号
-      PARAMETER (NUBW=3)    ! WCON物性値データ入力装置番号
-      PARAMETER (NUOW=10)   ! NUOW:外気温・外気湿度テキスト出力先装置番号
-      PARAMETER (NUOB=13)   ! BECSへの受け渡しファイル用装置番号
+      PARAMETER (NUBW=3)   ! WCON物性値データ入力装置番号
+      PARAMETER (NUOW=10)  ! 外気温・外気湿度テキスト出力先装置番号 （weath.dat）
+      PARAMETER (NUOB=13)  ! BECSへの受け渡しファイル用装置番号
+      PARAMETER (NUDD=99)  ! デバッグ用
+*
       PARAMETER (MX=30000)
       PARAMETER (HC=3.5,HR=4.5,HT=HC+HR,FC=HC/HT,FR=HR/HT,HO=20.)
       PARAMETER (DR=0.0174533)
 *
       DIMENSION GAS(0:9)   ! FURN(顕熱)による冷房負荷
       DIMENSION X(MX),M(MX)
-      EQUIVALENCE (X,M)
+      EQUIVALENCE (X,M)    ! XとMの記憶領域は共有される
+*
+*     MEMO: COMMON宣言 XMQは区別のための「ブロック名」、宣言対象はX
       COMMON /XMQ/X
 *
       DIMENSION MT(21),TH(21),G(0:9),P(8),WF(9,4)
@@ -32,6 +40,7 @@
       DIMENSION WD(7,24),ID(7,5),SH(24),CHSA(24),CHCA(24)
       DIMENSION WD8(24)   ! 外気飽和湿度－外気絶対湿度
       DIMENSION ROH(3),ROL(3)
+*
       PARAMETER(MXGL=200,NBLD=3,NTBL=4,MXVS=10,MXGT=100)
                             !  MXGL    :特性値表1つあたり最大ガラス数
                             !  NBLD    :ブラインド色種別数
@@ -50,10 +59,13 @@
       DIMENSION NVS(6)                ! 通気量のサンプリング数（添字は「GLD」第4添字と同）
       DIMENSION GLWK(2,2)             ! Work array(第2添字=1:ΔSC, =2:ΔU,
                                       ! 第1添字=1:ブラインド開, =2:閉)
+*
       DIMENSION FL(5,3)
       DIMENSION AM(3,9)
       INTEGER   MCNTL(32)   ! 「CNTL」カードのデータ内容(XMQ配列に相当)           rev 20200403(T.Nagai)
+*
       COMMON /ETC/MCNTL
+*
       DIMENSION MDW(2),WDND(7,24),IDND(7,5),KSCH(2)
                             !  MDW(1)  :本日の曜日(=1:月,2:火,..,7:日,8:祝,9:特)
                             !  MDW(2)  :明日の曜日
@@ -63,12 +75,14 @@
                             !  KSCH(2) :明日のスケジュール
       INTEGER   ISEAS(2)    !  ISEAS(1):本日の季節(=1:夏期,2:冬期,3:中間期)
                             !  ISEAS(2):明日の季節
+*
       PARAMETER(NAZ=20,NHR=24,NSL=2,NWD=7)
                             !  NAZ     :1グループあたりの最大スペース数(変更の場合は
                             !           関連ルーチンのPARAMETER文を全て変更する必要あり)
                             !  NHR     :1日のステップ数(24以外不可)
                             !  NSL     :顕熱と潜熱(2以外不可)
                             !  NWD     :気象データの種類(7以外不可)
+*
       INTEGER   IOPTG(NAZ,NHR)        ! 空調運転状態フラグ、=0:停止中,=1:運転中,=2:起動,=3:停止
       INTEGER   IOPVG(NAZ,NHR)        ! 外気導入状態フラグ、
                                       !     =0:カット中,=1:導入中,=2:導入開始,=3:導入停止
@@ -120,9 +134,11 @@
       CHARACTER QKY*4,QD*80,QJB*80,QSP*4,QERR*1
       CHARACTER QWK*200
       CHARACTER QPATH*200   ! 出力データパス(".....\"まで)
+*
       DATA LSZSPC/218,16,26,47,8/                                               ! rev 20200403(T.Nagai)
 *
 ***        INSIDE SURFACE REFLECTANCE
+***        ROH = [0.7, 0.5, 0.3], ROL = [0.3, 0.2, 0.1]
       DATA ROH,ROL/0.7, 0.5, 0.3, 0.3, 0.2, 0.1/
 *
 ***        WINDOW GLASS DATA (Initialization)
@@ -139,50 +155,75 @@
       DATA AM/79.,50.,-3.0,91.,53.,-3.1,102.,54.,-3.4,113.,55.,-3.6,
      *     125.,59.,-3.8,170.,65.,-5.6,194.,72.,-6.0,227.,85.,-6.3,
      *     329.,118.,-5.4/
-*
-***        SATURATION HUMIDITY
+
+**********************************************************************************************************
+
+***   SATURATION HUMIDITY
       SATX(T)=1000.*EXP(-5.58001+T*(0.0780136+T*(-2.87894E-04
      *       +T*(1.36152E-06+T*3.49024E-09)))-4.87306E-03*ABS(T))
 *
-***        SOLAR GAIN FACTOR
+***   SOLAR GAIN FACTOR
       GF(Z)=Z*(2.392+Z*(-3.8636+Z*(3.7568-Z*1.3952)))
 *
-***        WIND PRESSURE COEFFICIENT
+***   WIND PRESSURE COEFFICIENT
       CF(Z)=-0.01107+Z*(0.03675+Z*0.02332)
-*
+      
       DO 102 J=1,24
-      SH(J)=0.
-      CHSA(J)=0.
-  102 CHCA(J)=0.
-      DO 101 I=1500,MX   ! 1499番までは固定番地                                   rev 20121002(T.Nagai) Debug
-  101 M(I)=0
+        SH(J)=0.
+        CHSA(J)=0.
+  102   CHCA(J)=0.
 
+      DO 101 I=1500,MX   ! 1499番までは固定番地                                   rev 20121002(T.Nagai) Debug
+  101   M(I)=0
+
+**********************************************************************************************************
+
+******入力ファイル 1行目 建物データファイル名称
       READ(5,'(A)') QWK  ! INPUT DATA FILE NAME
-      OPEN(NUB,FILE=QWK,STATUS='OLD',FORM='FORMATTED')
+      OPEN(NUB,FILE=QWK,STATUS='OLD',FORM='FORMATTED')    ! 建物データファイルの読み込み（装置番号 NUB）
+
+******入力ファイル 2行目 気象データファイル名称
       READ(5,'(A)') QWK  ! WEATHER DATA FILE NAME
-      OPEN(NUW,FILE=QWK,STATUS='OLD',FORM='FORMATTED')
-      READ(NUW,'(A)') QWK                                                       ! add 20200403(T.Nagai)
-      IF(QWK(1:1).EQ.'*') THEN                                                  ! add 20200403(T.Nagai)
-        IWFLG(1) = 1                                                            ! add 20200403(T.Nagai)
-        CALL RHEAD(QWK,IWFLG,RWFLG)                                             ! add 20200403(T.Nagai)
-        MCNTL(3) = IWFLG(3)                                                     ! add 20200403(T.Nagai)
-        MCNTL(4) = IWFLG(2)                                                     ! add 20200403(T.Nagai)
-        MCNTL(31) = IWFLG(4)                                                    ! add 20200403(T.Nagai)
-      ELSE                                                                      ! add 20200403(T.Nagai)
-        IWFLG(1) = 0                                                            ! add 20200403(T.Nagai)
-        BACKSPACE(NUW)                                                          ! add 20200403(T.Nagai)
-      END IF                                                                    ! add 20200403(T.Nagai)
+      OPEN(NUW,FILE=QWK,STATUS='OLD',FORM='FORMATTED')    ! 気象データファイルの読み込み（装置番号 NUW
+
+******気象データファイルの1行目の1カラム目が「*」の場合は、ヘッダ行あり、その 他の文字の場合はヘッダ行なしと見なされる。
+      READ(NUW,'(A)') QWK                                 ! 変数 QWK に読み込み
+      IF(QWK(1:1).EQ.'*') THEN                            ! add 20200403(T.Nagai)
+        IWFLG(1) = 1                                      ! add 20200403(T.Nagai)
+        CALL RHEAD(QWK,IWFLG,RWFLG)                       ! add 20200403(T.Nagai)
+        MCNTL(3) = IWFLG(3)                               ! add 20200403(T.Nagai)
+        MCNTL(4) = IWFLG(2)                               ! add 20200403(T.Nagai)
+        MCNTL(31) = IWFLG(4)                              ! add 20200403(T.Nagai)
+      ELSE                                                ! add 20200403(T.Nagai)
+        IWFLG(1) = 0                                      ! add 20200403(T.Nagai)
+        BACKSPACE(NUW)                                    ! I/O 装置 NUW に接続されたファイルを前の記録の位置に戻す。
+      END IF                                              ! add 20200403(T.Nagai)
+
+******入力ファイル 3行目 出力先のディレクトリ名称
       READ(5,'(A)') QPATH  ! OUTPUT DATA FOLDER NAME
+
+******デバッグ用ファイル名の定義：　len_trim は 文字列長さを取得する関数
+      OPEN(NUDD,FILE=QPATH(1:LEN_TRIM(QPATH))//'debug.txt')  !デバッグ出力
+      WRITE(NUDD,*) 'ROH'
+      WRITE(NUDD,*) ROH
+      WRITE(NUDD,*) 'ROL'
+      WRITE(NUDD,*) ROL
+
+******気象データ保存用ファイル名の定義：　
       OPEN(NUOW,FILE=QPATH(1:LEN_TRIM(QPATH))//'weath.dat')  !外気温湿度出力ファイル
       WRITE(NUOW,'(A)') 'YEAR,MO,DY,YB,HR,,OUT-T,OUT-X'
-***        WINDOW GLASS DATA (Read from file)
+
+******入力ファイル 4行目 窓のファイル　WINDOW GLASS DATA (Read from file)
       READ(5,'(A)') QWK  ! WINDOW DATA FILE NAME
       OPEN(NUWN,FILE=QWK,STATUS='OLD',FORM='FORMATTED')
+
 *     K,SCC,SCRの読み込み
-      DO 90 II=1,NTBL   ! Tableループ
+      DO 90 II=1,NTBL   ! Tableループ（種類ごと）
        READ(NUWN,'()')
-       READ(NUWN,*) L1
-       IF(L1.GT.MXGL) CALL ERROR(48,NERR)
+       READ(NUWN,*) L1   ! ガラスの種類の数
+       
+       IF(L1.GT.MXGL) CALL ERROR(48,NERR)   ! 格納する変数のサイズをチェック
+
        DO 90 I=1,L1   ! ガラスループ
         READ(NUWN,*) I1,MGT(I,II),(GLK(I,J,II),GLC(I,J,II),GLR(I,J,II),
      -               J=0,NBLD)
@@ -193,6 +234,7 @@
          END IF
    98   CONTINUE
    90 CONTINUE
+
 *     AFW,PPW関連データの読み込み
       DO 92 II=1,6
        READ(NUWN,'()')
@@ -211,6 +253,7 @@
    93     CONTINUE
          END IF
    92 CONTINUE
+
 *     kLR等の読み込み
       READ(NUWN,'()')
       READ(NUWN,*) L1
@@ -218,11 +261,17 @@
        READ(NUWN,*) L2,GLKR(L2)
        IF(L2.GT.MXGT) CALL ERROR(49,NERR)
    94 CONTINUE
+
       READ(NUWN,'()')
       READ(NUWN,*) GLKRB, GLKRBO
       IF(GLKRB.GT.0.9999) CALL ERROR(51,NERR)
+
+***   入力ファイル 5行目 建材のファイル 
       READ(5,'(A)') QWK  ! WALL CONSTRUCTION DATA FILE NAME
       OPEN(NUBW,FILE=QWK,STATUS='OLD',FORM='FORMATTED')
+
+***   入力ファイル 6行目 ACSSへの連携のためのファイル
+***   end指定子は err指定子と同じような使い方で利用でき、ファイルの終端に到達した際に指定の場所に処理を移行させる
       READ(5,'(A)',END=99) QWK  ! OUTPUT FILE NAME FOR ACSS
       IF(LEN_TRIM(QWK).EQ.0) THEN
         IACSS=0
@@ -231,6 +280,8 @@
         OPEN(NUO,FILE=QPATH(1:LEN_TRIM(QPATH))//QWK,STATUS='UNKNOWN',
      -       FORM='FORMATTED')
       END IF
+
+***   入力ファイル 7行目 BECSへの連携のためのファイル
       READ(5,'(A)',END=99) QWK  ! OUTPUT FILE NAME FOR BECS
       IF(LEN_TRIM(QWK).EQ.0) THEN
         IBECS=0
@@ -244,7 +295,9 @@
       QERR='&'
       READ(NUB,'(A80)') QJB
       WRITE(6,'(1H1,A80)') QJB
-*
+
+
+
 *****       2. PRELIMINARY PROCESS ***********************************
 ***          2.1. BUILDING COMMON DATA *******************************
 *
@@ -1607,7 +1660,8 @@
      *R COUNT=',I3)
        STOP
       END IF
-*
+
+****** ACSS用
       IF(IACSS.EQ.1) THEN
         WRITE(NUO,'(3A)') ' ----- NewHASP/ACLD/', QVER, ' -----'
         WRITE(NUO,'(A)') QJB
@@ -1615,6 +1669,8 @@
      *                MCNTL(11),MCNTL(13),MCNTL(14), X(155), X(157), NRM
         WRITE(NUO,'(20I5)') (M(I),I=171,190)
       END IF
+
+****** BECS用
       IF(IBECS.EQ.1) THEN
         WRITE(NUOB,'(3A/A)')
      -         '.    NewHASP/ACLD ', QVER, '                        ',
@@ -1623,10 +1679,12 @@
         WRITE(NUOB,'(9I5)') (MCNTL(I), I=6,14)
         WRITE(NUOB,'(I5)') NRM
       END IF
-*
+
       LL=M(106)
       NRM=0
+
   410 IF(LL.EQ.0) GO TO 420
+
       NRM=NRM+1
 *
       WF(1,1)=X(LL+15)
@@ -1637,14 +1695,16 @@
       U2=X(LL+20)
       V2=X(LL+21)
       R2=X(LL+22)
+
       DO 402 J=2,8
-      WF(J,1)=U1+U2
-      WF(J,2)=V1+V2
-      U1=U1*R1
-      V1=V1*R1
-      U2=U2*R2
-      V2=V2*R2
+          WF(J,1)=U1+U2
+          WF(J,2)=V1+V2
+          U1=U1*R1
+          V1=V1*R1
+          U2=U2*R2
+          V2=V2*R2
   402 CONTINUE
+
       WF(9,1)=(U1/(1.-R1)+U2/(1.-R2))/(U1/((1.-R1)*R1)+U2/((1.-R2)*R2))
       WF(9,2)=(V1/(1.-R1)+V2/(1.-R2))/(V1/((1.-R1)*R1)+V2/((1.-R2)*R2))
 *
@@ -1652,12 +1712,14 @@
       WF(1,4)=X(LL+26)
       U1=X(LL+27)
       V1=X(LL+28)
+
       DO 403 J=2,8
-      WF(J,3)=U1
-      WF(J,4)=V1
-      U1=U1*X(LL+29)
-      V1=V1*X(LL+29)
+          WF(J,3)=U1
+          WF(J,4)=V1
+          U1=U1*X(LL+29)
+          V1=V1*X(LL+29)
   403 CONTINUE
+
       WF(9,3)=X(LL+29)
       WF(9,4)=X(LL+29)
       CALL NAME(QSP,M(LL+1))
@@ -1679,12 +1741,15 @@
 *
       LL=M(LL)
       GO TO 410
+
 *     外調機出力ファイルオープン
   420 LL=M(98)
       NUOT2=NUOT+NRM   ! 外調機出力先装置番号（先頭）
       II=NUOT2
+
   421 IF(LL.EQ.0) GO TO 500
       CALL NAME(QSP,M(LL+1))
+      
       DO 422 I=1,4
   422 IF(QSP(I:I).EQ.' ') QSP(I:I)='_'
       OPEN(II,FILE=QPATH(1:LEN_TRIM(QPATH))//'OHU-'//QSP//'.csv')
@@ -1693,7 +1758,8 @@
       II=II+1
       LL=M(LL)
       GO TO 421
-*
+
+
 *****       3. MAIN PROCESS ******************************************
 ***          3.1. DATING AND JOB CONTROL *****************************
 *
@@ -2238,6 +2304,9 @@ C       除去熱量の計算
   700 CONTINUE
       WRITE(6,91)
    91 FORMAT(1H0,'JOB COMPLETED')
+
+      WRITE(NUDD,1H0) 'JOB COMPLETED'  ! デバッグファイル
+
       STOP
       END
 *
@@ -2266,13 +2335,14 @@ C       除去熱量の計算
       IF(LD.EQ.0) RETURN
       LC=LD
       GO TO 10
-*
+
+*     ENTRY文とは, メソッド(元サブルーチン)の途中から実行を始めるための文
       ENTRY NAME(QNAM,NNAM)
       NN=NNAM
       DO 12 I=1,4
-      N=INT(NN/100**(4-I))
-      QNAM=QNAM(2:4)//QLIT(N:N)
-      NN=NN-N*100**(4-I)
+            N=INT(NN/100**(4-I))
+            QNAM=QNAM(2:4)//QLIT(N:N)
+            NN=NN-N*100**(4-I)
    12 CONTINUE
       RETURN
 *
@@ -2374,6 +2444,7 @@ C  90  FORMAT(5X,'DECODED ARITHMETICS=',1PE12.4)
       DIMENSION MT(NL),TH(NL),R(0:22),C(0:22),S(0:9)
       DIMENSION TRNS(0:9),ADMT(0:9),TCM(2,100)
       CHARACTER QWL*4
+
 *     家具容量の応答に関する石野らの実験・調査データ（顕熱用）
       REAL*8    SUM
       DIMENSION G0QC(22), G1QC(22), EPS(22), XN(22)
@@ -2401,7 +2472,9 @@ C  90  FORMAT(5X,'DECODED ARITHMETICS=',1PE12.4)
       SAVE TCM
       IF(QWL.EQ.'INIT') THEN   ! 特性値の読み込み
        I=NINT(HO)   ! 装置番号
+
        DO 5 L=1,100
+***     読み終わったら 99 に移動
         READ(I,*,END=99) J,IU,ALMD,CRHO
         IF((J.GE.1).AND.(J.LE.100)) THEN
          IF(IU.EQ.1) THEN   ! SI入力
@@ -2432,6 +2505,7 @@ C  90  FORMAT(5X,'DECODED ARITHMETICS=',1PE12.4)
         END IF
     5  CONTINUE
    99  RETURN
+
       END IF
 *
       IF(QWL.EQ.'FURN') GO TO 13
