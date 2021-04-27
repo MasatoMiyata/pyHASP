@@ -295,9 +295,7 @@
       QERR='&'
       READ(NUB,'(A80)') QJB
       WRITE(6,'(1H1,A80)') QJB
-
-
-
+*
 *****       2. PRELIMINARY PROCESS ***********************************
 ***          2.1. BUILDING COMMON DATA *******************************
 *
@@ -2304,9 +2302,6 @@ C       除去熱量の計算
   700 CONTINUE
       WRITE(6,91)
    91 FORMAT(1H0,'JOB COMPLETED')
-
-      WRITE(NUDD,1H0) 'JOB COMPLETED'  ! デバッグファイル
-
       STOP
       END
 *
@@ -2336,13 +2331,13 @@ C       除去熱量の計算
       LC=LD
       GO TO 10
 
-*     ENTRY文とは, メソッド(元サブルーチン)の途中から実行を始めるための文
+******ENTRY:汎用的なサブメソッドを定義
       ENTRY NAME(QNAM,NNAM)
       NN=NNAM
       DO 12 I=1,4
-            N=INT(NN/100**(4-I))
-            QNAM=QNAM(2:4)//QLIT(N:N)
-            NN=NN-N*100**(4-I)
+      N=INT(NN/100**(4-I))
+      QNAM=QNAM(2:4)//QLIT(N:N)
+      NN=NN-N*100**(4-I)
    12 CONTINUE
       RETURN
 *
