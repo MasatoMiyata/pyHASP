@@ -1,1 +1,0 @@
-mytHASP.exe < fnameNewHASP.txt > newHASP.err
