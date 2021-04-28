@@ -14,8 +14,8 @@
       CHARACTER  QVER*8    ! バージョン情報
       PARAMETER (QVER='20200403')                                               ! rev 20200403(T.Nagai)
 *
-      PARAMETER (NUB=1)    ! 建物データの装置番号
-      PARAMETER (NUW=11)   ! 気象データの装置番号
+      PARAMETER (NUB=1)    ! 建物データファイルの装置番号
+      PARAMETER (NUW=11)   ! 気象データファイルの装置番号
       PARAMETER (NUO=12)   ! ACLD連携のためのファイルの装置番号
       PARAMETER (NUOT=20)  ! CSVファイル出力先装置番号
       PARAMETER (NUWN=2)   ! 窓データファイル装置番号
@@ -26,7 +26,7 @@
 *
       PARAMETER (MX=30000)
       PARAMETER (HC=3.5,HR=4.5,HT=HC+HR,FC=HC/HT,FR=HR/HT,HO=20.)
-      PARAMETER (DR=0.0174533)
+      PARAMETER (DR=0.0174533)  ! 度からラジアンに変換するための係数
 *
       DIMENSION GAS(0:9)   ! FURN(顕熱)による冷房負荷
       DIMENSION X(MX),M(MX)
@@ -293,17 +293,25 @@
 *
    99 NERR=0
       QERR='&'
+
+
+***   建物データファイルを1行読み込み
       READ(NUB,'(A80)') QJB
-      WRITE(6,'(1H1,A80)') QJB
-*
+      WRITE(6,'(1H1,A80)') QJB  ! errファイルに出力。　1H1 → 1文字の「1]を出力（H形編集記述子）
+      
 *****       2. PRELIMINARY PROCESS ***********************************
 ***          2.1. BUILDING COMMON DATA *******************************
 *
       L=1500                                                                    ! rev 20121002(T.Nagai) Debug
 *
+
+***   建物データファイルを1行読み込み
   100 READ(NUB,'(A80)') QD
-      WRITE(6,'(1X,A80)') QD
+      WRITE(6,'(1X,A80)') QD   ! errファイルに出力。　1つ空白 + 80文字出力
+
+      ! 最初の4文字がキーコード
       QKY=QD(1:4)
+
       IF(QKY.EQ.'    ') GO TO 200
       IF(QKY.EQ.'BUIL') GO TO 110
       IF(QKY.EQ.'CNTL') GO TO 115
@@ -317,45 +325,83 @@
       IF(QKY.EQ.'OPCO') GO TO 180
       IF(QKY.EQ.'OSCH') GO TO 190
       IF(QKY.EQ.'OAHU') GO TO 195
+
       CALL ERROR(1,NERR)
+      
       GO TO 100
-*
+
+
 ***          2.2. 'BUIL' DATA ****************************************
 *
   110 CONTINUE
+
       CALL DCHECK(QD,560,NERR)
-*
-      IF(QD(30:35).EQ.'      ') QD(30:35)='    10'
-      IF(QD(36:41).EQ.'      ') QD(36:41)='  24.0'
-      IF(QD(42:47).EQ.'      ') QD(42:47)='    50'
-      IF(QD(48:53).EQ.'      ') QD(48:53)='   200'
-      IF(QD(54:59).EQ.'      ') QD(54:59)='   9.0'                              ! add 20200403(T.Nagai)
+
+      ! デフォルト値
+      IF(QD(30:35).EQ.'      ') QD(30:35)='    10'  ! 地物反射率
+      IF(QD(36:41).EQ.'      ') QD(36:41)='  24.0'  ! 基準温度
+      IF(QD(42:47).EQ.'      ') QD(42:47)='    50'  ! 基準湿度
+      IF(QD(48:53).EQ.'      ') QD(48:53)='   200'  ! 限界日射取得 W/m2
+      IF(QD(54:59).EQ.'      ') QD(54:59)='   9.0'  ! 時差 UTC ± h              ! add 20200403(T.Nagai)
+
+      ! BUIL の読み込み
+      ! 12-17：　緯度 →　W1
+      ! 18-23：　経度 →　W2
+      ! 24-29：　軒高 → X(153)
+      ! 30-35：　地物反射率 → X(154)
+      ! 36-41：　基準温度 → X(155)
+      ! 42-47：　基準湿度 → X(156)
+      ! 48-53：　限界日射取得 → X(158)
+      ! 54-59：　時差 → W3
       READ(QD(12:59),'(8F6.0)') W1,W2,(X(I),I=153,156),X(158),W3                ! rev 20200403(T.Nagai)
-      IF(IWFLG(1).EQ.1) THEN ! 気象データにヘッダ行がある場合                     add 20200403(T.Nagai)
-        X(150)=SIN(DR*RWFLG(1))                                                 ! add 20200403(T.Nagai)
-        X(151)=COS(DR*RWFLG(1))                                                 ! add 20200403(T.Nagai)
-        X(152)=RWFLG(2)/15.-RWFLG(3)                                            ! add 20200403(T.Nagai)
-      ELSE                                                                      ! add 20200403(T.Nagai)
+
+      IF(IWFLG(1).EQ.1) THEN ! 気象データにヘッダ行がある場合                           add 20200403(T.Nagai)
+        X(150)=SIN(DR*RWFLG(1))         ! 気象データに記された緯度の正弦              ! add 20200403(T.Nagai)
+        X(151)=COS(DR*RWFLG(1))         ! 気象データに記された緯度の余弦              ! add 20200403(T.Nagai)
+        X(152)=RWFLG(2)/15.-RWFLG(3)    ! 標準時との時差                          ! add 20200403(T.Nagai)
+      ELSE                                                                     ! add 20200403(T.Nagai)
         X(150)=SIN(DR*W1)
         X(151)=COS(DR*W1)
         X(152)=W2/15.-W3                                                        ! rev 20200403(T.Nagai)
       END IF                                                                    ! add 20200403(T.Nagai)
-      X(154)=0.01*X(154)
-      X(157)=SATX(X(155))*X(156)/100.
-      X(158)=0.860*X(158)
-      REFWD(1)=X(155)
-      REFWD(2)=X(157)
+
+      X(154)=0.01*X(154)    ! 反射率を % から 比率 に。
+      X(157)=SATX(X(155))*X(156)/100.   ! 基準湿度（絶対湿度）
+      X(158)=0.860*X(158)    ! W/m2 を kcal/m2h に変換
+
+      REFWD(1)=X(155)   ! 基準温度
+      REFWD(2)=X(157)   ! 基準湿度（絶対湿度）
 *
       GO TO 100
-*
+
+
 ***          2.2.5 'CNTL' DATA ***************************************
 *
   115 CONTINUE
+
       CALL DCHECK(QD,1001,NERR)
 *
       DO 116 I=1,15
+
+       ! 3桁ずつ抽出
        L1=11+(I-1)*3
-       IF(((I.NE.3).AND.(I.NE.4)).OR.(IWFLG(1).EQ.0)) THEN                      ! add 20200403(T.Nagai)
+
+       ! 計算モード         MCNTL(1)
+       ! 出力形式          MCNTL(2)
+       ! 雲量モード         MCNTL(3)
+       ! SIモード           MCNTL(4)
+       ! データ形式         MCNTL(5)   1:標準年気象データ、2:ピークデータ、3:実データ
+       ! 助走開始　年       MCNTL(6)
+       ! 助走開始　月       MCNTL(7)
+       ! 助走開始　日       MCNTL(8)
+       ! 本計算開始　年      MCNTL(9)
+       ! 本計算開始　月      MCNTL(10)
+       ! 本計算開始　日      MCNTL(11)
+       ! 計算終了　年        MCNTL(12)
+       ! 計算終了　月        MCNTL(13)
+       ! 計算終了　日        MCNTL(14)
+       
+       IF(((I.NE.3).AND.(I.NE.4)).OR.(IWFLG(1).EQ.0)) THEN             ! add 20200403(T.Nagai)
          ! 気象データヘッダ行の記述を優先する場合を除き                           add 20200403(T.Nagai)
          IF(QD(L1+1:L1+3).NE.'   ') THEN
            READ(QD(L1+1:L1+3),'(I3)') MCNTL(I)
@@ -364,13 +410,17 @@
        ! 4.8 INITIALIZATION で予めデフォルト値が代入されている
        ! (カード自体が省略された場合を想定)
   116 CONTINUE
+
+      ! 人体発熱顕熱比率算出用温度   MCNTL(32) 
       IF(QD(60:62).NE.'   ') THEN                                               ! add 20200403(T.Nagai)
         READ(QD(60:62),'(I3)') MCNTL(32)                                        ! add 20200403(T.Nagai)
       END IF                                                                    ! add 20200403(T.Nagai)
-*
+
+      ! 年について、二桁（80）から四桁（1980）に変換
       DO 117 I=1,3
-       II=6+(I-1)*3
-       IF(MCNTL(5).EQ.2)THEN
+
+       II=6+(I-1)*3           ! 6, 9, 12
+       IF(MCNTL(5).EQ.2)THEN  ! 実気象データである場合
         IF(MCNTL(II).GE.51)THEN   ! 51年以上の場合は1900年代とみなす
          MCNTL(II)=1900+MCNTL(II)
         ELSE
@@ -379,9 +429,14 @@
        ELSE
         MCNTL(II)=0
        END IF
-       MCNTL(18+I)=NDATF(MCNTL(II),MCNTL(II+1),MCNTL(II+2))
+
        ! 1899/12/31を1とした通算日数(EXCELと合わせるため)
        ! 実在気象データ以外が指定されたときは1999年となる
+       ! 助走開始日の通算日数　MCNTL(19)
+       ! 本計算開始日の通算日数　MCNTL(20)
+       ! 計算終了日の通算日数　MCNTL(21)
+       MCNTL(18+I)=NDATF(MCNTL(II),MCNTL(II+1),MCNTL(II+2))
+
   117 CONTINUE
 *
       GO TO 100
@@ -389,6 +444,7 @@
 ***          2.2.7 'HRAT' DATA ***************************************
 *
   125 CONTINUE
+  
       CALL DCHECK(QD,1341,NERR)
 *
       DO 126 I=1,9
@@ -2755,7 +2811,7 @@ c    &  'approximate step response:', g(0), (a(i), e(i), i = 1, n)
 *
       WRITE(6,90) I
    90 FORMAT(4X,'****** ERROR',I3,' ******')
-      NERR=NERR+1
+      NERR=NERR+1  ! エラーの数
       RETURN
       END
 *
