@@ -22,7 +22,7 @@
       PARAMETER (NUBW=3)   ! WCON物性値データ入力装置番号
       PARAMETER (NUOW=10)  ! 外気温・外気湿度テキスト出力先装置番号 （weath.dat）
       PARAMETER (NUOB=13)  ! BECSへの受け渡しファイル用装置番号
-      PARAMETER (NUDD=99)  ! デバッグ用
+      PARAMETER (NUDD=99)  ! デバッグ用（宮田追加）
 *
       PARAMETER (MX=30000)
       PARAMETER (HC=3.5,HR=4.5,HT=HC+HR,FC=HC/HT,FR=HR/HT,HO=20.)
@@ -480,9 +480,9 @@
       CALL RETRIV(100,QD(6:9),NNAM,LC,LD)
 
       IF(LD.NE.0) THEN
-      　　CALL ERROR(2,NERR)
-      　　WRITE(QD(6:9),'(A1,I3)') QERR,NERR
-      　　GO TO 120
+      　 CALL ERROR(2,NERR)
+      　 WRITE(QD(6:9),'(A1,I3)') QERR,NERR
+      　 GO TO 120
       END IF
 *
       ! WRITE(NUDD,*) QD(6:9)
@@ -927,13 +927,16 @@
 *
       ! Lの更新　（168個 間隔）
       L=L+168
-      
+
       GO TO 100
 *
 *************        'OSCH' DATA*************************************
 *
   190 CONTINUE
+
       CALL DCHECK(QD,1061,NERR)
+
+      ! OSCH名称の数値化と起点の検索 （3文字であるため空白を入れて4文字に）
       CALL RETRIV(147,QD(6:8)//' ',NNAM,LC,LD)
       IF(LD.NE.0) THEN
        CALL ERROR(2,NERR)
@@ -944,25 +947,37 @@
       M(LC)=L
       M(L)=LD
       M(L+1)=NNAM
-*
-      DO 192 II=1,2
-       DO 194 I=1,5
-        IWK=11+(II-1)*36+(I-1)*6
-        IF(QD(IWK+1:IWK+3).EQ.'   ') QD(IWK+1:IWK+3)=' -1'
-        IF(QD(IWK+4:IWK+6).EQ.'   ') QD(IWK+4:IWK+6)=' -1'
-        READ(QD(IWK+1:IWK+3),'(I3)') M(L+1+(II-1)*10+(I-1)*2+1)
-        READ(QD(IWK+4:IWK+6),'(I3)') M(L+1+(II-1)*10+(I-1)*2+2)
-  194  CONTINUE
+
+      DO 192 II=1,2     ! スケジュール1か2
+        DO 194 I=1,5     ! 各スケジュールにおいて、5セットの開始時刻と終了時刻を指定可能
+
+          IWK=11+(II-1)*36+(I-1)*6
+
+          IF(QD(IWK+1:IWK+3).EQ.'   ') QD(IWK+1:IWK+3)=' -1'
+          IF(QD(IWK+4:IWK+6).EQ.'   ') QD(IWK+4:IWK+6)=' -1'
+
+          ! 開始時刻
+          READ(QD(IWK+1:IWK+3),'(I3)') M(L+1+(II-1)*10+(I-1)*2+1)
+          ! 終了時刻
+          READ(QD(IWK+4:IWK+6),'(I3)') M(L+1+(II-1)*10+(I-1)*2+2)
+
+  194   CONTINUE
   192 CONTINUE
 *
+      ! Lの更新　（22個 間隔）
       L=L+22
+
       GO TO 100
 *
 *************        'OAHU' DATA*************************************
 *
   195 CONTINUE
+
       CALL DCHECK(QD,1370,NERR)
+
+      ! OAHU名称の数値化と起点の検索
       CALL RETRIV(98,QD(6:9),NNAM,LC,LD)
+
       IF(LD.NE.0) THEN
        CALL ERROR(2,NERR)
        WRITE(QD(6:9),'(A1,I3)') QERR,NERR
@@ -971,50 +986,71 @@
 *
       M(LC)=L
       M(L)=LD
+
+      ! OAHU名称　M(起点＋1)
       M(L+1)=NNAM
 *
+      ! 全熱交換効率[%] X(L+2)
       IF(QD(12:14).EQ.'   ') QD(12:14)='  0'
       READ(QD(12:14),'(F3.0)') X(L+2)
       X(L+2)=X(L+2)*0.01
+
       DO 196 II=1,3   ! 季節ループ
-       IWK=14+(II-1)*18
-       L1=L+2+(II-1)*9
-*      全熱交換器
-       IF(QD(IWK+1:IWK+3).EQ.'   ') THEN
-        IF(QD(IWK+4:IWK+6).NE.'   ') CALL ERROR(46,NERR)
-        M(L1+1)=0
-       ELSE
-        READ(QD(IWK+1:IWK+3),'(F3.0)') X(L1+2)
-        IF(QD(IWK+4:IWK+6).EQ.'   ') THEN
-         M(L1+1)=1
+        IWK=14+(II-1)*18
+        L1=L+2+(II-1)*9
+ 
+*       全熱交換器 熱回収用排気条件（温度、湿度）
+        IF(QD(IWK+1:IWK+3).EQ.'   ') THEN
+          IF(QD(IWK+4:IWK+6).NE.'   ') CALL ERROR(46,NERR)
+          M(L1+1)=0   ! 排気条件なし
         ELSE
-         M(L1+1)=2
-         READ(QD(IWK+4:IWK+6),'(F3.0)') X(L1+3)
-         X(L1+3)=SATX(X(L1+2))*X(L1+3)*0.01
+          ! 熱回収用排気条件（温度）
+          READ(QD(IWK+1:IWK+3),'(F3.0)') X(L1+2)
+ 
+          IF(QD(IWK+4:IWK+6).EQ.'   ') THEN
+            M(L1+1)=1   ! 温度のみ
+          ELSE
+            M(L1+1)=2   ! 温度と湿度の指定
+ 
+            ! 熱回収用排気条件（湿度）
+            READ(QD(IWK+4:IWK+6),'(F3.0)') X(L1+3)
+            X(L1+3)=SATX(X(L1+2))*X(L1+3)*0.01
+            
+          END IF
         END IF
-       END IF
-*      外調機
-       DO 197 I=1,2   ! 上下限ループ
-        I1=IWK+6+(I-1)*3
-        IF(QD(I1+1:I1+3).EQ.'   ') THEN
-         IF(QD(I1+7:I1+9).NE.'   ') CALL ERROR(47,NERR)
-         M(L1+3+I)=0
-        ELSE
-         READ(QD(I1+1:I1+3),'(F3.0)') X(L1+5+I)
-         IF(QD(I1+7:I1+9).EQ.'   ') THEN
-          M(L1+3+I)=1
-         ELSE
-          M(L1+3+I)=2
-          READ(QD(I1+7:I1+9),'(F3.0)') X(L1+7+I)
-          X(L1+7+I)=SATX(X(L1+5+I))*X(L1+7+I)*0.01
-         END IF
-        END IF
-  197  CONTINUE
+ 
+*       外調機 （DB上限、下限、RH上限、下限）
+        DO 197 I=1,2   ! 上下限ループ
+          I1=IWK+6+(I-1)*3
+          
+          IF(QD(I1+1:I1+3).EQ.'   ') THEN
+           IF(QD(I1+7:I1+9).NE.'   ') CALL ERROR(47,NERR)
+           M(L1+3+I)=0      ! 上限下限の設定なし
+          ELSE
+            ! 上限の読み込み
+            READ(QD(I1+1:I1+3),'(F3.0)') X(L1+5+I)
+            IF(QD(I1+7:I1+9).EQ.'   ') THEN
+             M(L1+3+I)=1    ! 上限のみ
+            ELSE
+              M(L1+3+I)=2   ! 上限と下限の指定
+              ! 下限の読み込み
+              READ(QD(I1+7:I1+9),'(F3.0)') X(L1+7+I)
+              X(L1+7+I)=SATX(X(L1+5+I))*X(L1+7+I)*0.01
+            END IF
+          END IF
+  197   CONTINUE
   196 CONTINUE
 *
+
+      ! Lの更新　（183個 間隔）
       L=L+183
       GO TO 100
 *
+
+
+***** ここまで 建物全体のデータ *****
+
+
 ***          2.8. 'SPAC' DATA ****************************************
 *
   200 CONTINUE
@@ -1087,9 +1123,14 @@
       GAS(J)=0.
       GRM(J)=0.
   201 GRL(J)=0.
+  
       ARM=0.
-*
+
+
+
+
 ***          2.9. SPACE ELEMENT DATA *********************************
+
   202 READ(NUB,'(A80)') QD
       WRITE(6,'(1X,A80)') QD
       QKY=QD(1:4)
@@ -2543,7 +2584,9 @@ C       除去熱量の計算
    91 FORMAT(1H0,'JOB COMPLETED')
       STOP
       END
-*
+
+
+
 *****       4. SUBROUTINES *******************************************
 
 ***          4.1. CODE NAME RETRIEVAL ********************************
