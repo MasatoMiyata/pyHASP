@@ -474,7 +474,7 @@
 
       CALL DCHECK(QD,597,NERR)
 
-			! 名称の数値化と起点の検索
+      ! 名称の数値化と起点の検索
       ! NNAMは数値化された EXPS名称 QD(6:9) 
       ! 例えば、 N___　であれば 15010101、 E___  であれば 6010101
       CALL RETRIV(100,QD(6:9),NNAM,LC,LD)
@@ -491,19 +491,19 @@
       ! WRITE(NUDD,*) LC   ! 100 → 1500 → 1576 → 1652 → 1728
       ! WRITE(NUDD,*) LD   ! ずっと 0
 
-			! 行番号の保存 EXPSの場合、起点は LC=100
+      ! 行番号の保存 EXPSの場合、起点は LC=100
       M(LC)=L         ! 初期値 LC=100, L=1500　次のデータが入っている行番号
 
-			! 起点 M(L) には 0 を入れる
+      ! 起点 M(L) には 0 を入れる
       M(L)=LD						 
 
-			! EXPS名称　M(起点＋1)
+      ! EXPS名称　M(起点＋1)
       M(L+1)=NNAM
 
-			! 傾斜角 W2
-			! 方位角 W1
-			! 隣棟距離 X(L+12)
-			! 隣棟高さ X(L+13)
+      ! 傾斜角 W2
+      ! 方位角 W1
+      ! 隣棟距離 X(L+12)
+      ! 隣棟高さ X(L+13)
       READ(QD(12:29),'(2F6.0,2F3.0)') W2,W1,X(L+12),X(L+13)
       X(L+2)=W1							! 傾斜角 X(起点+2)
       X(L+3)=SIN(DR*W1)			! 傾斜角のsin X(起点+3)
@@ -517,10 +517,10 @@
       X(L+10)=X(L+4)*X(L+6) ! 傾斜角のcosと方位角のcosの積
       X(L+11)=(1.-X(L+6))/2.  ! (1-cos(方位角))/2
 
-			! 庇の出[ZH] X(1)
-			! 窓下[y1] X(2)
-			! 窓高[y2] X(3)
-			! 小壁[y3] X(4)
+      ! 庇の出[ZH] X(1)
+      ! 窓下[y1] X(2)
+      ! 窓高[y2] X(3)
+      ! 小壁[y3] X(4)
       READ(QD(30:53),'(4F6.0)') (X(I),I=1,4)
       X(L+14)=X(1)           ! 庇の出 X(起点+14)
       X(L+15)=X(3)           ! 窓高  X(起点+15)
@@ -528,10 +528,10 @@
       X(L+17)=X(3)+X(4)      ! 窓高+小壁  X(起点+17)
       X(L+18)=X(2)+X(3)+X(4) ! 窓下＋窓高+小壁  X(起点+18)
 
-			! 袖庇の出[ZV] X(1)
-			! 右袖壁[x1] X(2)
-			! 窓幅[x2] X(3)
-			! 左袖壁[x3] X(4)
+      ! 袖庇の出[ZV] X(1)
+      ! 右袖壁[x1] X(2)
+      ! 窓幅[x2] X(3)
+      ! 左袖壁[x3] X(4)
       READ(QD(54:77),'(4F6.0)') (X(I),I=1,4)
       X(L+19)=X(1)           ! 袖庇の出 X(起点+19)
       X(L+20)=X(3)           ! 窓幅 X(起点+20)
@@ -542,17 +542,17 @@
       X(L+24)=X(L+18)*X(L+23)-X(L+25)  ! 壁面積  X(起点+24) 
 
       IF(X(L+18).EQ.0.) THEN
-      	X(L+26)=0.
+        X(L+26)=0.
       ELSE
-				! X(L+18): 外皮全体の幅、 X(L+14): 庇の出
-      	X(L+26)=0.5*(X(L+18)+X(L+14)-SQRT(X(L+18)**2+X(L+14)**2))/X(L+18)
+        ! X(L+18): 外皮全体の幅、 X(L+14): 庇の出
+        X(L+26)=0.5*(X(L+18)+X(L+14)-SQRT(X(L+18)**2+X(L+14)**2))/X(L+18)
       END IF
 
       IF(X(L+23).EQ.0.) THEN
-      	X(L+27)=0.
+        X(L+27)=0.
       ELSE
-				! X(L+23): 外皮全体の高さ、 X(L+19): 袖庇の出
-      	X(L+27)=(X(L+23)+X(L+19)-SQRT(X(L+23)**2+X(L+19)**2))/X(L+23)
+        ! X(L+23): 外皮全体の高さ、 X(L+19): 袖庇の出
+        X(L+27)=(X(L+23)+X(L+19)-SQRT(X(L+23)**2+X(L+19)**2))/X(L+23)
       END IF
 *
       ! Lの更新　（76個 間隔）
@@ -566,16 +566,16 @@
 
       CALL DCHECK(QD,615,NERR)
   
-			! WCON名称の数値化と起点の検索
-			CALL RETRIV(102,QD(6:9),NNAM,LC,LD)
-  
-			IF(LD.NE.0) THEN
-       CALL ERROR(2,NERR)
-       WRITE(QD(6:9),'(A1,I3)') QERR,NERR
-       GO TO 130
+      ! WCON名称の数値化と起点の検索
+      CALL RETRIV(102,QD(6:9),NNAM,LC,LD)
+
+      IF(LD.NE.0) THEN
+        CALL ERROR(2,NERR)
+        WRITE(QD(6:9),'(A1,I3)') QERR,NERR
+        GO TO 130
       END IF
 
-			WRITE(NUDD,*) QD(6:9)
+      WRITE(NUDD,*) QD(6:9)
       WRITE(NUDD,*) NNAM
       WRITE(NUDD,*) L    ! 1880 → 1889 → 1902
       WRITE(NUDD,*) LC   ! 102 → 1880 → 1889
@@ -584,29 +584,29 @@
       M(LC)=L
       M(L)=LD
 
-			! WCON名称　M(起点＋1)
+      ! WCON名称　M(起点＋1)
       M(L+1)=NNAM
 
-			! 入力された層の数
+      ! 入力された層の数
       NL=0
-			
+
   131 L1=L+2*NL+3  ! L+3　→　L+5　→ L+7
       K1=6*NL+12   ! 12→18→24
 
-			! 材番（3桁） M1
-			! 厚さ（3桁） W1
+      ! 材番（3桁） M1
+      ! 厚さ（3桁） W1
       READ(QD(K1:K1+5),'(I3,F3.0)') M1,W1
       IF(M1.NE.0) THEN
-				M(L1)=M1              ! 材料番号 M(L+3)
-				X(L1+1)=0.001*W1      ! 材料厚さ[mm → m] M(L+4)
-				NL=NL+1               ! 層数をカウント
-				IF(NL.LT.11) GO TO 131  ! 層数は11層まで
+        M(L1)=M1              ! 材料番号 M(L+3)
+        X(L1+1)=0.001*W1      ! 材料厚さ[mm → m] M(L+4)
+        NL=NL+1               ! 層数をカウント
+        IF(NL.LT.11) GO TO 131  ! 層数は11層まで
       END IF
 *
-			! 層の数 M(L+2)
+      ! 層の数 M(L+2)
       M(L+2)=NL
 
-			! Lの更新
+      ! Lの更新
       L=L+2*NL+3
 
       GO TO 100
@@ -618,33 +618,33 @@
 
       CALL DCHECK(QD,661,NERR)
 
-			! WSCH名称の数値化と起点の検索
+      ! WSCH名称の数値化と起点の検索
       CALL RETRIV(108,QD(6:9),NNAM,LC,LD)
 
       IF(LD.NE.0) THEN
-       CALL ERROR(2,NERR)
-       WRITE(QD(6:9),'(A1,I3)') QERR,NERR
-       GO TO 140
+        CALL ERROR(2,NERR)
+        WRITE(QD(6:9),'(A1,I3)') QERR,NERR
+        GO TO 140
       END IF
 *
       M(LC)=L
       M(L)=LD
 
-			! WSCH名称　M(起点＋1)
+      ! WSCH名称　M(起点＋1)
       M(L+1)=NNAM
 
-			! 月曜のスケジュール M(L+2)
-			! 火曜のスケジュール M(L+3)
-			! 水曜のスケジュール M(L+4)
-			! 木曜のスケジュール M(L+5)
-			! 金曜のスケジュール M(L+6)
-			! 土曜のスケジュール M(L+7)
-			! 日曜のスケジュール M(L+8)
-			! 祝日のスケジュール M(L+9)
-			! 特別日のスケジュール M(L+10)
+      ! 月曜のスケジュール M(L+2)
+      ! 火曜のスケジュール M(L+3)
+      ! 水曜のスケジュール M(L+4)
+      ! 木曜のスケジュール M(L+5)
+      ! 金曜のスケジュール M(L+6)
+      ! 土曜のスケジュール M(L+7)
+      ! 日曜のスケジュール M(L+8)
+      ! 祝日のスケジュール M(L+9)
+      ! 特別日のスケジュール M(L+10)
       READ(QD(12:38),'(9I3)') (M(I),I=L+2,L+10)
 
-			! Lの更新　（11個 間隔）
+      ! Lの更新　（11個 間隔）
       L=L+11
       GO TO 100
 *
@@ -652,69 +652,69 @@
 *
   150 CONTINUE
 
-			! DSCH名称の数値化と起点の検索
+      ! DSCH名称の数値化と起点の検索
       CALL RETRIV(104,QD(6:9),NNAM,LC,LD)
 			
       IF(LD.NE.0) THEN
-       CALL ERROR(2,NERR)
-       WRITE(QD(6:9),'(A1,I3)') QERR,NERR
-       GO TO 150
+        CALL ERROR(2,NERR)
+        WRITE(QD(6:9),'(A1,I3)') QERR,NERR
+        GO TO 150
       END IF
 *
       M(LC)=L
       M(L)=LD
 
-			! DSCH名称　M(起点＋1)
+      ! DSCH名称　M(起点＋1)
       M(L+1)=NNAM
 *
-			! 変数初期化 X(L+2) から X(L+73)　　　73は 24時間×3パターン + 1（名称分）
+      ! 変数初期化 X(L+2) から X(L+73)　　　73は 24時間×3パターン + 1（名称分）
       DO 151 LL=L+2,L+73
   151 X(LL)=0.
 
       DO 154 I=1,3   ! 指定可能なスケジュールは3つ
 
-				! 2回目以降、先頭行が + であれば読み込む
-      	IF(I.GE.2) THEN
-      	 READ(NUB,'(A80)') QD
-      	 IF(QD(1:4).EQ.'+   ') THEN
-      	  WRITE(6,'(1X,A80)') QD
-      	 ELSE
-      	  BACKSPACE(NUB)
-      	  GO TO 156
-      	 END IF
-      	END IF
+      ! 2回目以降、先頭行が + であれば読み込む
+      IF(I.GE.2) THEN
+        READ(NUB,'(A80)') QD
+        IF(QD(1:4).EQ.'+   ') THEN
+          WRITE(6,'(1X,A80)') QD
+        ELSE
+          BACKSPACE(NUB)
+          GO TO 156
+        END IF
+      END IF
 
-      	CALL DCHECK(QD,1225,NERR)
+      CALL DCHECK(QD,1225,NERR)
 
-				! もし空白であれば 24時間停止（1時から24時まで0）とする。
-      	IF(QD(12:14).EQ.'   ') THEN
-      	 QD(12:20)='  1  0 24'
-      	END IF
+      ! もし空白であれば 24時間停止（1時から24時まで0）とする。
+      IF(QD(12:14).EQ.'   ') THEN
+        QD(12:20)='  1  0 24'
+      END IF
 
-      	K1=12
-      	L1=L+24*I-23
+      K1=12
+      L1=L+24*I-23
       	
-				! スケジュール 開始時刻 M1
-				READ(QD(K1:K1+2),'(I3)') M1
+      ! スケジュール 開始時刻 M1
+      READ(QD(K1:K1+2),'(I3)') M1
 
-  152 	IF(K1.LE.72.AND.M1.NE.0) THEN
+  152 IF(K1.LE.72.AND.M1.NE.0) THEN
 
-					! スケジュール　比率%　W
-					! スケジュール　終了時刻 M2
-			  	READ(QD(K1+3:K1+8),'(F3.0,I3)') W,M2
+        ! スケジュール　比率%　W
+        ! スケジュール　終了時刻 M2
+        READ(QD(K1+3:K1+8),'(F3.0,I3)') W,M2
+  
+        DO 153 J=M1,M2
+  153   X(L1+J)=0.01*W   ! 時刻別の比率
+  
+        M1=M2
+        K1=K1+6   ! 比率（3桁）と終了時刻（3桁）を飛ばす
+        GOTO 152
 
-      		DO 153 J=M1,M2
-  153 	 		X(L1+J)=0.01*W   ! 時刻別の比率
-
-      		M1=M2
-      		K1=K1+6   ! 比率（3桁）と終了時刻（3桁）を飛ばす
-      		GOTO 152
-
-      	END IF
+      END IF
 		
   154 CONTINUE
 
-			! Lの更新　（74個 間隔）
+      ! Lの更新　（74個 間隔）
   156 L=L+74
 
       GO TO 100
@@ -729,8 +729,8 @@
 
       DO 162 I = 1, 34 ! データ行のループ(34:365日を特別日とする場合の行数)       rev 20200410(T.Nagai)
 
-				! 継続行がある場合（オプション）
-				IF(I.GE.2) THEN                                                         ! rev 20200410(T.Nagai)
+        ! 継続行がある場合（オプション）
+        IF(I.GE.2) THEN                                                         ! rev 20200410(T.Nagai)
           READ(NUB,'(A80)') QD                                                  ! rev 20200410(T.Nagai)
           IF(QD(1:4).EQ.'+   ') THEN                                            ! rev 20200410(T.Nagai)
             WRITE(6,'(1X,A80)') QD                                              ! rev 20200410(T.Nagai)
@@ -739,36 +739,35 @@
             GO TO 169                                                           ! rev 20200410(T.Nagai)
           END IF                                                                ! rev 20200410(T.Nagai)
         END IF                                                                  ! rev 20200410(T.Nagai)
-
-				CALL DCHECK(QD,753,NERR)                                                ! rev 20200410(T.Nagai)
-
-				! 月（3桁）と日（3桁） の読み込み　（最大11セット）
-				! M(171)?M(192)
-				READ(QD(12:77),'(22I3)') (M(M1),M1=171,192)                             ! rev 20200410(T.Nagai)
-
-				DO 163 I2 = 1, 11                                                       ! rev 20200410(T.Nagai)
-
-					! 171を始点に2つ飛ばし
+  
+        CALL DCHECK(QD,753,NERR)                                                ! rev 20200410(T.Nagai)
+  
+        ! 月（3桁）と日（3桁） の読み込み　（最大11セット）
+        ! M(171)からM(192)
+        READ(QD(12:77),'(22I3)') (M(M1),M1=171,192)                             ! rev 20200410(T.Nagai)
+  
+        DO 163 I2 = 1, 11                                                       ! rev 20200410(T.Nagai)
+  
+          ! 171を始点に2つ飛ばし
           M1=171+2*(I2-1)                                                       ! rev 20200410(T.Nagai)
-					
+    
           IF(M(M1).NE.0) THEN                                                   ! rev 20200410(T.Nagai)
-
-						! 通し日の算出 M2
-            M2=NDATE(M(M1),M(M1+1))
-
-						! M(193)=1/1、M(558)=12/31 特別日なら 1
-						M(192+M2)=1                                                         ! rev 20200410(T.Nagai)
-
-						! 特別日のカウント
+    
+            ! 通し日の算出 M2
+            M2=NDATE(M(M1),M(M1+1))  
+            ! M(193)=1/1、M(558)=12/31 特別日なら 1
+            M(192+M2)=1                                                         ! rev 20200410(T.Nagai)  
+            ! 特別日のカウント
             N=N+1
+    
           END IF                                                                ! rev 20200410(T.Nagai)
-
+  
   163   CONTINUE                                                                ! rev 20200410(T.Nagai)
 
-	162 CONTINUE                                                                  ! rev 20200410(T.Nagai)
+  162 CONTINUE                                                                  ! rev 20200410(T.Nagai)
 
 			! 特別日の日数 M(170)
-	169 M(170)=N                                                                  ! rev 20200410(T.Nagai)
+  169 M(170)=N                                                                  ! rev 20200410(T.Nagai)
 *
       GO TO 100
 *
@@ -780,15 +779,15 @@
 *
       DO 171 I=1,12
 
-				! 季節　1：夏期、2:冬期、3:中間期
-				! 季節　1月　M(981)
-				! 季節　2月　M(982)
-				! ・・・
-				! 季節 12月　M(992)
-      	L1=I*3+9
-      	IF(QD(L1:L1+2).NE.'   ') THEN
-      		READ(QD(L1:L1+2),'(I3)') M(980+I)
-      	END IF                                                                  ! rev 20200403(T.Nagai)
+	  ! 季節　1：夏期、2:冬期、3:中間期
+	  ! 季節　1月　M(981)
+	  ! 季節　2月　M(982)
+	  ! ・・・
+	  ! 季節 12月　M(992)
+        L1=I*3+9
+        IF(QD(L1:L1+2).NE.'   ') THEN
+          READ(QD(L1:L1+2),'(I3)') M(980+I)
+        END IF                                                                  ! rev 20200403(T.Nagai)
   171 CONTINUE                                                                  ! rev 20200403(T.Nagai)
 
       ! 4.8 INITIALIZATION で予めデフォルト値が代入されている
@@ -801,12 +800,10 @@
   180 CONTINUE
 
       CALL DCHECK(QD,1131,NERR)
+  	
+	CALL RETRIV(145,QD(6:9),NNAM,LC,LD)
   
-	
-			CALL RETRIV(145,QD(6:9),NNAM,LC,LD)
-  
-	
-			IF(LD.NE.0) THEN
+	IF(LD.NE.0) THEN
        CALL ERROR(2,NERR)
        WRITE(QD(6:9),'(A1,I3)') QERR,NERR
        GO TO 180
