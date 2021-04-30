@@ -480,9 +480,9 @@
       CALL RETRIV(100,QD(6:9),NNAM,LC,LD)
 
       IF(LD.NE.0) THEN
-      	CALL ERROR(2,NERR)
-      	WRITE(QD(6:9),'(A1,I3)') QERR,NERR
-      	GO TO 120
+      　　CALL ERROR(2,NERR)
+      　　WRITE(QD(6:9),'(A1,I3)') QERR,NERR
+      　　GO TO 120
       END IF
 *
       ! WRITE(NUDD,*) QD(6:9)
@@ -766,7 +766,7 @@
 
   162 CONTINUE                                                                  ! rev 20200410(T.Nagai)
 
-			! 特別日の日数 M(170)
+      ! 特別日の日数 M(170)
   169 M(170)=N                                                                  ! rev 20200410(T.Nagai)
 *
       GO TO 100
@@ -801,6 +801,7 @@
 
       CALL DCHECK(QD,1131,NERR)
   	
+      ! OPCO名称の数値化と起点の検索
 	CALL RETRIV(145,QD(6:9),NNAM,LC,LD)
   
 	IF(LD.NE.0) THEN
@@ -811,84 +812,122 @@
 *
       M(LC)=L
       M(L)=LD
+
+      ! OPCO名称　M(起点＋1)
       M(L+1)=NNAM
 *
+      ! 外気導入開始時刻（デフォルト値は0=終日導入しない）　　M(L+164)  
       IF(QD(12:14).EQ.'   ') QD(12:14)='  0'
       READ(QD(12:14),'(I3)') M(L+164)
+
+      ! 運転終了時間（スケジュール1） M1
       IF(QD(15:17).EQ.'   ')THEN
        M1=-1
       ELSE
        READ(QD(15:17),'(I3)') M1
       END IF
+
+      ! 運転終了時間（スケジュール2） M2
       IF(QD(18:20).EQ.'   ')THEN
        M2=-1
       ELSE
        READ(QD(18:20),'(I3)') M2
       END IF
+
+      ! 外気導入量（デフォルト値は 0）　　X(L+165)
       IF(QD(75:80).EQ.'      ') QD(75:80)='   0.0'
       READ(QD(75:80),'(F6.0)') X(L+165)
 *
+      ! DB上限、下限、RH上限、下限、予熱時間　（夏期）　のデフォルト値
       IF(QD(27:29).EQ.'   ') QD(27:29)='26.'
       IF(QD(30:32).EQ.'   ') QD(30:32)='26.'
       IF(QD(33:35).EQ.'   ') QD(33:35)='50.'
       IF(QD(36:38).EQ.'   ') QD(36:38)='50.'
       IF(QD(39:41).EQ.'   ') QD(39:41)='  1'
-*
+
+      ! DB上限、下限、RH上限、下限、予熱時間　（冬期）　のデフォルト値
       IF(QD(45:47).EQ.'   ') QD(45:47)='22.'
       IF(QD(48:50).EQ.'   ') QD(48:50)='22.'
       IF(QD(51:53).EQ.'   ') QD(51:53)='40.'
       IF(QD(54:56).EQ.'   ') QD(54:56)='40.'
       IF(QD(57:59).EQ.'   ') QD(57:59)='  2'
-*
+
+      ! DB上限、下限、RH上限、下限、予熱時間　（中間期）　のデフォルト値
       IF(QD(63:65).EQ.'   ') QD(63:65)='24.'
       IF(QD(66:68).EQ.'   ') QD(66:68)='24.'
       IF(QD(69:71).EQ.'   ') QD(69:71)='50.'
       IF(QD(72:74).EQ.'   ') QD(72:74)='50.'
 *
+      ! 夏期、冬期、中間期のループ
       DO 181 II=1,3
-       IWK=26+(II-1)*18
-       L1=L+1+(II-1)*4
-       READ(QD(IWK+1:IWK+12),'(4F3.0)') (X(L1+I),I=1,4)
-       IF(X(L1+1).LT.X(L1+2)) CALL ERROR(40,NERR)
-       IF(X(L1+3).LT.X(L1+4)) CALL ERROR(40,NERR)
-       X(L1+3)=SATX(X(L1+1))*X(L1+3)/100.
-          ! 最大気温、最大相対湿度から最大絶対湿度を求める
-       X(L1+4)=SATX(X(L1+2))*X(L1+4)/100.   ! 上と同様
-       IF(II.LE.2)THEN
-        READ(QD(IWK+13:IWK+15),'(I3)') M(L+165+II)
-       END IF
-*
-       IWK=23+(II-1)*18
-       CALL RETRIV(147,QD(IWK+1:IWK+3)//' ',NNAM,LC,LD)
-       I=L+14+(II-1)*50
-       IF(LD.NE.LC) THEN   ! 該当するOSCHデータが見つからない場合
-        IF(QD(IWK+1:IWK+3).NE.'   ')THEN
-         READ(QD(IWK+1:IWK+3),'(I3)') M3
-         X(I+M3)=1.
-         X(I+25+M3)=1.
+      
+        IWK=26+(II-1)*18
+        L1=L+1+(II-1)*4
+
+        ! DB上限 X(L+2), X(L+6), X(L+10)
+        ! DB下限 X(L+3), X(L+7), X(L+11) 
+        ! RH上限 X(L+4), X(L+8), X(L+12)
+        ! RH下限 X(L+5), X(L+9), X(L+13)
+        READ(QD(IWK+1:IWK+12),'(4F3.0)') (X(L1+I),I=1,4)
+
+        IF(X(L1+1).LT.X(L1+2)) CALL ERROR(40,NERR)
+        IF(X(L1+3).LT.X(L1+4)) CALL ERROR(40,NERR)
+
+        ! 最大気温、最大相対湿度から最大絶対湿度を求める
+        X(L1+3)=SATX(X(L1+1))*X(L1+3)/100.
+        X(L1+4)=SATX(X(L1+2))*X(L1+4)/100.
+        
+        ! 次の季節の運転開始時刻を読み込む  冬期 M(L+166), 中間期 M(L+167) 
+        IF(II.LE.2)THEN
+          READ(QD(IWK+13:IWK+15),'(I3)') M(L+165+II)
         END IF
-        IF(M1.NE.-1)THEN
-         X(I+M1)=-1.
-        END IF
-        IF(M2.NE.-1)THEN
-         X(I+25+M2)=-1.
-        END IF
-       ELSE   ! 該当するOSCHデータが見つかった場合はそちらのスケジュールに従う
-        DO 183 M4=1,2
-         DO 184 M5=1,5
-          L1=LC+1+(M4-1)*10+(M5-1)*2
-          IF(M(L1+1).NE.-1)THEN
-           X(I+(M4-1)*25+M(L1+1))=1.
+  
+        ! 運転開始時刻
+        IWK=23+(II-1)*18
+        CALL RETRIV(147,QD(IWK+1:IWK+3)//' ',NNAM,LC,LD)
+
+        I=L+14+(II-1)*50    ! スケジュール2種類（24時間×2=48）
+
+        IF(LD.NE.LC) THEN   ! 該当するOSCHデータが見つからない場合
+
+          IF(QD(IWK+1:IWK+3).NE.'   ')THEN
+            ! 運転開始時刻 M3
+            READ(QD(IWK+1:IWK+3),'(I3)') M3
+            ! 運転開始時刻 X(L+14)
+            X(I+M3)=1.
+            X(I+25+M3)=1.
           END IF
-          IF(M(L1+2).NE.-1)THEN
-           X(I+(M4-1)*25+M(L1+2))=-1.
+
+          IF(M1.NE.-1)THEN
+            ! 運転終了時刻（スケジュール1）
+            X(I+M1)=-1.
           END IF
-  184    CONTINUE
-  183   CONTINUE
-       END IF
+
+          IF(M2.NE.-1)THEN
+            ! 運転終了時刻（スケジュール2）
+            X(I+25+M2)=-1.
+          END IF
+         
+        ELSE   ! 該当するOSCHデータが見つかった場合はそちらのスケジュールに従う
+          DO 183 M4=1,2   ! スケジュール1か2
+            DO 184 M5=1,5  ! 各スケジュールにおいて、5セットの開始時刻と終了時刻を指定可能
+            
+              L1=LC+1+(M4-1)*10+(M5-1)*2
+              IF(M(L1+1).NE.-1)THEN
+                X(I+(M4-1)*25+M(L1+1))=1.
+              END IF
+              IF(M(L1+2).NE.-1)THEN
+                X(I+(M4-1)*25+M(L1+2))=-1.
+              END IF
+  184       CONTINUE
+  183     CONTINUE
+        END IF
+
   181 CONTINUE
 *
+      ! Lの更新　（168個 間隔）
       L=L+168
+      
       GO TO 100
 *
 *************        'OSCH' DATA*************************************
