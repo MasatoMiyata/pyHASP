@@ -610,12 +610,17 @@
       L=L+2*NL+3
 
       GO TO 100
-*
+
+
 ***          2.5. 'WSCH' DATA ****************************************
 *
   140 CONTINUE
+
       CALL DCHECK(QD,661,NERR)
+
+			! WSCH名称の数値化と起点の検索
       CALL RETRIV(108,QD(6:9),NNAM,LC,LD)
+
       IF(LD.NE.0) THEN
        CALL ERROR(2,NERR)
        WRITE(QD(6:9),'(A1,I3)') QERR,NERR
@@ -624,16 +629,32 @@
 *
       M(LC)=L
       M(L)=LD
+
+			! WSCH名称　M(起点＋1)
       M(L+1)=NNAM
+
+			! 月曜のスケジュール M(L+2)
+			! 火曜のスケジュール M(L+3)
+			! 水曜のスケジュール M(L+4)
+			! 木曜のスケジュール M(L+5)
+			! 金曜のスケジュール M(L+6)
+			! 土曜のスケジュール M(L+7)
+			! 日曜のスケジュール M(L+8)
+			! 祝日のスケジュール M(L+9)
+			! 特別日のスケジュール M(L+10)
       READ(QD(12:38),'(9I3)') (M(I),I=L+2,L+10)
-*
+
+			! Lの更新　（11個 間隔）
       L=L+11
       GO TO 100
 *
 ***          2.6. 'DSCH' DATA ****************************************
 *
   150 CONTINUE
+
+			! DSCH名称の数値化と起点の検索
       CALL RETRIV(104,QD(6:9),NNAM,LC,LD)
+			
       IF(LD.NE.0) THEN
        CALL ERROR(2,NERR)
        WRITE(QD(6:9),'(A1,I3)') QERR,NERR
@@ -642,48 +663,74 @@
 *
       M(LC)=L
       M(L)=LD
+
+			! DSCH名称　M(起点＋1)
       M(L+1)=NNAM
 *
+			! 変数初期化 X(L+2) から X(L+73)　　　73は 24時間×3パターン + 1（名称分）
       DO 151 LL=L+2,L+73
   151 X(LL)=0.
-      DO 154 I=1,3
-      IF(I.GE.2) THEN
-       READ(NUB,'(A80)') QD
-       IF(QD(1:4).EQ.'+   ') THEN
-        WRITE(6,'(1X,A80)') QD
-       ELSE
-        BACKSPACE(NUB)
-        GO TO 156
-       END IF
-      END IF
-      CALL DCHECK(QD,1225,NERR)
-      IF(QD(12:14).EQ.'   ') THEN
-       QD(12:20)='  1  0 24'
-      END IF
-      K1=12
-      L1=L+24*I-23
-      READ(QD(K1:K1+2),'(I3)') M1
-  152 IF(K1.LE.72.AND.M1.NE.0) THEN
-       READ(QD(K1+3:K1+8),'(F3.0,I3)') W,M2
-       DO 153 J=M1,M2
-  153  X(L1+J)=0.01*W
-       M1=M2
-       K1=K1+6
-       GOTO 152
-      END IF
+
+      DO 154 I=1,3   ! 指定可能なスケジュールは3つ
+
+				! 2回目以降、先頭行が + であれば読み込む
+      	IF(I.GE.2) THEN
+      	 READ(NUB,'(A80)') QD
+      	 IF(QD(1:4).EQ.'+   ') THEN
+      	  WRITE(6,'(1X,A80)') QD
+      	 ELSE
+      	  BACKSPACE(NUB)
+      	  GO TO 156
+      	 END IF
+      	END IF
+
+      	CALL DCHECK(QD,1225,NERR)
+
+				! もし空白であれば 24時間停止（1時から24時まで0）とする。
+      	IF(QD(12:14).EQ.'   ') THEN
+      	 QD(12:20)='  1  0 24'
+      	END IF
+
+      	K1=12
+      	L1=L+24*I-23
+      	
+				! スケジュール 開始時刻 M1
+				READ(QD(K1:K1+2),'(I3)') M1
+
+  152 	IF(K1.LE.72.AND.M1.NE.0) THEN
+
+					! スケジュール　比率%　W
+					! スケジュール　終了時刻 M2
+			  	READ(QD(K1+3:K1+8),'(F3.0,I3)') W,M2
+
+      		DO 153 J=M1,M2
+  153 	 		X(L1+J)=0.01*W   ! 時刻別の比率
+
+      		M1=M2
+      		K1=K1+6   ! 比率（3桁）と終了時刻（3桁）を飛ばす
+      		GOTO 152
+
+      	END IF
+		
   154 CONTINUE
-*
+
+			! Lの更新　（74個 間隔）
   156 L=L+74
+
       GO TO 100
-*
+
 ***          2.7. 'SDAY' DATA ****************************************
 *
   160 CONTINUE
+
 *     CALL DCHECK(QD,759,NERR)                                                  ! del 20200410(T.Nagai)
-*
+
       N=0
+
       DO 162 I = 1, 34 ! データ行のループ(34:365日を特別日とする場合の行数)       rev 20200410(T.Nagai)
-        IF(I.GE.2) THEN                                                         ! rev 20200410(T.Nagai)
+
+				! 継続行がある場合（オプション）
+				IF(I.GE.2) THEN                                                         ! rev 20200410(T.Nagai)
           READ(NUB,'(A80)') QD                                                  ! rev 20200410(T.Nagai)
           IF(QD(1:4).EQ.'+   ') THEN                                            ! rev 20200410(T.Nagai)
             WRITE(6,'(1X,A80)') QD                                              ! rev 20200410(T.Nagai)
@@ -692,32 +739,58 @@
             GO TO 169                                                           ! rev 20200410(T.Nagai)
           END IF                                                                ! rev 20200410(T.Nagai)
         END IF                                                                  ! rev 20200410(T.Nagai)
-        CALL DCHECK(QD,753,NERR)                                                ! rev 20200410(T.Nagai)
-        READ(QD(12:77),'(22I3)') (M(M1),M1=171,192)                             ! rev 20200410(T.Nagai)
-        DO 163 I2 = 1, 11                                                       ! rev 20200410(T.Nagai)
+
+				CALL DCHECK(QD,753,NERR)                                                ! rev 20200410(T.Nagai)
+
+				! 月（3桁）と日（3桁） の読み込み　（最大11セット）
+				! M(171)?M(192)
+				READ(QD(12:77),'(22I3)') (M(M1),M1=171,192)                             ! rev 20200410(T.Nagai)
+
+				DO 163 I2 = 1, 11                                                       ! rev 20200410(T.Nagai)
+
+					! 171を始点に2つ飛ばし
           M1=171+2*(I2-1)                                                       ! rev 20200410(T.Nagai)
+					
           IF(M(M1).NE.0) THEN                                                   ! rev 20200410(T.Nagai)
+
+						! 通し日の算出 M2
             M2=NDATE(M(M1),M(M1+1))
-            M(192+M2)=1                                                         ! rev 20200410(T.Nagai)
+
+						! M(193)=1/1、M(558)=12/31 特別日なら 1
+						M(192+M2)=1                                                         ! rev 20200410(T.Nagai)
+
+						! 特別日のカウント
             N=N+1
           END IF                                                                ! rev 20200410(T.Nagai)
+
   163   CONTINUE                                                                ! rev 20200410(T.Nagai)
-  162 CONTINUE                                                                  ! rev 20200410(T.Nagai)
-  169 M(170)=N                                                                  ! rev 20200410(T.Nagai)
+
+	162 CONTINUE                                                                  ! rev 20200410(T.Nagai)
+
+			! 特別日の日数 M(170)
+	169 M(170)=N                                                                  ! rev 20200410(T.Nagai)
 *
       GO TO 100
 *
 *************        'SEAS' DATA*************************************
 *
   170 CONTINUE
+
       CALL DCHECK(QD,894,NERR)
 *
       DO 171 I=1,12
-      L1=I*3+9
-      IF(QD(L1:L1+2).NE.'   ') THEN
-       READ(QD(L1:L1+2),'(I3)') M(980+I)
-      END IF                                                                    ! rev 20200403(T.Nagai)
+
+				! 季節　1：夏期、2:冬期、3:中間期
+				! 季節　1月　M(981)
+				! 季節　2月　M(982)
+				! ・・・
+				! 季節 12月　M(992)
+      	L1=I*3+9
+      	IF(QD(L1:L1+2).NE.'   ') THEN
+      		READ(QD(L1:L1+2),'(I3)') M(980+I)
+      	END IF                                                                  ! rev 20200403(T.Nagai)
   171 CONTINUE                                                                  ! rev 20200403(T.Nagai)
+
       ! 4.8 INITIALIZATION で予めデフォルト値が代入されている
       ! (カード自体が省略された場合を想定)
 *
@@ -726,9 +799,14 @@
 *************        'OPCO' DATA*************************************
 *
   180 CONTINUE
+
       CALL DCHECK(QD,1131,NERR)
-      CALL RETRIV(145,QD(6:9),NNAM,LC,LD)
-      IF(LD.NE.0) THEN
+  
+	
+			CALL RETRIV(145,QD(6:9),NNAM,LC,LD)
+  
+	
+			IF(LD.NE.0) THEN
        CALL ERROR(2,NERR)
        WRITE(QD(6:9),'(A1,I3)') QERR,NERR
        GO TO 180
