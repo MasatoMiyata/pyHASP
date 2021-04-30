@@ -474,8 +474,8 @@
 
       CALL DCHECK(QD,597,NERR)
 
-      ! QD(6:9) は EXPS名称
-      ! NNAMで数値化する。
+			! 名称の数値化と起点の検索
+      ! NNAMは数値化された EXPS名称 QD(6:9) 
       ! 例えば、 N___　であれば 15010101、 E___  であれば 6010101
       CALL RETRIV(100,QD(6:9),NNAM,LC,LD)
 
@@ -485,11 +485,11 @@
       	GO TO 120
       END IF
 *
-      WRITE(NUDD,*) QD(6:9)
-      WRITE(NUDD,*) NNAM
-      WRITE(NUDD,*) L    ! 1500 → 1576 → 1652 → 1728　→ 1804
-      WRITE(NUDD,*) LC   ! 100 → 1500 → 1576 → 1652 → 1728
-      WRITE(NUDD,*) LD   ! ずっと 0
+      ! WRITE(NUDD,*) QD(6:9)
+      ! WRITE(NUDD,*) NNAM
+      ! WRITE(NUDD,*) L    ! 1500 → 1576 → 1652 → 1728　→ 1804
+      ! WRITE(NUDD,*) LC   ! 100 → 1500 → 1576 → 1652 → 1728
+      ! WRITE(NUDD,*) LD   ! ずっと 0
 
 			! 行番号の保存 EXPSの場合、起点は LC=100
       M(LC)=L         ! 初期値 LC=100, L=1500　次のデータが入っている行番号
@@ -555,7 +555,7 @@
       	X(L+27)=(X(L+23)+X(L+19)-SQRT(X(L+23)**2+X(L+19)**2))/X(L+23)
       END IF
 *
-      ! データは 76個 間隔
+      ! Lの更新　（76個 間隔）
       L=L+76
                                                                           ! rev 20200403(T.Nagai) L 初期値1500
       GOTO 100
@@ -563,32 +563,52 @@
 ***          2.4. 'WCON' DATA ****************************************
 *
   130 CONTINUE
+
       CALL DCHECK(QD,615,NERR)
-      CALL RETRIV(102,QD(6:9),NNAM,LC,LD)
-      IF(LD.NE.0) THEN
+  
+			! WCON名称の数値化と起点の検索
+			CALL RETRIV(102,QD(6:9),NNAM,LC,LD)
+  
+			IF(LD.NE.0) THEN
        CALL ERROR(2,NERR)
        WRITE(QD(6:9),'(A1,I3)') QERR,NERR
        GO TO 130
       END IF
-*
+
+			WRITE(NUDD,*) QD(6:9)
+      WRITE(NUDD,*) NNAM
+      WRITE(NUDD,*) L    ! 1880 → 1889 → 1902
+      WRITE(NUDD,*) LC   ! 102 → 1880 → 1889
+      WRITE(NUDD,*) LD   ! ずっと 0
+
       M(LC)=L
       M(L)=LD
+
+			! WCON名称　M(起点＋1)
       M(L+1)=NNAM
-*
+
+			! 入力された層の数
       NL=0
-  131 L1=L+2*NL+3
-      K1=6*NL+12
+			
+  131 L1=L+2*NL+3  ! L+3　→　L+5　→ L+7
+      K1=6*NL+12   ! 12→18→24
+
+			! 材番（3桁） M1
+			! 厚さ（3桁） W1
       READ(QD(K1:K1+5),'(I3,F3.0)') M1,W1
       IF(M1.NE.0) THEN
-       M(L1)=M1
-       X(L1+1)=0.001*W1
-       NL=NL+1
-       IF(NL.LT.11) GO TO 131
+				M(L1)=M1              ! 材料番号 M(L+3)
+				X(L1+1)=0.001*W1      ! 材料厚さ[mm → m] M(L+4)
+				NL=NL+1               ! 層数をカウント
+				IF(NL.LT.11) GO TO 131  ! 層数は11層まで
       END IF
 *
+			! 層の数 M(L+2)
       M(L+2)=NL
-*
+
+			! Lの更新
       L=L+2*NL+3
+
       GO TO 100
 *
 ***          2.5. 'WSCH' DATA ****************************************
