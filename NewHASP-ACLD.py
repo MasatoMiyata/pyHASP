@@ -2,9 +2,96 @@ import math
 import numpy as np
 import pandas as pd
 
+
+def read_textfile(filename:str, split_method=None):
+    """
+    テキストファイルを読み込む関数
+    Args:
+        filename (str): ファイル名称
+    Returns:
+        _type_: 行毎のデータ
+    """
+    with open(filename, 'r', encoding='shift_jis') as f:
+        line_data = f.readlines()
+
+    if split_method == None:
+        data = line_data
+    else:
+
+        for line_num in range(0,len(line_data)):
+
+            split_data = line_data[line_num].split(split_method)
+            for split_num in range(0,len(split_data)):
+                print(split_data[split_num])
+
+    return data
+
+# filename = "./newHASP/Sample_Input_NewHASP1.txt"
+# filename = "./newHASP/wndwtabl.dat"
+# data = read_textfile(filename, ",")
+# for line in range(0,len(data)):
+#     print(data[line])
+
+def RHEAD(QA, IWFLG, RWFLG):
+    """
+    気象データのヘッダー部分の読み込み
+    """
+
+    # IWFLG[1]　日射・放射の単位 =0:10kJ/m2h, =1:kcal/m2h, =2:kJ/m2h、
+    if (QA[15:19] == '10kJ'):
+        IWFLG[1] = 0
+    elif (QA[15:19] == 'kcal'):
+        IWFLG[1] = 1
+    elif (QA[15:19] == 'kJ  '):
+        IWFLG[1] = 2
+    else:
+        raise Exception("ERROR: RHEAD")
+
+    # IWFLG[2]　雲量モード =0:雲量, =1:夜間放射、
+    if (QA[20:23] ==  'CA '):
+        IWFLG[2] = 0
+    elif (QA[20:23] == 'LNR'):
+        IWFLG[2] = 1
+    else:
+        raise Exception("ERROR: RHEAD")
+
+    # IWFLG[3]　気象データのカラム数(3以上9以下)
+    IWFLG[3] = QA[24]
+    if IWFLG[3] <= 3 or IWFLG[3] >= 9:
+        raise Exception("ERROR: RHEAD")
+
+    # RWFLG[0] 緯度[deg]（南緯の場合は負値）、
+    IWK1 = float(QA[60:62])
+    IWK2 = float(QA[62:65])
+
+    if QA[65] == "N":
+        RWFLG[0] = IWK1 + IWK2/600.0
+    elif QA[65] == "S":
+        RWFLG[0] = -IWK1 - IWK2/600.0
+    else:
+        raise Exception("ERROR: RHEAD")
+
+    # RWFLG[1] 経度[deg]（西経の場合は負値）、
+    IWK1 = float(QA[67:70])
+    IWK2 = float(QA[70:73])
+
+    if QA[73] == "E":
+        RWFLG[1] = IWK1 + IWK2/600.0
+    elif QA[65] == "W":
+        RWFLG[1] = -IWK1 - IWK2/600.0
+    else:
+        raise Exception("ERROR: RHEAD")
+
+    # RWFLG[2] 世界時と地方標準時の時差
+    RWFLG[2] = float(QA[77:83])
+
+    return IWFLG, RWFLG
+
+#-----------------------------------------------------------------------
 # DYNAMIC HEAT LOAD PROGRAM FOR ENERGY SIMULATION
 # HASP/ACLD/8501       CODED BY Y.MATSUO
 # NewHASP/ACLD         REVISED BY T.NAGAI  
+#-----------------------------------------------------------------------
 
 # 1. JOB START
 
@@ -149,13 +236,12 @@ RWFLG = np.zeros(3)              # 気象データヘッダ行のデータ      
 # QWK*200
 # QPATH*200   # 出力データパス(".....\"まで)
 
-
-LSZSPC = [218,16,26,47,8]                                               # rev 20200403(T.Nagai)
+# rev 20200403(T.Nagai)
+LSZSPC = [218,16,26,47,8]                                               
 
 # INSIDE SURFACE REFLECTANCE
 ROH = [0.7, 0.5, 0.3]
 ROL = [0.3, 0.2, 0.1]
-
 
 # WINDOW GLASS DATA (Initialization)
 GLK = 3200*9.999
@@ -167,10 +253,16 @@ GLKRB  = 102*9.999
 GLKRBO = 102*9.999
 
 # WF FOR LIGHTING FIXTURE
-FL = [0.4438,0.0534,0.8972,0.0362,0.0000,0.7321,0.0254,0.8926,0.0309,0.0000,1.0000,0.0000,0.0000,0.0000,0.0000]
+FL = [  0.4438,0.0534,0.8972,0.0362,0.0000,
+        0.7321,0.0254,0.8926,0.0309,0.0000,
+        1.0000,0.0000,0.0000,0.0000,0.0000  ]
 
 # OCCUPANCY HEAT DISCHARGE
-AM = [79.,50.,-3.0,91.,53.,-3.1,102.,54.,-3.4,113.,55.,-3.6, 125.,59.,-3.8,170.,65.,-5.6,194.,72.,-6.0,227.,85.,-6.3, 329.,118.,-5.4]
+AM = [  79.,50.,-3.0,91.,53.,-3.1,102.,54.,-3.4,113.,55.,-3.6,
+        125.,59.,-3.8,170.,65.,-5.6,194.,72.,-6.0,227.,85.,-6.3,
+        329.,118.,-5.4 ]
+
+#**********************************************************************************************************
 
 # SATURATION HUMIDITY
 def SATX(T):
@@ -186,4 +278,61 @@ def GF(Z):
 def CF(Z):
     y=-0.01107+Z*(0.03675+Z*0.02332)
     return y
+
+#**********************************************************************************************************
+
+# 入力ファイル 1行目 建物データファイル名称
+NUM = read_textfile("./newHASP/Sample_Input_NewHASP1.txt")
+
+# 入力ファイル 2行目 気象データファイル名称
+NUW = read_textfile("./newHASP/36300110_SI.hasH")
+
+
+
+
+
+IWFLG, RWFLG = RHEAD(NUW[0], IWFLG, RWFLG)
+
+print(IWFLG)
+print(RWFLG)
+
+
+# # RWFLG = np.zeros(3)              # 気象データヘッダ行のデータ                add 20200403(T.Nagai)
+# #                                 # (1) 緯度[deg]（南緯の場合は負値）、
+# #                                 # (2) 経度[deg]（西経の場合は負値）、
+# #                                 # (3) 世界時と地方標準時の時差
+# #                                 #  （日本の場合は9.0）
+
+
+
+
+
+if NUW[0][0] == "*":
+    IWFLG[1] = 1
+else:
+    IWFLG[1] = 0
+
+
+# 入力ファイル 3行目 出力先のディレクトリ名称
+QPATH = "./out/"
+
+# 入力ファイル 4行目 窓のファイル WINDOW GLASS DATA (Read from file)
+NUWN   = "./newHASP/wndwtabl.dat"
+
+# K,SCC,SCRの読み込み
+# NUWN_data = read_textfile(NUWN)
+
+# for II in range(0,4): # Tableループ（種類ごと）
+
+#     L1 = int(NUWN_data[1]) # ガラスの種類の数
+
+#     for I in range(2,2+L1):  # ガラスループ
+
+#         I1 = int(NUWN_data[I][0])
+#         MGT[I][II] = NUWN_data[I][1]
+#         GLK[I][0][II] = NUWN_data[I][2]
+#         GLC[I][0][II] = NUWN_data[I][3]
+#         GLR[I][0][II] = NUWN_data[I][4]
+
+
 
