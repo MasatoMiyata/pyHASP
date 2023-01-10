@@ -1,7 +1,7 @@
 import math
 import numpy as np
 import pandas as pd
-
+import xlrd
 
 def read_textfile(filename:str, split_method=None):
     """
@@ -15,7 +15,9 @@ def read_textfile(filename:str, split_method=None):
         line_data = f.readlines()
 
     if split_method == None:
+        
         data = line_data
+
     else:
 
         for line_num in range(0,len(line_data)):
@@ -244,13 +246,13 @@ ROH = [0.7, 0.5, 0.3]
 ROL = [0.3, 0.2, 0.1]
 
 # WINDOW GLASS DATA (Initialization)
-GLK = 3200*9.999
-GLR = 3200*9.999
-GLC = 3200*9.999
-GLD = 2640*9.999
-GLKR   = 102*9.999
-GLKRB  = 102*9.999
-GLKRBO = 102*9.999
+# GLK = 3200*9.999
+# GLR = 3200*9.999
+# GLC = 3200*9.999
+# GLD = 2640*9.999
+# GLKR   = 102*9.999
+# GLKRB  = 102*9.999
+# GLKRBO = 102*9.999
 
 # WF FOR LIGHTING FIXTURE
 FL = [  0.4438,0.0534,0.8972,0.0362,0.0000,
@@ -282,57 +284,134 @@ def CF(Z):
 #**********************************************************************************************************
 
 # 入力ファイル 1行目 建物データファイル名称
-NUM = read_textfile("./newHASP/Sample_Input_NewHASP1.txt")
+NUB = read_textfile("./newHASP/Sample_Input_NewHASP1.txt")
 
 # 入力ファイル 2行目 気象データファイル名称
 NUW = read_textfile("./newHASP/36300110_SI.hasH")
 
-
-
-
-
-IWFLG, RWFLG = RHEAD(NUW[0], IWFLG, RWFLG)
-
-print(IWFLG)
-print(RWFLG)
-
-
-# # RWFLG = np.zeros(3)              # 気象データヘッダ行のデータ                add 20200403(T.Nagai)
-# #                                 # (1) 緯度[deg]（南緯の場合は負値）、
-# #                                 # (2) 経度[deg]（西経の場合は負値）、
-# #                                 # (3) 世界時と地方標準時の時差
-# #                                 #  （日本の場合は9.0）
-
-
-
-
-
+# 気象データファイルの1行目の1カラム目が「*」の場合は、ヘッダ行あり、その 他の文字の場合はヘッダ行なしと見なされる。
 if NUW[0][0] == "*":
-    IWFLG[1] = 1
+    IWFLG[0] = 1
+    IWFLG, RWFLG = RHEAD(NUW[0], IWFLG, RWFLG)
+    MCNTL[2]  = IWFLG[2]
+    MCNTL[3]  = IWFLG[1]
+    MCNTL[30] = IWFLG[3]
 else:
-    IWFLG[1] = 0
-
+    IWFLG[0] = 0
 
 # 入力ファイル 3行目 出力先のディレクトリ名称
 QPATH = "./out/"
 
 # 入力ファイル 4行目 窓のファイル WINDOW GLASS DATA (Read from file)
-NUWN   = "./newHASP/wndwtabl.dat"
+# NUWN = read_textfile("./newHASP/wndwtabl.dat", ",")
 
 # K,SCC,SCRの読み込み
-# NUWN_data = read_textfile(NUWN)
+wb = xlrd.open_workbook("wndwtabl.xlsx")
 
-# for II in range(0,4): # Tableループ（種類ごと）
+for II in range(0, NTBL):
 
-#     L1 = int(NUWN_data[1]) # ガラスの種類の数
+    if II == 0:
+        sheets = wb.sheet_by_name("単板")
+    elif II == 1:
+        sheets = wb.sheet_by_name("複層A6mm")
+    elif II == 2:
+        sheets = wb.sheet_by_name("複層A12mm")
+    elif II == 3:
+        sheets = wb.sheet_by_name("複層ブラインド内蔵")
+    else:
+        raise Exception("シート名が不正です")
 
-#     for I in range(2,2+L1):  # ガラスループ
+    for I in range(0, sheets.nrows-1):
+        row_data = sheets.row_values(I+1)
 
-#         I1 = int(NUWN_data[I][0])
-#         MGT[I][II] = NUWN_data[I][1]
-#         GLK[I][0][II] = NUWN_data[I][2]
-#         GLC[I][0][II] = NUWN_data[I][3]
-#         GLR[I][0][II] = NUWN_data[I][4]
+        I1 = float(row_data[0])
+        MGT[I][II] = float(row_data[1])
+
+        for j in range(0,NBLD):
+
+            if abs(float(row_data[3*j+2]) - 9.999) > 0.001:
+                GLK[I][j][II] = float(row_data[3*j+2])*0.86  # [W/m2K]から[kcal/m2hdeg]へ変換
+            else:
+                GLK[I][j][II] = float(row_data[3*j+2])           
+
+            GLC[I][j][II] = float(row_data[3*j+3])
+            GLR[I][j][II] = float(row_data[3*j+4])
+
+# AFW, PPW関連データの読み込み ＜省略＞
+
+# 入力ファイル 5行目 建材のファイル 
+NUBW = xlrd.open_workbook("wndwtabl.xlsx")
+
+# 入力ファイル 6行目 ACSSへの連携のためのファイル ＜省略＞
+# 入力ファイル 7行目 BECSへの連携のためのファイル ＜省略＞
+
+
+#*****       2. PRELIMINARY PROCESS ***********************************
+
+#***          2.1. BUILDING COMMON DATA *******************************
+
+for line in range(1,len(NUB)):
+    
+    KEY = NUB[line][0:4]
+
+    if KEY == "BUIL":
+
+        # DCHECK(QD,560,NERR)
+
+        W1 = float(NUB[line][11:17])  # 緯度
+        W2 = float(NUB[line][17:23])  # 経度
+        X[153] = float(NUB[line][23:29])  # 軒高
+        X[154] = float(NUB[line][29:35])  # 地物反射率
+        X[155] = float(NUB[line][35:41])  # 基準温度
+        X[156] = float(NUB[line][41:47])  # 基準湿度
+        X[158] = float(NUB[line][47:53])  # 限界日射取得
+        W3 = float(NUB[line][53:59])  # 時差
+
+        if IWFLG[0] == 1:  # 気象データにヘッダ行がある場合
+
+            X[150] = math.sin(DR*RWFLG[0])   # 気象データに記された緯度の正弦
+            X[151] = math.cos(DR*RWFLG[0])   # 気象データに記された緯度の余弦
+            X[152] = RWFLG[1]/15 - RWFLG[2]  # 標準時との時差            
+
+        else:
+
+            X[150] = math.sin(DR*W1)   # 気象データに記された緯度の正弦
+            X[151] = math.cos(DR*W1)   # 気象データに記された緯度の余弦
+            X[152] = W2/15 - W3  # 標準時との時差          
+
+        X[154] = 0.01 * X[154]    # 反射率を % から 比率 に。
+        X[157] = SATX(X[155]) * X[156] / 100   # 基準湿度（絶対湿度）
+        X[158] = 0.860 * X[158]    # W/m2 を kcal/m2h に変換
+
+        REFWD[0] = X[155]   # 基準温度
+        REFWD[1] = X[157]   # 基準湿度（絶対湿度）
+
+
+
+    # elif KEY == "CNTL":
+    #     print("未実装")
+    # elif KEY == "HRAT":
+    #     print("未実装")
+    # elif KEY == "EXPS":
+    #     print("未実装")
+    # elif KEY == "WCON":
+    #     print("未実装")
+    # elif KEY == "WSCH":
+    #     print("未実装")
+    # elif KEY == "DSCH":
+    #     print("未実装")
+    # elif KEY == "SDAY":
+    #     print("未実装")
+    # elif KEY == "SEAS":
+    #     print("未実装")
+    # elif KEY == "OPCO":
+    #     print("未実装")
+    # elif KEY == "OSCH":
+    #     print("未実装")
+    # elif KEY == "OAHU":
+    #     print("未実装")
+    # else:
+    #     print(KEY)
 
 
 
