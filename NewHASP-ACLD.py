@@ -349,7 +349,7 @@ def CF(Z):
 #**********************************************************************************************************
 
 # 入力ファイル 1行目 建物データファイル名称
-NUB = read_textfile("./newHASP/Sample_Input_NewHASP1.txt")
+NUB = read_textfile("./fortran/Sample_Input_NewHASP1.txt")
 
 # 入力ファイル 2行目 気象データファイル名称
 NUW = read_textfile("./newHASP/36300110_SI.hasH")
@@ -504,8 +504,16 @@ for line in range(1,len(NUB)):
         MCNTL[20] = NDATF(MCNTL[9],MCNTL[10],MCNTL[11])
         MCNTL[21] = NDATF(MCNTL[12],MCNTL[13],MCNTL[14])
 
-    # elif KEY == "HRAT":
-    #     print("未実装")
+    elif KEY == "HRAT":
+
+        # CALL DCHECK(QD,1341,NERR)
+
+        for i in range(0,9):
+            L1 = 11 + 3*i
+            if NUB[line][L1:L1+3] != "   ":
+                MCNTL[22+i] = float(NUB[line][L1:L1+3]) 
+
+
     # elif KEY == "EXPS":
     #     print("未実装")
     # elif KEY == "WCON":
