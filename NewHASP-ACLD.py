@@ -89,6 +89,71 @@ def RHEAD(QA, IWFLG, RWFLG):
 
     return IWFLG, RWFLG
 
+def NDATE(MON,IDY):
+    """
+    **************** ANNUAL BASE DATING **********************************
+    *     ARGUMENTS MON       - INPUT.  MONTH.
+    *               IDY       - INPUT.  DAY OF THE MONTH.
+    *     FUNCTION  NDATE               DAY OF THE YEAR.
+    *     REQ. ROUTINES       - NONE.
+    **********************************************************************
+    """
+    if MON-3 >= 0:
+        y = int(30.57*MON - 31.06 - 1 + IDY)
+    else:
+        y = int(30.57*MON - 31.06 + 1 + IDY)
+
+    return y
+
+def NDATF(IYR,MON,IDY):
+    """
+    **************** 2004.02.07 BASE DATING ******************************
+    *     1899年12月31日を1とした通算日数
+    *     ARGUMENTS IYR       - INPUT.  YEAR.(1951-2050あるいは0)
+    *               MON       - INPUT.  MONTH.
+    *               IDY       - INPUT.  DAY OF THE MONTH.
+    *     FUNCTION  NDATF               CUMULATIVE DAY.
+    *     REQ. ROUTINES       - NONE.
+    *     REMARKS   IYR=0のときは1999の月日に対する通算日数を返す
+    **********************************************************************
+    """
+
+    NDS_x = range(1951,2051)
+    NDS_y = [18628, 18993, 19359, 19724, 20089,   # 1951-55
+            20454, 20820, 21185, 21550, 21915,    # 1956-60
+            22281, 22646, 23011, 23376, 23742,    # 1961-65
+            24107, 24472, 24837, 25203, 25568,    # 1966-70
+            25933, 26298, 26664, 27029, 27394,    # 1971-75
+            27759, 28125, 28490, 28855, 29220,    # 1976-80
+            29586, 29951, 30316, 30681, 31047,    # 1981-85
+            31412, 31777, 32142, 32508, 32873,    # 1986-90
+            33238, 33603, 33969, 34334, 34699,    # 1991-95
+            35064, 35430, 35795, 36160, 36525,    # 1996-2000
+            36891, 37256, 37621, 37986, 38352,    # 2001-05
+            38717, 39082, 39447, 39813, 40178,    # 2006-10
+            40543, 40908, 41274, 41639, 42004,    # 2011-15
+            42369, 42735, 43100, 43465, 43830,    # 2016-20
+            44196, 44561, 44926, 45291, 45657,    # 2021-25
+            46022, 46387, 46752, 47118, 47483,    # 2026-30
+            47848, 48213, 48579, 48944, 49309,    # 2031-35
+            49674, 50040, 50405, 50770, 51135,    # 2036-40
+            51501, 51866, 52231, 52596, 52962,    # 2041-45
+            53327, 53692, 54057, 54423, 54788]    # 2046-50
+    
+    NDS = dict(zip(NDS_x, NDS_y))
+    
+    if IYR == 0:
+        y = NDS[1999] + NDATE(MON,IDY)
+    else:
+        y = NDS[IYR] + NDATE(MON,IDY)
+
+        # 2000年以外に100で割り切れる年はない
+        if IYR%4 == 0 and MON >= 3:
+            y = y + 1
+
+    return y
+
+
 #-----------------------------------------------------------------------
 # DYNAMIC HEAT LOAD PROGRAM FOR ENERGY SIMULATION
 # HASP/ACLD/8501       CODED BY Y.MATSUO
@@ -170,7 +235,7 @@ GLWK = np.zeros((2,2))      # Work array(第2添字=1:ΔSC, =2:ΔU,  第1添字=
 
 FL = np.zeros((5,3))
 AM = np.zeros((3,9))
-MCNTL = np.zeros(32)   # 「CNTL」カードのデータ内容(XMQ配列に相当)           rev 20200403(T.Nagai)
+MCNTL = np.zeros(32+1)   # 「CNTL」カードのデータ内容(XMQ配列に相当)           rev 20200403(T.Nagai)
 
 #       COMMON /ETC/MCNTL
 
@@ -387,9 +452,58 @@ for line in range(1,len(NUB)):
         REFWD[1] = X[157]   # 基準湿度（絶対湿度）
 
 
+    elif KEY == "CNTL":
 
-    # elif KEY == "CNTL":
-    #     print("未実装")
+        # CALL DCHECK(QD,1001,NERR)
+
+        MCNTL[1]  = float(NUB[line][11:14]) # 計算モード         
+        MCNTL[2]  = float(NUB[line][14:17]) # 出力形式
+        if IWFLG[0] == 0:
+            MCNTL[3]  = float(NUB[line][17:20]) # 雲量モード  
+            MCNTL[4]  = float(NUB[line][20:23]) # SIモード    
+        MCNTL[5]  = float(NUB[line][23:26]) # データ形式 1:標準年気象データ、2:ピークデータ、3:実データ
+        if NUB[line][26:29] != "   ":
+            MCNTL[6]  = float(NUB[line][26:29]) # 助走開始 年  
+        MCNTL[7]  = float(NUB[line][29:32]) # 助走開始 月  
+        MCNTL[8]  = float(NUB[line][32:35]) # 助走開始 日  
+        if NUB[line][35:38] != "   ":
+            MCNTL[9]  = float(NUB[line][35:38]) # 本計算開始 年 
+        MCNTL[10] = float(NUB[line][38:41]) # 本計算開始 月 
+        MCNTL[11] = float(NUB[line][41:44]) # 本計算開始 日 
+        if NUB[line][44:47] != "   ":
+            MCNTL[12] = float(NUB[line][44:47]) # 計算終了 年   
+        MCNTL[13] = float(NUB[line][47:50]) # 計算終了 月   
+        MCNTL[14] = float(NUB[line][50:53]) # 計算終了 日   
+
+        # 4.8 INITIALIZATION で予めデフォルト値が代入されている
+
+        # 人体発熱顕熱比率算出用温度
+        if NUB[line][59:63] != "   ":
+            MCNTL[32] = float(NUB[line][59:63])
+
+        # 年について、二桁（80）から四桁（1980）に変換
+        # 51年以上の場合は1900年代とみなす
+
+        for MCNTL_i in [6,9,12]:
+            if MCNTL[5] == 2:  # 実気象データである場合
+                if MCNTL[MCNTL_i] >= 51: 
+                    MCNTL[MCNTL_i] += 1900
+                else:
+                    MCNTL[MCNTL_i] += 2000
+            else:
+                MCNTL[MCNTL_i]=0
+
+
+        # 1899/12/31を1とした通算日数(EXCELと合わせるため)
+        # 実在気象データ以外が指定されたときは1999年となる
+        # 助走開始日の通算日数 MCNTL(19)
+        # 本計算開始日の通算日数 MCNTL(20)
+        # 計算終了日の通算日数 MCNTL(21)
+
+        MCNTL[19] = NDATF(MCNTL[6],MCNTL[7],MCNTL[8])
+        MCNTL[20] = NDATF(MCNTL[9],MCNTL[10],MCNTL[11])
+        MCNTL[21] = NDATF(MCNTL[12],MCNTL[13],MCNTL[14])
+
     # elif KEY == "HRAT":
     #     print("未実装")
     # elif KEY == "EXPS":
