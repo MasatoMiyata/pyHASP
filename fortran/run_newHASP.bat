@@ -1,1 +1,0 @@
-NewHASP-ACLD.exe < fnameNewHASP.txt > newHASP.err
