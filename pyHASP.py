@@ -2,7 +2,7 @@ import math
 import numpy as np
 import pandas as pd
 import xlrd
-import newhasp_library as nl
+import pyHASP_library as pl
 
 #-----------------------------------------------------------------------
 # DYNAMIC HEAT LOAD PROGRAM FOR ENERGY SIMULATION
@@ -185,16 +185,16 @@ AM = [  79.,50.,-3.0,91.,53.,-3.1,102.,54.,-3.4,113.,55.,-3.6,
 #**********************************************************************************************************
 
 # 入力ファイル 1行目 建物データファイル名称
-NUB = nl.read_textfile("./input/Sample_Input_NewHASP1.txt")
+NUB = pl.read_textfile("./input/Sample_Input_NewHASP1.txt")
 
 # 入力ファイル 2行目 気象データファイル名称
-NUW = nl.read_textfile("./input/36300110_SI.hasH")
+NUW = pl.read_textfile("./input/36300110_SI.hasH")
 
 # 気象データファイルの1行目の1カラム目が「*」の場合は、ヘッダ行あり、
 # その他の文字の場合はヘッダ行なしと見なされる。
 if NUW[0][0] == "*":
     IWFLG[0] = 1
-    IWFLG, RWFLG = nl.RHEAD(NUW[0], IWFLG, RWFLG)
+    IWFLG, RWFLG = pl.RHEAD(NUW[0], IWFLG, RWFLG)
     MCNTL[2]  = IWFLG[2]
     MCNTL[3]  = IWFLG[1]
     MCNTL[30] = IWFLG[3]
@@ -304,7 +304,7 @@ for line in range(1,len(NUB)):
 
 
         X[154] = 0.01 * X[154]                    # 反射率を % から 比率 に。
-        X[157] = nl.SATX(X[155]) * X[156] / 100   # 基準湿度（絶対湿度）
+        X[157] = pl.SATX(X[155]) * X[156] / 100   # 基準湿度（絶対湿度）
         X[158] = 0.860 * X[158]                   # W/m2 を kcal/m2h に変換
 
         REFWD[0] = X[155]   # 基準温度
@@ -359,9 +359,9 @@ for line in range(1,len(NUB)):
         # 本計算開始日の通算日数 MCNTL(20)
         # 計算終了日の通算日数 MCNTL(21)
 
-        MCNTL[19] = nl.NDATF(MCNTL[6],MCNTL[7],MCNTL[8])
-        MCNTL[20] = nl.NDATF(MCNTL[9],MCNTL[10],MCNTL[11])
-        MCNTL[21] = nl.NDATF(MCNTL[12],MCNTL[13],MCNTL[14])
+        MCNTL[19] = pl.NDATF(MCNTL[6],MCNTL[7],MCNTL[8])
+        MCNTL[20] = pl.NDATF(MCNTL[9],MCNTL[10],MCNTL[11])
+        MCNTL[21] = pl.NDATF(MCNTL[12],MCNTL[13],MCNTL[14])
 
     elif KEY == "HRAT":
 
@@ -380,7 +380,7 @@ for line in range(1,len(NUB)):
         # 名称の数値化と起点の検索
         # NNAMは数値化された EXPS名称 QD(6:9) 
         # 例えば、 N___ であれば 15010101、 E___  であれば 6010101
-        # (NNAM,LC,LD) = nl.RETRIV(100,QD(6:9),M)
+        # (NNAM,LC,LD) = pl.RETRIV(100,QD(6:9),M)
 
     #     IF(LD.NE.0) THEN
     #         CALL ERROR(2,NERR)
