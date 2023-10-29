@@ -251,6 +251,8 @@ NUBW = xlrd.open_workbook("./input/wndwtabl.xlsx")
 #*****       2. PRELIMINARY PROCESS ***********************************
 #***          2.1. BUILDING COMMON DATA *******************************
 
+L = 1500
+
 for line in range(1,len(NUB)):
     
     KEY = NUB[line][0:4]
@@ -372,98 +374,92 @@ for line in range(1,len(NUB)):
             if NUB[line][L1:L1+3] != "   ":
                 MCNTL[22+i] = float(NUB[line][L1:L1+3]) 
 
-    # elif KEY == "EXPS":
+
+    elif KEY == "EXPS":
 
         # CALL DCHECK(QD,597,NERR)
-
+        print("-------" + KEY + "-------")
+        print("-------" + NUB[line][5:9] + "-------")
 
         # 名称の数値化と起点の検索
         # NNAMは数値化された EXPS名称 QD(6:9) 
         # 例えば、 N___ であれば 15010101、 E___  であれば 6010101
-        # (NNAM,LC,LD) = pl.RETRIV(100,QD(6:9),M)
+        (NNAM,LC,LD) = pl.RETRIV(100,NUB[line][5:9],M)
 
-    #     IF(LD.NE.0) THEN
-    #         CALL ERROR(2,NERR)
-    #         WRITE(QD(6:9),'(A1,I3)') QERR,NERR
-    #     GO TO 120
-    #     END IF
-    # *
-    #     ! WRITE(NUDD,*) QD(6:9)
-    #     ! WRITE(NUDD,*) NNAM
-    #     ! WRITE(NUDD,*) L    ! 1500 → 1576 → 1652 → 1728 → 1804
-    #     ! WRITE(NUDD,*) LC   ! 100 → 1500 → 1576 → 1652 → 1728
-    #     ! WRITE(NUDD,*) LD   ! ずっと 0
+        if LD != 0:
+            print(f"EXPS: " + {NUB[line][5:9]})
+            raise Exception("LDが0以外になります")
 
-    #     ! 行番号の保存 EXPSの場合、起点は LC=100
-    #     M(LC)=L         ! 初期値 LC=100, L=1500 次のデータが入っている行番号
+        # 行番号の保存 EXPSの場合、起点は LC=100
+        M[int(LC)] = L     # 初期値 LC=100, L=1500 次のデータが入っている行番号
 
-    #     ! 起点 M(L) には 0 を入れる
-    #     M(L)=LD						 
+        # 起点 M(L) には 0 を入れる
+        M[int(L)] = LD						 
 
-    #     ! EXPS名称 M(起点＋1)
-    #     M(L+1)=NNAM
+        # EXPS名称 M(起点＋1)
+        M[int(L+1)] = NNAM
 
-    #     ! 傾斜角 W2
-    #     ! 方位角 W1
-    #     ! 隣棟距離 X(L+12)
-    #     ! 隣棟高さ X(L+13)
-    #     READ(QD(12:29),'(2F6.0,2F3.0)') W2,W1,X(L+12),X(L+13)
-    #     X(L+2)=W1							! 傾斜角 X(起点+2)
-    #     X(L+3)=SIN(DR*W1)			! 傾斜角のsin X(起点+3)
-    #     X(L+4)=COS(DR*W1)			! 傾斜角のcos X(起点+4)
-    #     X(L+5)=SIN(DR*W2)			! 方位角のsin X(起点+5)
-    #     X(L+6)=COS(DR*W2)			! 方位角のcos X(起点+6)
+        # 傾斜角 W2
+        # 方位角 W1
+        # 隣棟距離 X(L+12)
+        # 隣棟高さ X(L+13)
 
-    #     X(L+7)=X(L+3)*X(L+5)  ! 傾斜角のsinと方位角のsinの積
-    #     X(L+8)=X(L+3)*X(L+6)  ! 傾斜角のsinと方位角のcosの積
-    #     X(L+9)=X(L+4)*X(L+5)  ! 傾斜角のcosと方位角のsinの積
-    #     X(L+10)=X(L+4)*X(L+6) ! 傾斜角のcosと方位角のcosの積
-    #     X(L+11)=(1.-X(L+6))/2.  ! (1-cos(方位角))/2
+        W2 = NUB[line][11:17]    # 傾斜角
+        W1 = NUB[line][17:23]    # 方位角
 
-    #     ! 庇の出[ZH] X(1)
-    #     ! 窓下[y1] X(2)
-    #     ! 窓高[y2] X(3)
-    #     ! 小壁[y3] X(4)
-    #     READ(QD(30:53),'(4F6.0)') (X(I),I=1,4)
-    #     X(L+14)=X(1)           ! 庇の出 X(起点+14)
-    #     X(L+15)=X(3)           ! 窓高  X(起点+15)
-    #     X(L+16)=X(2)+X(3)      ! 窓下＋窓高  X(起点+16)
-    #     X(L+17)=X(3)+X(4)      ! 窓高+小壁  X(起点+17)
-    #     X(L+18)=X(2)+X(3)+X(4) ! 窓下＋窓高+小壁  X(起点+18)
+        if len(NUB[line]) > 24:
 
-    #     ! 袖庇の出[ZV] X(1)
-    #     ! 右袖壁[x1] X(2)
-    #     ! 窓幅[x2] X(3)
-    #     ! 左袖壁[x3] X(4)
-    #     READ(QD(54:77),'(4F6.0)') (X(I),I=1,4)
-    #     X(L+19)=X(1)           ! 袖庇の出 X(起点+19)
-    #     X(L+20)=X(3)           ! 窓幅 X(起点+20)
-    #     X(L+21)=X(2)+X(3)      ! 右袖壁+窓幅 X(起点+21)
-    #     X(L+22)=X(3)+X(4)      ! 窓幅+左袖壁 X(起点+22)
-    #     X(L+23)=X(2)+X(3)+X(4) ! 右袖壁+窓幅+左袖壁 X(起点+23)
-    #     X(L+25)=X(L+15)*X(L+20)  ! 窓面積  X(起点+25)
-    #     X(L+24)=X(L+18)*X(L+23)-X(L+25)  ! 壁面積  X(起点+24) 
+            X[L+12] = float(NUB[line][23:26])   # 隣棟距離[m]
+            X[L+13] = float(NUB[line][26:29])   # 隣棟高さ[m]
 
-    #     IF(X(L+18).EQ.0.) THEN
-    #     X(L+26)=0.
-    #     ELSE
-    #     ! X(L+18): 外皮全体の幅、 X(L+14): 庇の出
-    #     X(L+26)=0.5*(X(L+18)+X(L+14)-SQRT(X(L+18)**2+X(L+14)**2))/X(L+18)
-    #     END IF
+            X[L+2] = W1				      # 傾斜角 X(起点+2)
+            X[L+3] = math.sin(DR*W1)	  # 傾斜角のsin X(起点+3)
+            X[L+4] = math.cos(DR*W1)	  # 傾斜角のcos X(起点+4)
+            X[L+5] = math.sin(DR*W2)	  # 方位角のsin X(起点+5)
+            X[L+6] = math.cos(DR*W2)	  # 方位角のcos X(起点+6)
+            X[L+7] = X(L+3)*X(L+5)        # 傾斜角のsinと方位角のsinの積
+            X[L+8] = X(L+3)*X(L+6)        # 傾斜角のsinと方位角のcosの積
+            X[L+9] = X(L+4)*X(L+5)        # 傾斜角のcosと方位角のsinの積
+            X[L+10] = X(L+4)*X(L+6)       # 傾斜角のcosと方位角のcosの積
+            X[L+11] = (1.0-X(L+6))/2.0    # (1-cos(方位角))/2
 
-    #     IF(X(L+23).EQ.0.) THEN
-    #     X(L+27)=0.
-    #     ELSE
-    #     ! X(L+23): 外皮全体の高さ、 X(L+19): 袖庇の出
-    #     X(L+27)=(X(L+23)+X(L+19)-SQRT(X(L+23)**2+X(L+19)**2))/X(L+23)
-    #     END IF
-    # *
-    #     ! Lの更新 （76個 間隔）
-    #     L=L+76
-    #                                                                         ! rev 20200403(T.Nagai) L 初期値1500
-    #     GOTO 100
+            X[1] = float(NUB[line][29:35])  # 庇の出[ZH] X(1)
+            X[2] = float(NUB[line][35:41])  # 窓下[y1] X(2)
+            X[3] = float(NUB[line][41:47])  # 窓高[y2] X(3)
+            X[4] = float(NUB[line][47:53])  # 小壁[y3] X(4)
 
+            X[L+14] = X[1]                  # 庇の出 X(起点+14)
+            X[L+15] = X[3]                  # 窓高  X(起点+15)
+            X[L+16] = X[2] + X[3]           # 窓下＋窓高  X(起点+16)
+            X[L+17] = X[3] + X[4]           # 窓高+小壁  X(起点+17)
+            X[L+18] = X[2] + X[3] + X[4]    # 窓下＋窓高+小壁  X(起点+18)
 
+            X[1] = float(NUB[line][53:59])  # 袖庇の出[ZV] X(1)
+            X[2] = float(NUB[line][59:65])  # 右袖壁[x1] X(2)
+            X[3] = float(NUB[line][65:71])  # 窓幅[x2] X(3)
+            X[4] = float(NUB[line][71:77])  # 左袖壁[x3] X(4)
+
+            X[L+19] = X[1]                         # 袖庇の出 X(起点+19)
+            X[L+20] = X[3]                         # 窓幅 X(起点+20)
+            X[L+21] = X[2] + X[3]                  # 右袖壁+窓幅 X(起点+21)
+            X[L+22] = X[3] + X[4]                  # 窓幅+左袖壁 X(起点+22)
+            X[L+23] = X[2] + X[3] + X[4]           # 右袖壁+窓幅+左袖壁 X(起点+23)
+            X[L+25] = X[L+15] * X[L+20]            # 窓面積  X(起点+25)
+            X[L+24] = X[L+18] * X[L+23] - X[L+25]  # 壁面積  X(起点+24) 
+
+            if X[L+18] == 0:
+                X[L+26] = 0.0
+            else:
+                # X[L+18]: 外皮全体の幅、 X[L+14]: 庇の出
+                X[L+26] = 0.5*(X[L+18]+X[L+14]-math.sqrt(X[L+18]**2+X[L+14]**2))/X[L+18]
+        
+            if X[L+23] == 0:
+                X[L+27] = 0.0
+            else:
+                # X[L+23]: 外皮全体の高さ、 X[L+19]: 袖庇の出
+                X[L+27] = (X[L+23]+X[L+19]-math.sqrt(X[L+23]**2+X[L+19]**2))/X[L+23]
+    
+        L = L+76
 
 
     # elif KEY == "WCON":

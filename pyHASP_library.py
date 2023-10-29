@@ -172,11 +172,11 @@ def RETRIV(LO,QNAM,M):
 
     while True:
 
-        if M[LC+1] == NNAM:
+        if M[int(LC+1)] == NNAM:
             return NNAM,LC,LD
 
-        LD = M[LC]
-        if LD == 0:
+        LD = M[int(LC)]
+        if LD == 0:       # M(LC)=0であれば空いている。
             return NNAM,LC,LD
 
         LC = LD
@@ -199,3 +199,5 @@ def CF(Z):
 
 
 
+
+# if __name__ == '__main__':
