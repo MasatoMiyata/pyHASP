@@ -198,6 +198,23 @@ def CF(Z):
     return y
 
 
+def display_XMQ_matrix(X,M,start, end):
+    """XMQ変数を出力する関数
+
+    Args:
+        start (_type_): 出力を開始する行数
+        end (_type_): 出力を終了する行数
+    """
+
+    set_range = range(start,end)
+    print("***********************************************")
+    for i in set_range:
+        print( f"X {str(i)} :  {X[i]} " )
+    print("***********************************************")
+    for i in set_range:
+        print( f"M {str(i)} :  {M[i]} " )
+    print("***********************************************")
+
 
 
 # if __name__ == '__main__':
