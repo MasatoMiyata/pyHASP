@@ -6,5 +6,10 @@
 *.err
 *.md
 *.pdf
-/newHASP/*
-/Prog_ACLD_HEX15
+
+/input/
+/newHASP/
+/newHASP_source/
+/newHASP_source_ACLD_HEX15/
+/venv312/
+

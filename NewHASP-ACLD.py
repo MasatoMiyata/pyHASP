@@ -2,157 +2,7 @@ import math
 import numpy as np
 import pandas as pd
 import xlrd
-
-def read_textfile(filename:str, split_method=None):
-    """
-    テキストファイルを読み込む関数
-    Args:
-        filename (str): ファイル名称
-    Returns:
-        _type_: 行毎のデータ
-    """
-    with open(filename, 'r', encoding='shift_jis') as f:
-        line_data = f.readlines()
-
-    if split_method == None:
-        
-        data = line_data
-
-    else:
-
-        for line_num in range(0,len(line_data)):
-
-            split_data = line_data[line_num].split(split_method)
-            for split_num in range(0,len(split_data)):
-                print(split_data[split_num])
-
-    return data
-
-# filename = "./newHASP/Sample_Input_NewHASP1.txt"
-# filename = "./newHASP/wndwtabl.dat"
-# data = read_textfile(filename, ",")
-# for line in range(0,len(data)):
-#     print(data[line])
-
-def RHEAD(QA, IWFLG, RWFLG):
-    """
-    気象データのヘッダー部分の読み込み
-    """
-
-    # IWFLG[1]　日射・放射の単位 =0:10kJ/m2h, =1:kcal/m2h, =2:kJ/m2h、
-    if (QA[15:19] == '10kJ'):
-        IWFLG[1] = 0
-    elif (QA[15:19] == 'kcal'):
-        IWFLG[1] = 1
-    elif (QA[15:19] == 'kJ  '):
-        IWFLG[1] = 2
-    else:
-        raise Exception("ERROR: RHEAD")
-
-    # IWFLG[2]　雲量モード =0:雲量, =1:夜間放射、
-    if (QA[20:23] ==  'CA '):
-        IWFLG[2] = 0
-    elif (QA[20:23] == 'LNR'):
-        IWFLG[2] = 1
-    else:
-        raise Exception("ERROR: RHEAD")
-
-    # IWFLG[3]　気象データのカラム数(3以上9以下)
-    IWFLG[3] = QA[24]
-    if IWFLG[3] <= 3 or IWFLG[3] >= 9:
-        raise Exception("ERROR: RHEAD")
-
-    # RWFLG[0] 緯度[deg]（南緯の場合は負値）、
-    IWK1 = float(QA[60:62])
-    IWK2 = float(QA[62:65])
-
-    if QA[65] == "N":
-        RWFLG[0] = IWK1 + IWK2/600.0
-    elif QA[65] == "S":
-        RWFLG[0] = -IWK1 - IWK2/600.0
-    else:
-        raise Exception("ERROR: RHEAD")
-
-    # RWFLG[1] 経度[deg]（西経の場合は負値）、
-    IWK1 = float(QA[67:70])
-    IWK2 = float(QA[70:73])
-
-    if QA[73] == "E":
-        RWFLG[1] = IWK1 + IWK2/600.0
-    elif QA[65] == "W":
-        RWFLG[1] = -IWK1 - IWK2/600.0
-    else:
-        raise Exception("ERROR: RHEAD")
-
-    # RWFLG[2] 世界時と地方標準時の時差
-    RWFLG[2] = float(QA[77:83])
-
-    return IWFLG, RWFLG
-
-def NDATE(MON,IDY):
-    """
-    **************** ANNUAL BASE DATING **********************************
-    *     ARGUMENTS MON       - INPUT.  MONTH.
-    *               IDY       - INPUT.  DAY OF THE MONTH.
-    *     FUNCTION  NDATE               DAY OF THE YEAR.
-    *     REQ. ROUTINES       - NONE.
-    **********************************************************************
-    """
-    if MON-3 >= 0:
-        y = int(30.57*MON - 31.06 - 1 + IDY)
-    else:
-        y = int(30.57*MON - 31.06 + 1 + IDY)
-
-    return y
-
-def NDATF(IYR,MON,IDY):
-    """
-    **************** 2004.02.07 BASE DATING ******************************
-    *     1899年12月31日を1とした通算日数
-    *     ARGUMENTS IYR       - INPUT.  YEAR.(1951-2050あるいは0)
-    *               MON       - INPUT.  MONTH.
-    *               IDY       - INPUT.  DAY OF THE MONTH.
-    *     FUNCTION  NDATF               CUMULATIVE DAY.
-    *     REQ. ROUTINES       - NONE.
-    *     REMARKS   IYR=0のときは1999の月日に対する通算日数を返す
-    **********************************************************************
-    """
-
-    NDS_x = range(1951,2051)
-    NDS_y = [18628, 18993, 19359, 19724, 20089,   # 1951-55
-            20454, 20820, 21185, 21550, 21915,    # 1956-60
-            22281, 22646, 23011, 23376, 23742,    # 1961-65
-            24107, 24472, 24837, 25203, 25568,    # 1966-70
-            25933, 26298, 26664, 27029, 27394,    # 1971-75
-            27759, 28125, 28490, 28855, 29220,    # 1976-80
-            29586, 29951, 30316, 30681, 31047,    # 1981-85
-            31412, 31777, 32142, 32508, 32873,    # 1986-90
-            33238, 33603, 33969, 34334, 34699,    # 1991-95
-            35064, 35430, 35795, 36160, 36525,    # 1996-2000
-            36891, 37256, 37621, 37986, 38352,    # 2001-05
-            38717, 39082, 39447, 39813, 40178,    # 2006-10
-            40543, 40908, 41274, 41639, 42004,    # 2011-15
-            42369, 42735, 43100, 43465, 43830,    # 2016-20
-            44196, 44561, 44926, 45291, 45657,    # 2021-25
-            46022, 46387, 46752, 47118, 47483,    # 2026-30
-            47848, 48213, 48579, 48944, 49309,    # 2031-35
-            49674, 50040, 50405, 50770, 51135,    # 2036-40
-            51501, 51866, 52231, 52596, 52962,    # 2041-45
-            53327, 53692, 54057, 54423, 54788]    # 2046-50
-    
-    NDS = dict(zip(NDS_x, NDS_y))
-    
-    if IYR == 0:
-        y = NDS[1999] + NDATE(MON,IDY)
-    else:
-        y = NDS[IYR] + NDATE(MON,IDY)
-
-        # 2000年以外に100で割り切れる年はない
-        if IYR%4 == 0 and MON >= 3:
-            y = y + 1
-
-    return y
-
+import newhasp_library as nl
 
 #-----------------------------------------------------------------------
 # DYNAMIC HEAT LOAD PROGRAM FOR ENERGY SIMULATION
@@ -172,6 +22,7 @@ NUWN=2   # 窓データファイル装置番号
 NUBW=3   # WCON物性値データ入力装置番号
 NUOW=10  # 外気温・外気湿度テキスト出力先装置番号 （weath.dat）
 NUOB=13  # BECSへの受け渡しファイル用装置番号
+
 NUDD=99  # デバッグ用（宮田追加）
 
 MX=30000
@@ -184,8 +35,10 @@ HO=20.0
 DR=0.0174533  # 度からラジアンに変換するための係数
 
 GAS = np.zeros(10)   # FURN(顕熱)による冷房負荷 GAS(0:9)
+
 X = np.zeros(MX)
 M = np.zeros(MX)
+
 
 # EQUIVALENCE (X,M)    ! XとMの記憶領域は共有される
 # COMMON /XMQ/X
@@ -331,33 +184,17 @@ AM = [  79.,50.,-3.0,91.,53.,-3.1,102.,54.,-3.4,113.,55.,-3.6,
 
 #**********************************************************************************************************
 
-# SATURATION HUMIDITY
-def SATX(T):
-    y = 1000.*math.exp(-5.58001+T*(0.0780136+T*(-2.87894E-04+T*(1.36152E-06+T*3.49024E-09)))-4.87306E-03*abs(T))
-    return y
-
-# SOLAR GAIN FACTOR
-def GF(Z):
-    y = Z*(2.392+Z*(-3.8636+Z*(3.7568-Z*1.3952)))
-    return y
-
-# WIND PRESSURE COEFFICIENT
-def CF(Z):
-    y=-0.01107+Z*(0.03675+Z*0.02332)
-    return y
-
-#**********************************************************************************************************
-
 # 入力ファイル 1行目 建物データファイル名称
-NUB = read_textfile("./fortran/Sample_Input_NewHASP1.txt")
+NUB = nl.read_textfile("./input/Sample_Input_NewHASP1.txt")
 
 # 入力ファイル 2行目 気象データファイル名称
-NUW = read_textfile("./newHASP/36300110_SI.hasH")
+NUW = nl.read_textfile("./input/36300110_SI.hasH")
 
-# 気象データファイルの1行目の1カラム目が「*」の場合は、ヘッダ行あり、その 他の文字の場合はヘッダ行なしと見なされる。
+# 気象データファイルの1行目の1カラム目が「*」の場合は、ヘッダ行あり、
+# その他の文字の場合はヘッダ行なしと見なされる。
 if NUW[0][0] == "*":
     IWFLG[0] = 1
-    IWFLG, RWFLG = RHEAD(NUW[0], IWFLG, RWFLG)
+    IWFLG, RWFLG = nl.RHEAD(NUW[0], IWFLG, RWFLG)
     MCNTL[2]  = IWFLG[2]
     MCNTL[3]  = IWFLG[1]
     MCNTL[30] = IWFLG[3]
@@ -371,7 +208,7 @@ QPATH = "./out/"
 # NUWN = read_textfile("./newHASP/wndwtabl.dat", ",")
 
 # K,SCC,SCRの読み込み
-wb = xlrd.open_workbook("wndwtabl.xlsx")
+wb = xlrd.open_workbook("./input/wndwtabl.xlsx")
 
 for II in range(0, NTBL):
 
@@ -405,14 +242,13 @@ for II in range(0, NTBL):
 # AFW, PPW関連データの読み込み ＜省略＞
 
 # 入力ファイル 5行目 建材のファイル 
-NUBW = xlrd.open_workbook("wndwtabl.xlsx")
+NUBW = xlrd.open_workbook("./input/wndwtabl.xlsx")
 
 # 入力ファイル 6行目 ACSSへの連携のためのファイル ＜省略＞
 # 入力ファイル 7行目 BECSへの連携のためのファイル ＜省略＞
 
 
 #*****       2. PRELIMINARY PROCESS ***********************************
-
 #***          2.1. BUILDING COMMON DATA *******************************
 
 for line in range(1,len(NUB)):
@@ -426,11 +262,33 @@ for line in range(1,len(NUB)):
         W1 = float(NUB[line][11:17])  # 緯度
         W2 = float(NUB[line][17:23])  # 経度
         X[153] = float(NUB[line][23:29])  # 軒高
-        X[154] = float(NUB[line][29:35])  # 地物反射率
-        X[155] = float(NUB[line][35:41])  # 基準温度
-        X[156] = float(NUB[line][41:47])  # 基準湿度
-        X[158] = float(NUB[line][47:53])  # 限界日射取得
-        W3 = float(NUB[line][53:59])  # 時差
+
+        
+        if (NUB[line][29:35]) == "      " : # 地物反射率（デフォルト:10）
+            X[154] =  10
+        else:
+            X[154] = float(NUB[line][29:35])  
+
+        if (NUB[line][35:41]) == "      ": # 基準温度（デフォルト:24）
+            X[155] = 24
+        else:
+            X[155] = float(NUB[line][35:41])  
+
+        if (NUB[line][41:47]) == "      ": # 基準湿度（デフォルト:50）
+            X[156] = 50
+        else:
+            X[156] = float(NUB[line][41:47])  
+
+        if (NUB[line][47:53]) == "      ": # 限界日射取得（デフォルト:200）
+            X[158] = 200
+        else:
+            X[158] = float(NUB[line][47:53])  
+
+        if (NUB[line][53:59]) == "      ": # 時差（デフォルト:9.0）
+            W3 = 0
+        else:
+            W3 = float(NUB[line][53:59])  
+
 
         if IWFLG[0] == 1:  # 気象データにヘッダ行がある場合
 
@@ -442,11 +300,12 @@ for line in range(1,len(NUB)):
 
             X[150] = math.sin(DR*W1)   # 気象データに記された緯度の正弦
             X[151] = math.cos(DR*W1)   # 気象データに記された緯度の余弦
-            X[152] = W2/15 - W3  # 標準時との時差          
+            X[152] = W2/15 - W3        # 標準時との時差          
 
-        X[154] = 0.01 * X[154]    # 反射率を % から 比率 に。
-        X[157] = SATX(X[155]) * X[156] / 100   # 基準湿度（絶対湿度）
-        X[158] = 0.860 * X[158]    # W/m2 を kcal/m2h に変換
+
+        X[154] = 0.01 * X[154]                    # 反射率を % から 比率 に。
+        X[157] = nl.SATX(X[155]) * X[156] / 100   # 基準湿度（絶対湿度）
+        X[158] = 0.860 * X[158]                   # W/m2 を kcal/m2h に変換
 
         REFWD[0] = X[155]   # 基準温度
         REFWD[1] = X[157]   # 基準湿度（絶対湿度）
@@ -500,9 +359,9 @@ for line in range(1,len(NUB)):
         # 本計算開始日の通算日数 MCNTL(20)
         # 計算終了日の通算日数 MCNTL(21)
 
-        MCNTL[19] = NDATF(MCNTL[6],MCNTL[7],MCNTL[8])
-        MCNTL[20] = NDATF(MCNTL[9],MCNTL[10],MCNTL[11])
-        MCNTL[21] = NDATF(MCNTL[12],MCNTL[13],MCNTL[14])
+        MCNTL[19] = nl.NDATF(MCNTL[6],MCNTL[7],MCNTL[8])
+        MCNTL[20] = nl.NDATF(MCNTL[9],MCNTL[10],MCNTL[11])
+        MCNTL[21] = nl.NDATF(MCNTL[12],MCNTL[13],MCNTL[14])
 
     elif KEY == "HRAT":
 
@@ -513,9 +372,100 @@ for line in range(1,len(NUB)):
             if NUB[line][L1:L1+3] != "   ":
                 MCNTL[22+i] = float(NUB[line][L1:L1+3]) 
 
-
     # elif KEY == "EXPS":
-    #     print("未実装")
+
+        # CALL DCHECK(QD,597,NERR)
+
+
+        # 名称の数値化と起点の検索
+        # NNAMは数値化された EXPS名称 QD(6:9) 
+        # 例えば、 N___ であれば 15010101、 E___  であれば 6010101
+        # (NNAM,LC,LD) = nl.RETRIV(100,QD(6:9),M)
+
+    #     IF(LD.NE.0) THEN
+    #         CALL ERROR(2,NERR)
+    #         WRITE(QD(6:9),'(A1,I3)') QERR,NERR
+    #     GO TO 120
+    #     END IF
+    # *
+    #     ! WRITE(NUDD,*) QD(6:9)
+    #     ! WRITE(NUDD,*) NNAM
+    #     ! WRITE(NUDD,*) L    ! 1500 → 1576 → 1652 → 1728 → 1804
+    #     ! WRITE(NUDD,*) LC   ! 100 → 1500 → 1576 → 1652 → 1728
+    #     ! WRITE(NUDD,*) LD   ! ずっと 0
+
+    #     ! 行番号の保存 EXPSの場合、起点は LC=100
+    #     M(LC)=L         ! 初期値 LC=100, L=1500 次のデータが入っている行番号
+
+    #     ! 起点 M(L) には 0 を入れる
+    #     M(L)=LD						 
+
+    #     ! EXPS名称 M(起点＋1)
+    #     M(L+1)=NNAM
+
+    #     ! 傾斜角 W2
+    #     ! 方位角 W1
+    #     ! 隣棟距離 X(L+12)
+    #     ! 隣棟高さ X(L+13)
+    #     READ(QD(12:29),'(2F6.0,2F3.0)') W2,W1,X(L+12),X(L+13)
+    #     X(L+2)=W1							! 傾斜角 X(起点+2)
+    #     X(L+3)=SIN(DR*W1)			! 傾斜角のsin X(起点+3)
+    #     X(L+4)=COS(DR*W1)			! 傾斜角のcos X(起点+4)
+    #     X(L+5)=SIN(DR*W2)			! 方位角のsin X(起点+5)
+    #     X(L+6)=COS(DR*W2)			! 方位角のcos X(起点+6)
+
+    #     X(L+7)=X(L+3)*X(L+5)  ! 傾斜角のsinと方位角のsinの積
+    #     X(L+8)=X(L+3)*X(L+6)  ! 傾斜角のsinと方位角のcosの積
+    #     X(L+9)=X(L+4)*X(L+5)  ! 傾斜角のcosと方位角のsinの積
+    #     X(L+10)=X(L+4)*X(L+6) ! 傾斜角のcosと方位角のcosの積
+    #     X(L+11)=(1.-X(L+6))/2.  ! (1-cos(方位角))/2
+
+    #     ! 庇の出[ZH] X(1)
+    #     ! 窓下[y1] X(2)
+    #     ! 窓高[y2] X(3)
+    #     ! 小壁[y3] X(4)
+    #     READ(QD(30:53),'(4F6.0)') (X(I),I=1,4)
+    #     X(L+14)=X(1)           ! 庇の出 X(起点+14)
+    #     X(L+15)=X(3)           ! 窓高  X(起点+15)
+    #     X(L+16)=X(2)+X(3)      ! 窓下＋窓高  X(起点+16)
+    #     X(L+17)=X(3)+X(4)      ! 窓高+小壁  X(起点+17)
+    #     X(L+18)=X(2)+X(3)+X(4) ! 窓下＋窓高+小壁  X(起点+18)
+
+    #     ! 袖庇の出[ZV] X(1)
+    #     ! 右袖壁[x1] X(2)
+    #     ! 窓幅[x2] X(3)
+    #     ! 左袖壁[x3] X(4)
+    #     READ(QD(54:77),'(4F6.0)') (X(I),I=1,4)
+    #     X(L+19)=X(1)           ! 袖庇の出 X(起点+19)
+    #     X(L+20)=X(3)           ! 窓幅 X(起点+20)
+    #     X(L+21)=X(2)+X(3)      ! 右袖壁+窓幅 X(起点+21)
+    #     X(L+22)=X(3)+X(4)      ! 窓幅+左袖壁 X(起点+22)
+    #     X(L+23)=X(2)+X(3)+X(4) ! 右袖壁+窓幅+左袖壁 X(起点+23)
+    #     X(L+25)=X(L+15)*X(L+20)  ! 窓面積  X(起点+25)
+    #     X(L+24)=X(L+18)*X(L+23)-X(L+25)  ! 壁面積  X(起点+24) 
+
+    #     IF(X(L+18).EQ.0.) THEN
+    #     X(L+26)=0.
+    #     ELSE
+    #     ! X(L+18): 外皮全体の幅、 X(L+14): 庇の出
+    #     X(L+26)=0.5*(X(L+18)+X(L+14)-SQRT(X(L+18)**2+X(L+14)**2))/X(L+18)
+    #     END IF
+
+    #     IF(X(L+23).EQ.0.) THEN
+    #     X(L+27)=0.
+    #     ELSE
+    #     ! X(L+23): 外皮全体の高さ、 X(L+19): 袖庇の出
+    #     X(L+27)=(X(L+23)+X(L+19)-SQRT(X(L+23)**2+X(L+19)**2))/X(L+23)
+    #     END IF
+    # *
+    #     ! Lの更新 （76個 間隔）
+    #     L=L+76
+    #                                                                         ! rev 20200403(T.Nagai) L 初期値1500
+    #     GOTO 100
+
+
+
+
     # elif KEY == "WCON":
     #     print("未実装")
     # elif KEY == "WSCH":
