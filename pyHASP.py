@@ -10,6 +10,9 @@ import pyHASP_library as pl
 # NewHASP/ACLD         REVISED BY T.NAGAI  
 #-----------------------------------------------------------------------
 
+# XMQ配列 X：実数, M：整数、Q：文字列（整数に変換）
+
+
 # 1. JOB START
 
 QVER='20200403'                                               
@@ -378,10 +381,8 @@ for line in range(1,len(NUB)):
     elif KEY == "EXPS":
 
         # CALL DCHECK(QD,597,NERR)
-        print("-------" + KEY + "-------")
-        print("-------" + NUB[line][5:9] + "-------")
 
-        # 名称の数値化と起点の検索
+        # 名称の数値化と起点（初期値100）の検索
         # NNAMは数値化された EXPS名称 QD(6:9) 
         # 例えば、 N___ であれば 15010101、 E___  であれば 6010101
         (NNAM,LC,LD) = pl.RETRIV(100,NUB[line][5:9],M)
@@ -462,10 +463,59 @@ for line in range(1,len(NUB)):
         L = L+76
 
 
-    # elif KEY == "WCON":
-    #     print("未実装")
+    elif KEY == "WCON":
+
+        # DCHECK(QD,615,NERR)
+    
+        # 名称の数値化と起点（初期値102）の検索
+        (NNAM,LC,LD) = pl.RETRIV(102,NUB[line][5:9],M)
+
+        if LD != 0:
+            print(f"WCON: " + {NUB[line][5:9]})
+            raise Exception("LDが0以外になります")
+        
+        M[int(LC)] = L
+        M[int(L)] = LD
+
+        # WCON名称 M(起点＋1)
+        M[L+1] = NNAM
+
+        # 入力された層の数
+        NL = int((len(NUB[line])-12) /6)
+
+        for i in range(NL):
+
+            L1 = L + 2*i + 3
+            K1 = 6*i + 12
+
+            # ! 材番（3桁） M1
+            if NUB[line][K1-1:K1+2] == "   ":
+                M1 = 0
+            else:
+                M1 = float(NUB[line][K1-1:K1+2])
+    
+            # ! 厚さ（3桁） W1
+            if NUB[line][K1+2:K1+5] == "   ":
+                W1 = 0
+            else:
+                W1 = float(NUB[line][K1+2:K1+5])
+
+            if M1 != 0:
+                M[L1] = M1              # 材料番号 M(L+3)
+                X[L1+1] = 0.001*W1      # 材料厚さ[mm → m] M(L+4)
+    
+        # 層の数 M(L+2)
+        M[L+2] = NL
+
+        # Lの更新
+        L = L + 2*NL + 3
+
+
     # elif KEY == "WSCH":
     #     print("未実装")
+    
+    
+    
     # elif KEY == "DSCH":
     #     print("未実装")
     # elif KEY == "SDAY":
@@ -482,4 +532,5 @@ for line in range(1,len(NUB)):
     #     print(KEY)
 
 
+pl.display_XMQ_matrix(X,M,1875,2000)
 
