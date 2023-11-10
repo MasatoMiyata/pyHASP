@@ -517,10 +517,6 @@ for line in range(1,len(NUB)):
 
         # WSCH名称の数値化と起点の検索
         (NNAM,LC,LD) = pl.RETRIV(108,NUB[line][5:9],M)
-
-        # print(NNAM)
-        # print(LC)
-        # print(LD)
         
         if LD != 0:
             print(f"WSCH: " + {NUB[line][5:9]})
@@ -544,8 +540,59 @@ for line in range(1,len(NUB)):
         # Lの更新
         L = L + 11
     
-    # elif KEY == "DSCH":
-    #     print("未実装")
+    elif KEY == "DSCH":
+
+        # DSCH名称の数値化と起点の検索
+        (NNAM,LC,LD) = pl.RETRIV(104,NUB[line][5:9],M)
+
+        if LD != 0:
+            print(f"DSCH: " + {NUB[line][5:9]})
+            raise Exception("LDが0以外になります")
+
+        M[int(LC)] = int(L)
+        M[int(L)] = int(LD)
+
+        # DSCH名称 M(起点＋1)
+        M[L+1] = NNAM
+
+        # 変数初期化 X(L+2) から X(L+73)   73は 24時間×3パターン + 1（名称分）
+        for i in range(L+2,L+73+1):
+            X[int(i)] = 0
+
+        # 指定可能なスケジュールは3つ
+        for i in [1,2,3]:
+
+            # 読み込む行数
+            n = line + (i-1)
+
+            if i == 1 or (i > 1 and NUB[n][0:4] == "+   "):
+
+                # もし空白であれば 24時間停止（1時から24時まで0）とする。
+                if NUB[n][11:14] == "   " or len(NUB[n]) < 15:
+                    NUB[n] = NUB[n][0:9] + "    1  0 24"
+
+                K1 = 12
+                L1 = L + 24*i - 23
+
+                # スケジュール 開始時刻 M1
+                M1 = int(NUB[n][K1-1:K1+2])
+
+                while K1 < len(NUB[n])-8 and M1 != 0:
+
+                    # スケジュール 比率% W
+                    # スケジュール 終了時刻 M2
+                    W  = int(NUB[n][K1+2:K1+5])
+                    M2 = int(NUB[n][K1+5:K1+8])
+
+                    for m in range(M1, M2+1):
+                        X[L1 + m] = 0.01 * W
+
+                    M1 = M2
+                    K1 = K1 + 6
+
+        # Lの更新
+        L = L + 74
+
     # elif KEY == "SDAY":
     #     print("未実装")
     # elif KEY == "SEAS":
@@ -560,5 +607,5 @@ for line in range(1,len(NUB)):
     #     print(KEY)
 
 
-pl.display_XMQ_matrix(X,M,1940,1960)
+# pl.display_XMQ_matrix(X,M,2027,2027+100)
 
