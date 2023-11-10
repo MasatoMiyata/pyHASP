@@ -511,10 +511,38 @@ for line in range(1,len(NUB)):
         L = L + 2*NL + 3
 
 
-    # elif KEY == "WSCH":
-    #     print("未実装")
-    
-    
+    elif KEY == "WSCH":
+
+        # CALL DCHECK(QD,661,NERR)        
+
+        # WSCH名称の数値化と起点の検索
+        (NNAM,LC,LD) = pl.RETRIV(108,NUB[line][5:9],M)
+
+        # print(NNAM)
+        # print(LC)
+        # print(LD)
+        
+        if LD != 0:
+            print(f"WSCH: " + {NUB[line][5:9]})
+            raise Exception("LDが0以外になります")
+
+        M[int(LC)] = int(L)
+        M[int(L)] = int(LD)
+
+        # WSCH名称 M(起点＋1)
+        M[int(L+1)] = NNAM
+        M[int(L+2)] = int(NUB[line][11:14])  # 月曜
+        M[int(L+3)] = int(NUB[line][14:17])  # 火曜
+        M[int(L+4)] = int(NUB[line][17:20])  # 水曜
+        M[int(L+5)] = int(NUB[line][20:23])  # 木曜
+        M[int(L+6)] = int(NUB[line][23:26])  # 金曜
+        M[int(L+7)] = int(NUB[line][26:29])  # 土曜
+        M[int(L+8)] = int(NUB[line][29:32])  # 日曜
+        M[int(L+9)] = int(NUB[line][32:35])  # 祝日
+        M[int(L+10)] = int(NUB[line][35:38])  # 特別日
+
+        # Lの更新
+        L = L + 11
     
     # elif KEY == "DSCH":
     #     print("未実装")
@@ -532,5 +560,5 @@ for line in range(1,len(NUB)):
     #     print(KEY)
 
 
-pl.display_XMQ_matrix(X,M,1875,2000)
+pl.display_XMQ_matrix(X,M,1940,1960)
 
