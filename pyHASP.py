@@ -593,8 +593,36 @@ for line in range(1,len(NUB)):
         # Lの更新
         L = L + 74
 
-    # elif KEY == "SDAY":
-    #     print("未実装")
+    elif KEY == "SDAY":
+
+        N=0  # 特別日のカウント
+
+        for i in range(1,35): # ! データ行のループ(34:365日を特別日とする場合の最大行数)
+
+            # 読み込む行数
+            n = line + (i-1)
+
+            if i == 1 or (i > 1 and NUB[n][0:4] == "+   "):
+
+                for j in range(0, int(len(NUB[n][11:-1])/6) ):
+
+                    M1 = 171 + 2*j
+                    
+                    M[M1]   = NUB[n][11+6*j  :11+6*j+3]   # 月
+                    M[M1+1] = NUB[n][11+6*j+3:11+6*j+6]   # 日
+
+                    # 特別日のカウント
+                    N = N + 1
+
+                    # 通し日の算出 M2
+                    M2 = pl.NDATE(M[M1],M[M1+1]) 
+                    
+                    # M(193)=1/1、M(558)=12/31 特別日なら 1
+                    M[192+M2] = 1   
+
+        # 特別日の日数 M(170)
+        M[170]=N 
+
     # elif KEY == "SEAS":
     #     print("未実装")
     # elif KEY == "OPCO":
@@ -607,5 +635,5 @@ for line in range(1,len(NUB)):
     #     print(KEY)
 
 
-# pl.display_XMQ_matrix(X,M,2027,2027+100)
+pl.display_XMQ_matrix(X,M,170,560)
 
