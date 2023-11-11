@@ -623,8 +623,14 @@ for line in range(1,len(NUB)):
         # 特別日の日数 M(170)
         M[170]=N 
 
-    # elif KEY == "SEAS":
-    #     print("未実装")
+    elif KEY == "SEAS":
+
+        # CALL DCHECK(QD,894,NERR)
+
+        for i in range(0,12):
+            L1 = 3*i + 11
+            M[980+i+1] = int(NUB[line][L1:L1+3])
+
     # elif KEY == "OPCO":
     #     print("未実装")
     # elif KEY == "OSCH":
@@ -635,5 +641,5 @@ for line in range(1,len(NUB)):
     #     print(KEY)
 
 
-pl.display_XMQ_matrix(X,M,170,560)
+pl.display_XMQ_matrix(X,M,980,1000)
 
