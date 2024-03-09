@@ -647,12 +647,6 @@ for line in range(1,len(NUB)):
 
         # WCON名称 M(起点＋1)
         M[L+1] = NNAM
-
-        print(L)
-        print(LD)
-        print(L)
-        print(NNAM)
-        
         
         # 外気導入開始時刻（デフォルト値は0=終日導入しない）  M(L+164)  
         if NUB[line][11:14] == "   ":
@@ -825,12 +819,79 @@ for line in range(1,len(NUB)):
     
         L=L+22
 
-    # elif KEY == "OAHU":
-    #     print("未実装")
+    elif KEY == "OAHU":
 
+        # CALL DCHECK(QD,1370,NERR)
+
+        # 名称の数値化と起点（初期値98）の検索
+        (NNAM,LC,LD) = pl.RETRIV(98,NUB[line][5:9],M)
+
+        if LD != 0:
+            print(f"OAHU: " + {NUB[line][5:9]})
+            raise Exception("LDが0以外になります")
+        
+        M[int(LC)] = L
+        M[int(L)] = LD
+
+        # WCON名称 M(起点＋1)
+        M[L+1] = NNAM
+
+        # 全熱交換効率[%] X(L+2)
+        if NUB[line][11:14] == "   ":
+            NUB[line][11:14] = "  0"
+        X[L+2] = float(NUB[line][11:14])
+        X[L+2] = X[L+2]*0.01
+
+        for II in [1,2,3]:  # 季節ループ
+            
+            IWK=14+(II-1)*18
+            L1=L+2+(II-1)*9
+
+            # 全熱交換器 熱回収用排気条件（温度、湿度）
+            if NUB[line][IWK:IWK+3] == "   ":
+                if NUB[line][IWK+3:IWK+6] != "   ":
+                    raise Exception("OAHU エラー")
+                M[L1+1] = 0 
+            else:
+                # 熱回収用排気条件（温度)
+                X[L1+2] = float(NUB[line][IWK:IWK+3])
+
+                if NUB[line][IWK+3:IWK+6] == "   ":
+                    M[L1+1] = 1   # 温度のみ
+                else:
+                    M[L1+1] = 2   # 温度と湿度の指定
+                    X[L1+3] = float(NUB[line][IWK+3:IWK+6])
+                    X[L1+3] = pl.SATX(X[L1+2])*X[L1+3]*0.01
+
+            # 外調機 （DB上限、下限、RH上限、下限）
+            if I in [1,2]:  # 上下限ループ
+
+                I1=IWK+6+(I-1)*3
+
+                if NUB[line][I1:I1+3] == "   ":
+                    if NUB[line][I1+6:I1+9] != "   ":     # これあっているか？？？[IWK+3:IWK+6]では？
+                        raise Exception("OAHU エラー")
+                    M[L1+3+I] = 0
+                else:
+                    # 上限の読み込み
+                    X[L1+5+I] = float(NUB[line][I1:I1+3])
+                    if NUB[line][I1+6:I1+9] != "   ":
+                        M[L1+3+I]=1
+                    else:
+                        M[L1+3+I]=2
+                        # 下限の読み込み
+                        X[L1+7+I] = NUB[line][I1+6:I1+9]
+                        X[L1+7+I] = pl.SATX(X[L1+5+I])*X(L1+7+I)*0.01
+
+        # Lの更新 （183個 間隔）
+        L=L+183
 
     # else:
         # print(KEY)
+
+
+# ***** ここまで 建物全体のデータ ***** #
+
 
 
 # pl.display_XMQ_matrix(X,M,980,1000)
