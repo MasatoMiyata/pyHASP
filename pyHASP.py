@@ -631,15 +631,207 @@ for line in range(1,len(NUB)):
             L1 = 3*i + 11
             M[980+i+1] = int(NUB[line][L1:L1+3])
 
-    # elif KEY == "OPCO":
-    #     print("未実装")
-    # elif KEY == "OSCH":
-    #     print("未実装")
+    elif KEY == "OPCO":
+
+        # CALL DCHECK(QD,1131,NERR)
+
+        # 名称の数値化と起点（初期値145）の検索
+        (NNAM,LC,LD) = pl.RETRIV(145,NUB[line][5:9],M)
+
+        if LD != 0:
+            print(f"OPCO: " + {NUB[line][5:9]})
+            raise Exception("LDが0以外になります")
+    
+        M[int(LC)] = L
+        M[int(L)] = LD
+
+        # WCON名称 M(起点＋1)
+        M[L+1] = NNAM
+
+        print(L)
+        print(LD)
+        print(L)
+        print(NNAM)
+        
+        
+        # 外気導入開始時刻（デフォルト値は0=終日導入しない）  M(L+164)  
+        if NUB[line][11:14] == "   ":
+            X[L+165] = 0
+        else:
+            X[L+165] = int(NUB[line][11:14])
+
+
+        # 運転終了時間（スケジュール1） M1
+        if NUB[line][14:17] == "   ":
+            M1 = -1
+        else:
+            M1 = int(NUB[line][14:17])
+
+        # ! 運転終了時間（スケジュール2） M2
+        if NUB[line][17:20] == "   ":
+            M2 = -1
+        else:
+            M2 = int(NUB[line][17:20])
+
+        # ! 外気導入量（デフォルト値は 0）  X(L+165)
+        if NUB[line][74:80] == "   ":
+            X[L+166] = 0
+        else:
+            X[L+166] = float(NUB[line][74:80])  
+    
+        # ! DB上限、下限、RH上限、下限、予熱時間 （夏期） のデフォルト値
+        if NUB[line][26:29] == "   ":
+            NUB[line][26:29] = 26
+
+        if NUB[line][29:32] == "   ":
+            NUB[line][29:32] = 26
+
+        if NUB[line][32:35] == "   ":
+            NUB[line][32:35] = 50
+
+        if NUB[line][35:38] == "   ":
+            NUB[line][35:38] = 50
+
+        if NUB[line][38:41] == "   ":
+            NUB[line][38:41] = 1
+
+        # ! DB上限、下限、RH上限、下限、予熱時間 （冬期） のデフォルト値
+        if NUB[line][44:47] == "   ":
+            NUB[line][44:47] = 22
+
+        if NUB[line][47:50] == "   ":
+            NUB[line][47:50] = 22
+
+        if NUB[line][50:53] == "   ":
+            NUB[line][50:53] = 40
+
+        if NUB[line][53:56] == "   ":
+            NUB[line][53:56] = 40
+
+        if NUB[line][56:59] == "   ":
+            NUB[line][56:59] = 2
+
+        # ! DB上限、下限、RH上限、下限、予熱時間 （中間期） のデフォルト値
+        # IF(QD(63:65).EQ.'   ') QD(63:65)='24.'
+        # IF(QD(66:68).EQ.'   ') QD(66:68)='24.'
+        # IF(QD(69:71).EQ.'   ') QD(69:71)='50.'
+        # IF(QD(72:74).EQ.'   ') QD(72:74)='50.'
+
+        if NUB[line][62:65] == "   ":
+            NUB[line][62:65] = 24
+
+        if NUB[line][65:68] == "   ":
+            NUB[line][65:68] = 24
+
+        if NUB[line][68:71] == "   ":
+            NUB[line][68:71] = 50
+
+        if NUB[line][71:74] == "   ":
+            NUB[line][71:74] = 50
+
+
+        # 夏期、冬期、中間期のループ
+        for II in [1,2,3]:
+
+            IWK=26+(II-1)*18
+            L1=L+1+(II-1)*4
+
+            # DB上限 X(L+2), X(L+6), X(L+10)
+            # DB下限 X(L+3), X(L+7), X(L+11) 
+            # RH上限 X(L+4), X(L+8), X(L+12)
+            # RH下限 X(L+5), X(L+9), X(L+13)
+            X[L1+1] = NUB[line][IWK:IWK+3]
+            X[L1+2] = NUB[line][IWK+3:IWK+6]
+            X[L1+3] = NUB[line][IWK+6:IWK+9]
+            X[L1+4] = NUB[line][IWK+9:IWK+12]
+
+            if X[L1+1] < X[L1+2]:
+                raise Exception("室温の下限値が上限値を超えています")
+            if X[L1+3] < X[L1+4]:
+                raise Exception("湿度の下限値が上限値を超えています")
+
+            # 最大気温、最大相対湿度から最大絶対湿度を求める
+            X[L1+3] = pl.SATX( X[L1+1]) * X[L1+3] /100
+            X[L1+4] = pl.SATX( X[L1+2]) * X[L1+4] /100
+            
+            # 次の季節の運転開始時刻を読み込む  冬期 M(L+166), 中間期 M(L+167) 
+            if II <= 2:
+                X[L+165+II] = NUB[line][IWK+12:IWK+15]
+
+            # 運転開始時刻
+            IWK=23+(II-1)*18
+            (NNAM,LC,LD) = pl.RETRIV(147,NUB[line][IWK:IWK+3]+" ",M)
+
+            I=L+14+(II-1)*50    # スケジュール2種類（24時間×2=48）
+
+            if LD != LC:  # 該当するOSCHデータが見つからない場合
+
+                if NUB[line][IWK:IWK+3] != "   ":
+                    # 運転開始時刻 M3
+                    M3 = int(NUB[line][IWK:IWK+3])
+                    # 運転開始時刻 X(L+14)
+                    X[I+M3] = 1.
+                    X[I+25+M3] = 1.
+
+                if M1 != -1:
+                    # 運転終了時刻（スケジュール1）
+                    X[I+M1] = -1
+                if M2 != -1:
+                    # 運転終了時刻（スケジュール2）
+                    X[I+25+M2] = -1
+
+            else:   # 該当するOSCHデータが見つかった場合はそちらのスケジュールに従う
+
+                for M4 in [1,2]:  # スケジュール1か2
+                    for M5 in [1,2,3,4,5]:  # 各スケジュールにおいて、5セットの開始時刻と終了時刻を指定可能
+                        L1=LC+1+(M4-1)*10+(M5-1)*2
+                        if M[L1+1] != -1:
+                            X[I+(M4-1)*25+M(L1+1)] = 1.
+                        if M[L1+2] != -1:
+                            X[I+(M4-1)*25+M(L1+2)] = -1.
+
+        L=L+168
+
+    elif KEY == "OSCH":
+    
+        # OSCH名称の数値化と起点の検索 （3文字であるため空白を入れて4文字に）
+        (NNAM,LC,LD) = pl.RETRIV(147,NUB[line][5:8]+" ",M)
+
+        if LD != 0:
+            print(f"OSCH: " + {NUB[line][5:8]})
+            raise Exception("LDが0以外になります")
+
+        M[int(LC)] = L
+        M[int(L)] = LD
+
+        # WCON名称 M(起点＋1)
+        M[L+1] = NNAM
+
+        for II in [1,2]:  # スケジュール1か2
+            for I in [1,2,3,4,5]: # 各スケジュールにおいて、5セットの開始時刻と終了時刻を指定可能
+
+                IWK=11+(II-1)*36+(I-1)*6
+
+                if NUB[line][IWK:IWK+3] == "   ":
+                    NUB[line][IWK:IWK+3] = " -1"
+                if NUB[line][IWK+3:IWK+6] == "   ":
+                    NUB[line][IWK+3:IWK+6] = " -1"
+
+                # 開始時刻
+                M[L+1+(II-1)*10+(I-1)*2+1] = int(NUB[line][IWK:IWK+3])
+                # 終了時刻
+                M[L+1+(II-1)*10+(I-1)*2+2] = int(NUB[line][IWK+3:IWK+6])
+
+    
+        L=L+22
+
     # elif KEY == "OAHU":
     #     print("未実装")
+
+
     # else:
-    #     print(KEY)
+        # print(KEY)
 
 
-pl.display_XMQ_matrix(X,M,980,1000)
+# pl.display_XMQ_matrix(X,M,980,1000)
 
