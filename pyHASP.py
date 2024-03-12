@@ -245,7 +245,9 @@ for II in range(0, NTBL):
 # AFW, PPW関連データの読み込み ＜省略＞
 
 # 入力ファイル 5行目 建材のファイル 
-NUBW = xlrd.open_workbook("./input/wndwtabl.xlsx")
+NUBW = xlrd.open_workbook("./input/wcontabl.xlsx")
+# print(NUBW.sheet_by_name("Sheet1").cell(0,0).value)
+
 
 # 入力ファイル 6行目 ACSSへの連携のためのファイル ＜省略＞
 # 入力ファイル 7行目 BECSへの連携のためのファイル ＜省略＞
@@ -642,10 +644,13 @@ for line in range(1,len(NUB)):
             print(f"OPCO: " + {NUB[line][5:9]})
             raise Exception("LDが0以外になります")
     
+        print(f"OPCOの起点番号 LC: {LC}")
+        print(f"OPCOの行番号 L: {L}")
+
         M[int(LC)] = L
         M[int(L)] = LD
 
-        # WCON名称 M(起点＋1)
+        # OPCO名称 M(起点＋1)
         M[L+1] = NNAM
         
         # 外気導入開始時刻（デフォルト値は0=終日導入しない）  M(L+164)  
@@ -730,6 +735,10 @@ for line in range(1,len(NUB)):
             IWK=26+(II-1)*18
             L1=L+1+(II-1)*4
 
+            print(f"OPCO II: {II}")
+            print(f"OPCO IWK: {IWK}")
+            print(f"OPCO L1: {L1}")
+
             # DB上限 X(L+2), X(L+6), X(L+10)
             # DB下限 X(L+3), X(L+7), X(L+11) 
             # RH上限 X(L+4), X(L+8), X(L+12)
@@ -748,15 +757,17 @@ for line in range(1,len(NUB)):
             X[L1+3] = pl.SATX( X[L1+1]) * X[L1+3] /100
             X[L1+4] = pl.SATX( X[L1+2]) * X[L1+4] /100
             
-            # 次の季節の運転開始時刻を読み込む  冬期 M(L+166), 中間期 M(L+167) 
+            # 予熱時間を読み込む    ：newHASPのコメントが間違っている？
             if II <= 2:
-                X[L+165+II] = NUB[line][IWK+12:IWK+15]
+                M[L+165+II] = NUB[line][IWK+12:IWK+15]
+                print(f"OPCO L+165+II: {L+165+II}")
 
             # 運転開始時刻
             IWK=23+(II-1)*18
             (NNAM,LC,LD) = pl.RETRIV(147,NUB[line][IWK:IWK+3]+" ",M)
 
             I=L+14+(II-1)*50    # スケジュール2種類（24時間×2=48）
+            print(f"OPCO I: {I}")
 
             if LD != LC:  # 該当するOSCHデータが見つからない場合
 
@@ -886,13 +897,205 @@ for line in range(1,len(NUB)):
         # Lの更新 （183個 間隔）
         L=L+183
 
-    # else:
-        # print(KEY)
+
+    elif KEY == "SPAC":
+
+        NRM = 0
+        IZ = 1
+        LCGB = L   # 現在のグループの先頭スペースのSPACデータポインタ(L)
+
+        TCM = pl.GVECTR("INIT",NL,MT,TH,HT,NUBW)
+
+        # SPAC名
+        QSP=NUB[line][5:9]
+
+        (NNAM,LC,LD) = pl.RETRIV(106,QSP,M)
+
+        if LD != 0:
+            print(f"SPAC: " + {NUB[line][5:9]})
+            raise Exception("LDが0以外になります")
+        
+        M[int(LC)] = L
+        M[int(L)] = LD
+        NRM=NRM+1
+        # WCON名称 M(起点＋1)
+        M[L+1] = NNAM
+
+        # WSCH 名
+        (NNAM,LC,LD) = pl.RETRIV(108,NUB[line][9:13],M)
+        if LD != LC:
+            print(f"SPAC: " + {NUB[line][9:13]})
+            raise Exception("LDがLCと異なります")
+        else:
+            M[L+34] = LC+1
+        
+        M[L+35] = 0
+        M[L+47] = 0
+        M[L+51] = 0
+        M[L+55] = 0    # SOPCデータを指定しないスペースはこの値のままとなる
+        M[L+60] = 0    # 1時間前から現時刻までの運転状態（初期値）
+        M[L+61] = 0    # 前日からの外気導入継続状態（初期値）
+    
+        IFURS = 0      # 0以外の家具顕熱容量が指定されたかどうか
+
+        for II in [1,2]:
+            L1 = L+86+(II-1)*7
+            X[L1+1] = REFWD[II-1]  # 基準温湿度
+            X[L1+6] = REFWD[II-1]  # 基準温湿度
+            for I in [2,3,4,5]:
+                X[L1+I] = 0.0
+            M[L1+7] = 9
+        
+        # 床面積（関数ARITHは実装しない）
+        X[L+2] = float(NUB[line][41:])
+        X[L+5] = float(NUB[line][14:20])  # 地上高[m]
+        X[L+3] = float(NUB[line][20:26])  # 階高[m]
+        X[L+4] = float(NUB[line][26:32])  # 天井高[m]
+
+        X[L+6] = 0.004*(X[L+5]-X[153]/2.)
+        X[L+7] = math.sqrt(X[L+5]/25.)
+
+        if X[L+7] < 1:
+            X[L+7] = 1
+
+        if NUB[line][35:38] == "   ":
+            NUB[line][35:38] = "  3"
+        
+        if NUB[line][32:35] == "   ":   # エラーが出るので処理を追加
+            M[L+43] = 0
+        else:
+            M[L+43] = int(NUB[line][32:35])
+            
+        X[L+44] = NUB[line][35:38]
+
+        M1 = M[L+43]
+        if M1 == 0:
+            M1 = 1
+
+        X[L+46] = ROH[M1-1]/(X[L+2]*(1.-ROH[M1-1]*ROL[M1-1]))
+        X[L+45] = ROL[M1-1]*X[L+46]
+
+        LL=L
+        L=L+LSZSPC[0]
+
+        for J in [0,1,2,3,4,5,6,7,8,9]:
+            GAS[J]=0.
+            GRM[J]=0.
+            GRL[J]=0.
+    
+        ARM = 0
+
+        # SPACの終了行を探す。
+        spec_end = 0
+        for line_ex in range(line, len(NUB)):
+            if len(NUB[line_ex]) == 1:  # 空白行を探す
+                spec_end = line_ex
+                break
+        
+        for line_ex in range(line+1, spec_end):
+
+            KEY = NUB[line_ex][0:4]
+
+            if KEY == "OWAL":
+
+                M[L] = 1
+                A = float(NUB[line_ex][41:])
+                ARM=ARM+A
+
+                # WCONを検索
+                (NNAM,LC,LD) = pl.RETRIV(102,NUB[line_ex][5:9],M)
+                if LD != LC:
+                    raise Exception("LDがLCと異なります")
+                
+                print(f"LC: {LC}")
+
+                # 層の構成数
+                NL=M[int(LC+2)]
+
+                # 蒸発比[%]
+                if NUB[line_ex][20:23] == '   ':
+                    L1 = 0       
+                else:
+                    L1 = int(NUB[line_ex][20:23])
+
+                # 植栽と土壌の間の熱抵抗[m2K/W]
+                if NUB[line_ex][23:29] == '      ':
+                    W2 = 0.2      
+                else:
+                    W2 = float(NUB[line_ex][23:29])
+
+                W2=W2/0.86   # [m2K/W] --> [m2hdeg/kcal]
+
+                if L1 > 0:
+                    W1 = 0.60*60*L1*0.01
+                    HOX = HO+W1*1.0   # 飽和絶対湿度の温度変化に対する微分を1.0[g/kg(DA)/deg]とする
+                    X[L+15] = W1/HOX
+                    NL = NL+1
+                    MT[NL] = -1   # 純熱抵抗の意味
+                    TH[NL] = W2   # 熱抵抗
+                else:
+                    HOX=HO
+                    X[L+15]=0.0
+
+                for I in range(0,int(M[int(LC+2)])):
+                    L1 = LC+2*(I)+3
+                    # 建材番号
+                    MT[I]=M[int(L1)]
+                    # 長さ
+                    TH[I]=X[int(L1+1)]
+
+                print("---TCM---")
+                print(TCM)
+
+                GTR,GAD = pl.GVECTR('OWAL',NL,MT,TH,HT,HOX,TCM)
+
+                print("---NL---")
+                print(NL)
+                print("---MT---")
+                print(MT)
+                print("---TH---")
+                print(TH)
+                print("---HT---")
+                print(HT)
+                print("---HOX---")
+                print(HOX)
+
+                print("---GTR---")
+                print(GTR)
+                print("---GAD---")
+                print(GAD)
+
+                for J in range(0,9+1):
+                    GRM[J]=GRM[J]+A*GAD[J]
+
+                P = pl.CPARAM(2,GTR)
+
+                X[L+2]=A*P[1]
+                X[L+3]=A*P[3]
+                X[L+4]=P[5]
+                X[L+5]=A*P[6]
+                X[L+6]=P[8]
+
+            # elif KEY == "IWAL":
+            # elif KEY == "GWAL":
+            # elif KEY == "BECO":
+            # elif KEY == "WNDW":
+            # elif KEY == "INFL":
+            # elif KEY == "LIGH":
+            # elif KEY == "OCUP":
+            # elif KEY == "HEAT":
+            # elif KEY == "FURN":
+            # elif KEY == "CFLW":
+            # elif KEY == "SOPC":
 
 
-# ***** ここまで 建物全体のデータ ***** #
 
 
 
-# pl.display_XMQ_matrix(X,M,980,1000)
+    elif KEY == "CMPL":
+        print("読み込み完了")
+        break
+
+
+pl.display_XMQ_matrix(X,M,2100,2101)
 

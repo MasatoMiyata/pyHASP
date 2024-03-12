@@ -150,6 +150,7 @@ def NDATF(IYR,MON,IDY):
     return y
 
 
+# ***          4.1. CODE NAME RETRIEVAL ********************************
 def RETRIV(LO,QNAM,M):
     """
     CODE NAME RETRIEVAL
@@ -180,6 +181,15 @@ def RETRIV(LO,QNAM,M):
             return NNAM,LC,LD
 
         LC = LD
+
+
+# ***          4.2. DECODING ARITHMETIC EXPRESSION *********************
+        
+def ARITH(Q, NERR):
+    # 床面積等を算術式で入力した場合に値を計算する関数
+    # 実装不要とする。
+    A = 0
+    return A
 
 
 # SATURATION HUMIDITY
@@ -216,5 +226,363 @@ def display_XMQ_matrix(X,M,start, end):
     print("***********************************************")
 
 
+    # ファイルに書き込む
+    with open('output_XMQ.txt', 'w') as file:
+        for i, (item1, item2) in enumerate(zip(X, M), start=1):
+            file.write(f"{i-1}: {item1}, {item2}\n")
+
+
+def GVECTR(QWL,NL,MT,TH,HT,HO,TCM=np.zeros([2,100])):
+    """_summary_
+
+    Args:
+        QWL (_type_): 識別子（文字列4）
+        NL (_type_): 層の数
+        MT (_type_): 建材番号のリスト
+        TH (_type_): 長さのリスト
+        HT (_type_): HC+HR
+        HO (_type_): 建材データベースのファイル、H0=20　（QWLによって変わる）
+        TCM (_type_, optional): 建材データベースを読みとった値. Defaults to np.zeros([2,100]).
+
+    Returns:
+        _type_: _description_
+    """
+
+    TRNS = np.zeros(10)
+    ADMT = np.zeros(10)
+    R = np.zeros(23)
+    C = np.zeros(23)
+
+
+    # 家具容量の応答に関する石野らの実験・調査データ（顕熱用）
+    G0QC = [0.2893, 0.2518, 0.2311, 0.2119, 0.1790, 0.1794, 0.2187,
+            0.2038, 0.1234, 0.0696, 0.0772, 0.0927, 0.0966, 0.0411,
+            0.0465, 0.1398, 0.0741, 0.5120, 0.3653, 0.1982, 1.0000,
+            0.2572]
+    G1QC = [0.5579, 0.5260, 0.3129, 0.3720, 0.3038, 0.3176, 0.3820,
+            0.5263, 0.4707, 0.3461, 0.2612, 0.3520, 0.2566, 0.2090,
+            0.1535, 0.7415, 0.5722, 0.2513, 0.5668, 0.6222, 0.0000,
+            1.6416]
+    EPS =   [0.785 , 0.703 , 0.407 , 0.472 , 0.370 , 0.387 , 0.489 ,
+            0.661 , 0.537 , 0.372 , 0.283 , 0.388 , 0.284 , 0.218 ,
+            0.161 , 0.862 , 0.618 , 0.515 , 0.893 , 0.776 , 0.000 ,
+            2.210]
+    XN  =   [3.0  , 13.2  , 17.1  ,  7.7  ,  0.0  ,  9.8  ,  0.0  ,
+            1.2  , 10.2  ,  5.3  ,  3.7  ,  1.4  , 11.4  ,  7.5  ,
+            3.9  ,  0.0  ,  0.0  ,  3.6  ,  0.0  ,  0.5  ,  0.4  ,
+            0.1]
+
+    S =  [0., 0.00025, 0.001,  0.004,  0.016,  0.064,   0.256, 1.024, 4.096,  16.384]
+
+
+    if QWL == "INIT":  # 特性値の読み込み
+
+        for L in range(0,100):
+        
+            J  = int(HO.sheet_by_name("Sheet1").cell(L,0).value)
+            IU = int(HO.sheet_by_name("Sheet1").cell(L,1).value)
+            ALMD = float(HO.sheet_by_name("Sheet1").cell(L,2).value)
+            CRHO = float(HO.sheet_by_name("Sheet1").cell(L,3).value)
+
+            if J >= 1 and J <= 100:
+
+                if (IU == 1):  # SI入力
+                    if (J >= 90):  # 純抵抗
+                        if (ALMD == 0):  # 未定義(非引用)の材料を想定
+                            TCM[0,J-1] = 1.0*10**6
+                        else:
+                            TCM[0,J-1] = 1.0/(ALMD/0.86)   # [m2K/W]から[(m2hdeg/kcal)^(-1)]へ
+                        TCM[1,J-1] = 0
+                    else:
+                        TCM[0,J-1]=ALMD*0.86   # [W/mK]から[kcal/mhdeg]へ
+                        TCM[1,J-1]=CRHO/4.186  # [kJ/m3K]から[kcal/m3deg]へ
+
+                else:
+
+                    if (J >= 90):  # 純抵抗
+                        if (ALMD == 0):  # 未定義(非引用)の材料を想定
+                            TCM[0,J-1] = 1.0*10**6
+                        else:
+                            TCM[0,J-1] = 1.0/(ALMD)
+                        TCM[1,J-1] = 0
+                    else:
+                        TCM[0,J-1]=ALMD
+                        TCM[1,J-1]=CRHO/4.186
+
+        return TCM
+    
+    elif QWL == "FURN":
+        V = 2
+        W = V*HO
+        for J in range(0,10):
+            TRNS[J]=0.
+            ADMT[J]=W*S[J]/(S[J]+V)
+
+        return TRNS,ADMT
+
+    elif QWL == "FURS":
+        
+        for J in range(0,10):
+                TRNS[J]=0.0
+                SUM = 0.0
+                for K in range(0,22):
+                    if math.abs(EPS[K]) < 0.0001:
+                        SUM=SUM+XN[K]*G0QC[K]
+                    else:
+                        SUM=SUM+XN[K]*(G0QC[K]+G1QC[K]/(S[J]+EPS[K]))
+                ADMT[J]=SUM*0.01*HO*S[J]
+
+        return TRNS,ADMT
+
+    else:
+
+        # 初項
+        R[0] = 1/HT
+        C[0] =0.0
+        
+        # 初項 0 があるため、NLと1個ずれることに注意。
+        for L in range(0,int(NL)):
+            if MT[L] > 0:
+
+                # 建材番号
+                I = int(MT[L])
+                if I > 90:
+                    TH[L] = 1.0
+                R[L+1]=TH[L]/TCM[0,I-1]
+                C[L+1]=TH[L]*TCM[1,I-1]
+            else:
+                R[L+1]=TH[L]   # 純熱抵抗
+                C[L+1]=0.0
+
+        # GWALでなければ一層追加
+        if QWL != "GWAL":
+            NL=NL+1
+            R[int(NL)]=1/HO
+            C[int(NL)]=0.
+
+        print("----NL----")
+        print(NL)
+        print("----R----")
+        print(R)
+        print("----C----")
+        print(C)
+
+
+        for J in range(0,10):
+
+            G0=1.0
+            U1=1.0
+            U2=0.0
+            U3=0.0
+            U4=1.0
+        
+            for L in range(0,int(NL+1)):
+            
+                W = math.sqrt(S[J]*R[L]*C[L])
+
+                print(f"L: {L}")
+                print(f"J: {J}")
+                print(f"W: {W}")
+
+                if (W == 0):
+                    V1=1.
+                    V2=R[L]
+                    V3=0.
+                else:
+                    V0=math.exp(-W)
+                    G0=G0*V0
+                    V1=0.5*(1.+V0**2)
+                    V2=0.5*R[L]*(1.-V0**2)/W
+                    V3=0.5*W*(1.-V0**2)/R[L]
+                
+                W1=U1
+                W3=U3
+                U1=W1*V1+U2*V3
+                U2=W1*V2+U2*V1
+                U3=W3*V1+U4*V3
+                U4=W3*V2+U4*V1
+            
+            TRNS[J]=G0/U2
+            ADMT[J]=U4/U2
+
+    return TRNS,ADMT
+
+
+# ***          4.4. CONVOLUTION PARAMETERS *****************************
+# *
+# *     数値Laplace逆変換し，convolution parametersを求める．
+# *     HASP/ACLD/8501の収束計算でしばしばエラーになるのを改良
+# *     2001-06-25, Akihiro Nagata (Revised by T.Nagai)
+
+def CPARAM(nt, g):
+    """数値Laplace逆変換し，convolution parametersを求める．
+
+    Args:
+        nt (_type_): 項数
+        g (_type_): 応答
+    """
+
+    p = np.zeros(8+1)   # 1始まりとする
+
+    h = np.zeros(9+1)   # 1始まりとする
+    z = np.zeros([4+1,5+1])   # 1始まりとする
+    zz = np.zeros(5+1)   # 1始まりとする
+    e  = np.zeros(2+1)   # 1始まりとする
+    ee  = np.zeros(2+1)   # 1始まりとする
+    a   = np.zeros(2+1)   # 1始まりとする
+
+    # sは0始まり
+    s = [ 0.00000, 0.00025, 0.00100, 0.00400, 0.01600, 0.06400, 0.25600, 1.02400, 4.09600, 16.38400]
+    # g = [1.004636764526E+00,1.002895593643E+00,9.977108836174E-01,9.773875474930E-01,9.024424552917E-01,6.781448125839E-01,2.917146384716E-01,4.119890555739E-02,7.415368454531E-04,2.908633121024E-07]
+
+
+    for j in range(1, 9+1):
+        h[j] = (g[j] - g[0])/s[j]
+    for i in range(1, 8+1):
+        p[i] = 0
+
+    n = 1
+
+    print("----s-----")
+    print(s)
+    print("----g-----")
+    print(g)
+
+#    12 continue
+    goto12 = True
+
+    while True:
+
+        if goto12:
+            rr0  = 1*10**20
+            nn   = 2*n
+            nn1  = nn + 1
+            e[n] = s[9]
+            nc   = 1
+
+        #フラグリセット
+        goto12 = True
+
+        for i in range(1,nn+1):
+            for k in range(1,nn1+1):
+                z[i,k] = 0
+
+        for j in range(1, 9+1):
+            for i in range(1, n+1):
+                zz[i]   = 1/(s[j] + e[i])
+                zz[n+i] = zz[i]**2
+            
+            zz[nn1] = h[j]
+            for i in range(1, nn+1):
+                for k in range(1, nn1+1):
+                    z[i,k] = z[i,k] + zz[i]*zz[k]
+
+        # 判定（元のプログラムの go to 100）
+        goto100 = False
+        for i in range(1, nn+1):
+            if (abs(z[i,i]) < 1*10**-20):
+                w = 1
+                nc = 100
+                goto100 = True
+
+        if goto100 == False:
+            for i in range(1, nn+1):
+
+                if (abs(z[i,i]) < 1*10**-20):
+                    w = 1
+                    nc = 100
+                    print("ここに来たらおかしい")
+                    break
+
+                for j in range(i+1, nn1+1):
+                    z[i,j] = z[i,j]/z[i,i]
+
+                for k in range(1, nn+1):
+                    if (i != k):
+                        for j in range(i+1, nn1+1):
+                            z[k,j] = z[k,j] - z[i,j]*z[k,i]
+        
+            for i in range(1, n+1):
+                w = z[n+i,nn1]/(e[i]*z[i,nn1] + z[n+i,nn1])
+
+                if (abs(w) < 10):
+                    ee[i] = e[i]*math.exp(-w)
+                else:
+                    nc = 100
+
+            # 残差の計算
+                    
+            rr = 0.0
+            for j in range(1, 9+1):
+                r = h[j]
+                for i in range(1, n+1):
+                    r = r - z[i,2*n+1]/(s[j] + ee[i])
+                rr = rr + r*r
+            rr = math.sqrt(rr/9.0)
+
+            if (rr < rr0):
+                rr0 = rr
+                for i in range(1, n+1):
+                    a[i] = z[i,2*n+1]
+                    e[i] = ee[i]
+                
+                for i in range(n+1, 2+1):
+                    a[i] = 0
+                    e[i] = 0
+            else:
+                nc = 100
+
+        if (abs(w) > 10**-4):
+            if (nc >= 100): # not converged
+                if (n == 1):  # 1項でも収束しない場合はエラー
+                    NERR=0
+                    raise Exception("収束しません")
+                elif (rr0 >= rr1):  # 1項近似より残差が大きい
+                    n = 1
+                    a[1] = u
+                    e[1] = v
+                    print("ループを抜けます")
+                    break
+            else:
+                nc = nc + 1
+                goto12 = False  # go to 13
+
+        elif ((nt == 2) and (n == 1) and (e[1] < 1)):
+            u = z[1,3]
+            v = e[1]
+            n = 2
+            rr1 = rr  # 1項で近似したときのRMSE
+            goto12 = True
+        
+        else:
+            break
+
+    # Convolution parameters
+    p[1] = g[0]
+    p[2] = g[0]
+    for i in range(1, n+1):
+        u    = a[i]/e[i]
+        v    = math.exp(-e[i])
+        p[1] = p[1] + u*(1.-v)
+        p[2] = p[2] + 2.*u*(1.-v)/(1.+v)
+        p[3*i+0] = -u*(1.-v)**2
+        p[3*i+1] = -u*(1.-v)**2/(1.+v)
+        p[3*i+2] = v
+
+    for i in range(n+1, 2+1):
+        p[3*i+0] = 0
+        p[3*i+1] = 0
+        p[3*i+2] = 0
+
+    print('approximate step response:')
+    print(f'g[0] = {g[0]}')
+    print(f'a[1] = {a[1]}')
+    print(f'e[1] = {e[1]}')
+    print(f'a[2] = {a[2]}')
+    print(f'e[2] = {e[2]}')
+
+    return p
+
 
 # if __name__ == '__main__':
+
