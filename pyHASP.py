@@ -1213,7 +1213,45 @@ for line in range(1,len(NUB)):
 
                 L=L+LSZSPC[2]
 
-            # elif KEY == "GWAL":
+            elif KEY == "GWAL":
+                
+                A = float(NUB[line_ex][41:])
+                ARM=ARM+A
+            
+                # WCONを検索
+                (NNAM,LC,LD) = pl.RETRIV(102,NUB[line_ex][5:9],M)
+                if LD != LC:
+                    raise Exception("LDがLCと異なります")
+
+                # 層の構成数
+                NL = M[int(LC)+2]
+                W = 2.0
+
+                for I in range(0,int(M[int(LC+2)])-1):
+                    L1 = LC+2*(I)+3
+                    # 建材番号
+                    MT[I]=M[int(L1)]
+                    # 長さ
+                    TH[I]=X[int(L1+1)]
+                    W = W - TH[I]
+
+                MT[NL] = M[int(M[int(LC+2)])-1]
+                TH[NL] = W
+
+                # print(NUB[line_ex][5:9])
+                # print("---NL---")
+                # print(NL)
+                # print("---MT---")
+                # print(MT)
+                # print("---TH---")
+                # print(TH)
+                
+                GTR,GAD = pl.GVECTR('GWAL',NL,MT,TH,HT,0,TCM)
+
+                for J in range(0,10):
+                    GRM[J] = GRM[J] + A*(GAD[J]-GTR[J])
+
+
             # elif KEY == "BECO":
             # elif KEY == "WNDW":
             # elif KEY == "INFL":
