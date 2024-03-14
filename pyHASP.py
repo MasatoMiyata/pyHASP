@@ -1007,7 +1007,7 @@ for line in range(1,len(NUB)):
                 if LD != LC:
                     raise Exception("LDがLCと異なります")
                 
-                print(f"LC: {LC}")
+                print(f"WCON LC: {LC}")
 
                 # 層の構成数
                 NL=M[int(LC+2)]
@@ -1044,26 +1044,26 @@ for line in range(1,len(NUB)):
                     # 長さ
                     TH[I]=X[int(L1+1)]
 
-                print("---TCM---")
-                print(TCM)
+                # print("---TCM---")
+                # print(TCM)
 
                 GTR,GAD = pl.GVECTR('OWAL',NL,MT,TH,HT,HOX,TCM)
 
-                print("---NL---")
-                print(NL)
-                print("---MT---")
-                print(MT)
-                print("---TH---")
-                print(TH)
-                print("---HT---")
-                print(HT)
-                print("---HOX---")
-                print(HOX)
+                # print("---NL---")
+                # print(NL)
+                # print("---MT---")
+                # print(MT)
+                # print("---TH---")
+                # print(TH)
+                # print("---HT---")
+                # print(HT)
+                # print("---HOX---")
+                # print(HOX)
 
-                print("---GTR---")
-                print(GTR)
-                print("---GAD---")
-                print(GAD)
+                # print("---GTR---")
+                # print(GTR)
+                # print("---GAD---")
+                # print(GAD)
 
                 for J in range(0,9+1):
                     GRM[J]=GRM[J]+A*GAD[J]
@@ -1076,7 +1076,143 @@ for line in range(1,len(NUB)):
                 X[L+5]=A*P[6]
                 X[L+6]=P[8]
 
-            # elif KEY == "IWAL":
+                # EXPSを検索
+                (NNAM,LC,LD) = pl.RETRIV(100,NUB[line_ex][9:13],M)
+                if LD != LC:
+                    raise Exception("LDがLCと異なります")
+
+                print(f"EXPS LC: {LC}")
+                print(f"EXPS LL: {LL}")
+
+                M[L+1]=int(LC)
+                V1=X[int(LC)+26]
+                V2=X[int(LC)+11]
+                V4=X[int(LC)+27]
+                V3=0.0
+
+                if X[int(LC)+12] > 0:
+                    W = math.sqrt(X[int(LC)+12]**2 + (X[int(LC)+13]-X[int(LL)+5])**2)
+                    W = (X[int(LC)+6]*X[int(LC)+12]-X[int(LC)+5]*(X[int(LC)+13]-X[int(LL)+5]))/W
+                    V3 = (1.0 - W)/2.0
+
+                if (V2 > V3):
+                    if V1+V2 > 1:
+                        U1 = 0.0
+                        U2 = (1.0-V1-V3)*(1.0-V4)
+                    else:
+                        U1=(1.0-V1-V2)*(1.0-V4)
+                        U2=(V2-V3)*(1.0-V4)
+                else:
+                    if V1+V3 > 1:
+                        U1=0.0
+                        U2=0.0
+                    else:
+                        U1=(1.0-V1-V3)*(1.0-V4)
+                        U2=0.0
+
+                # 日射吸収率
+                if NUB[line_ex][14:17] == "   ":
+                    W1 = 80
+                else:
+                    W1 = float(NUB[line_ex][14:17])
+    
+                # 長波放射率
+                if NUB[line_ex][17:20] == "   ":
+                    W2 = 90
+                else:
+                    W2 = float(NUB[line_ex][17:20])
+
+                X[L+9]  = 0.01*W1/HOX
+                X[L+10] = X[154]*U2*X[L+9]
+                X[L+11] = (U1+X[154]*U2)*X[L+9]
+                X[L+12] = 0.01*W2*U1/HOX
+
+                if X[int(LC)+12] != 0.0:
+                    W = (X[int(LC)+13]-X[int(LL)+5])/X[int(LC)+12]
+                    X[L+13] = W*X[int(LC)+3]
+                    X[L+14] = W*X[int(LC)+4]
+
+                L=L+LSZSPC[1]
+    
+
+            elif KEY == "IWAL":
+
+                A = float(NUB[line_ex][41:])
+                ARM=ARM+A
+
+                # WCONを検索
+                (NNAM,LC,LD) = pl.RETRIV(102,NUB[line_ex][5:9],M)
+                if LD != LC:
+                    raise Exception("LDがLCと異なります")
+
+                # 層の構成数
+                NL=M[int(LC)+2]
+
+                for I in range(0,int(M[int(LC+2)])):
+                    L1 = LC+2*(I)+3
+                    # 建材番号
+                    MT[I]=M[int(L1)]
+                    # 長さ
+                    TH[I]=X[int(L1+1)]
+                
+                # print(NUB[line_ex][5:9])
+                # print("---NL---")
+                # print(NL)
+                # print("---MT---")
+                # print(MT)
+                # print("---TH---")
+                # print(TH)
+                
+                GTR,GAD = pl.GVECTR('IWAL',NL,MT,TH,HT,HOX,TCM)
+
+                if NUB[line_ex][11:14] != "   ":
+                    I = int(NUB[line_ex][11:14])  # 隣室モード
+                    W1 = float(NUB[line_ex][14:20]) # 隣室条件α
+                else:
+                    I = 0
+                    W1 = 0
+
+                if I == 0 and W1 == 0:
+                    for J in range(0,10):
+                        GRM[J] = GRM[J] + A*(GAD[J]-GTR[J])
+                else:
+                    M[L]=2
+                    M[L+1]=I
+                    for J in range(0,10):
+                        if M[L+1] == 0:
+                            GRM[J] = GRM[J] + A*(GAD[J]-(1.0-W1)*GTR[J])
+                        else:
+                            GRM[J] = GRM[J] + A*GAD[J]
+
+                if M[L+1] == 3:
+
+                    # 隣室SPAC名
+                    (NNAM,LC,LD) = pl.RETRIV(102,NUB[line_ex][20:24],M) # NNAMへの変換機能のみ利用
+                    M[L+2] = NNAM
+
+                    for J in range(0,10):
+                        X[L+16+J] = A*GTR[J]
+
+                else:
+                    P = pl.CPARAM(2,GTR)
+                    X[L+3] = A*P[1]
+                    X[L+4] = A*P[2]
+                    X[L+5] = A*P[3]
+                    X[L+6] = A*P[4]
+                    X[L+7] = P[5]
+                    X[L+8] = A*P[6]
+                    X[L+9] = A*P[7]
+                    X[L+10] = P[8]
+                        
+
+                X[L+11] = 0.0
+                X[L+12] = 0.0
+                X[L+13] = 0.0
+                X[L+14] = 0.0
+                X[L+15] = W1
+
+                L=L+LSZSPC[2]
+
             # elif KEY == "GWAL":
             # elif KEY == "BECO":
             # elif KEY == "WNDW":
