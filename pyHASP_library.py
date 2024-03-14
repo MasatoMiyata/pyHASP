@@ -307,7 +307,7 @@ def GVECTR(QWL,NL,MT,TH,HT,HO,TCM=np.zeros([2,100])):
                         TCM[1,J-1] = 0
                     else:
                         TCM[0,J-1]=ALMD
-                        TCM[1,J-1]=CRHO/4.186
+                        TCM[1,J-1]=CRHO
 
         return TCM
     
