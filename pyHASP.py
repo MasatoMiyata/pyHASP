@@ -1163,7 +1163,7 @@ for line in range(1,len(NUB)):
                 # print("---TH---")
                 # print(TH)
                 
-                GTR,GAD = pl.GVECTR('IWAL',NL,MT,TH,HT,HOX,TCM)
+                GTR,GAD = pl.GVECTR('IWAL',NL,MT,TH,HT,HT,TCM)
 
                 if NUB[line_ex][11:14] != "   ":
                     I = int(NUB[line_ex][11:14])  # 隣室モード
@@ -1251,8 +1251,45 @@ for line in range(1,len(NUB)):
                 for J in range(0,10):
                     GRM[J] = GRM[J] + A*(GAD[J]-GTR[J])
 
+            elif KEY == "BECO":
+                
+                # 部材延長[m]
+                A = float(NUB[line_ex][41:])
+                
+                # WCONを検索
+                (NNAM,LC,LD) = pl.RETRIV(102,NUB[line_ex][5:9],M)
+                if LD != LC:
+                    raise Exception("LDがLCと異なります")
 
-            # elif KEY == "BECO":
+                U1 = float(NUB[line_ex][26:32])  # 断面形状長辺[m]
+                U2 = float(NUB[line_ex][32:38])  # 断面形状短辺[m]
+
+                U0 = 2.0*(U1+U2)
+                A = U0*A
+                ARM = ARM+A
+            
+                NL=M[LC+2]
+
+                for I in range(0,int(M[int(LC+2)])-1):
+                    L1 = LC+2*(I)+3
+                    II = 2*NL-I
+                    W = U1*U2
+                    U1 = U1-2.*X[L1+2]
+                    U2 = U2-2.*X[L1+2]
+                    MT[I] = M[L1+1]
+                    TH[I] = (W-U1*U2)/U0
+                    MT[II] = MT[I]
+                    TH[II] =TH[I]
+                    
+                MT[NL] = M(int(M[int(LC+2)])-1)
+                TH[NL] = U1*U2/U0
+
+                GTR,GAD = pl.GVECTR('BECO',2*NL-1,MT,TH,HT,HT,TCM)
+
+                for J in range(0,10):
+                    GRM[J] = GRM[J] + A*(GAD[J]-GTR[J])
+
+
             # elif KEY == "WNDW":
             # elif KEY == "INFL":
             # elif KEY == "LIGH":
