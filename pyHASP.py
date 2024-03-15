@@ -77,7 +77,7 @@ GLC = np.zeros((MXGL,NBLD+1,NTBL))   # SCC   (MXGL,0:NBLD,NTBL)
 MGT = np.zeros((MXGL,NTBL))          # ガラス種別
 
 
-GLD = np.zeros((MXVS,NBLD+1,int(MXGT/10)+1,6))   
+GLD = np.zeros((MXVS+1,NBLD+1,int(MXGT/10)+1,6+1))   
         # 第4添字
         # =1:AFWのΔSC, =2:AFWのΔU,
 #       # =3:PPWのΔSC(Xpull=0), =4:PPWのΔU(Xpull=0),
@@ -86,7 +86,7 @@ GLD = np.zeros((MXVS,NBLD+1,int(MXGT/10)+1,6))
 GLKR = np.zeros(MXGT)     # 長波放射成分係数kLR（内側ブラインドなし）
 # GLKRB          # 内側ブラインドのkLR
 # GLKRBO         # ブラインドの総合熱伝達率に対する放射熱伝達率の比
-NVS = np.zeros(6)         # 通気量のサンプリング数（添字は「GLD」第4添字と同）
+NVS = np.zeros(6+1)         # 通気量のサンプリング数（添字は「GLD」第4添字と同）
 GLWK = np.zeros((2,2))      # Work array(第2添字=1:ΔSC, =2:ΔU,  第1添字=1:ブラインド開, =2:閉)
 
 FL = np.zeros((5,3))
@@ -242,7 +242,60 @@ for II in range(0, NTBL):
             GLC[I][j][II] = float(row_data[3*j+3])
             GLR[I][j][II] = float(row_data[3*j+4])
 
-# AFW, PPW関連データの読み込み ＜省略＞
+# AFW, PPW関連データの読み込み
+for II in [1,2,3,4,5,6]:
+
+    if II == 1:
+        sheets = wb.sheet_by_name("AFW日射遮蔽補正")
+    elif II == 2:
+        sheets = wb.sheet_by_name("AFW熱貫流率補正")
+    elif II == 3:
+        sheets = wb.sheet_by_name("PPW日射遮蔽補正0")
+    elif II == 4:
+        sheets = wb.sheet_by_name("PPW熱貫流率補正0")
+    elif II == 5:
+        sheets = wb.sheet_by_name("PPW日射遮蔽補正1")
+    elif II == 6:
+        sheets = wb.sheet_by_name("PPW熱貫流率補正1")
+
+    else:
+        raise Exception("シート名が不正です")
+
+    L1 = 9
+    NVS[II] = 8  # 通気量の条件の数
+
+    # 2行目
+    row_data = sheets.row_values(1)
+    IWK = float(row_data[0])
+    for JJ in range(1, int(NVS[II])):
+        GLD[JJ,0,0,II] = row_data[JJ]
+
+    # 3行目以降
+    for I in range(0, L1):
+        for J in range(0, NBLD):
+            row_data = sheets.row_values(2 + NBLD*I + J)
+            IWK = float(row_data[0])
+            for JJ in range(1, int(NVS[II])):
+                GLD[JJ,J,I,II] = row_data[JJ]
+                # 単位変換は省略
+
+# kLR等の読み込み
+sheets = wb.sheet_by_name("kLR")
+
+row_data = sheets.row_values(1)
+L1 = int(row_data[0])
+
+for I in range(1,L1+1):
+    row_data = sheets.row_values(I+1)
+    L2 = int(row_data[0])
+    GLKR[L2] = row_data[1]
+
+# 熱伝達比率
+sheets = wb.sheet_by_name("熱伝達比率")
+row_data = sheets.row_values(1)
+GLKRB = row_data[0]
+GLKRBO = row_data[1]
+
 
 # 入力ファイル 5行目 建材のファイル 
 NUBW = xlrd.open_workbook("./input/wcontabl.xlsx")
@@ -1290,7 +1343,224 @@ for line in range(1,len(NUB)):
                     GRM[J] = GRM[J] + A*(GAD[J]-GTR[J])
 
 
-            # elif KEY == "WNDW":
+            elif KEY == "WNDW":
+
+                M[L] = 3
+                A = float(NUB[line_ex][41:])
+                ARM=ARM+A
+
+                if (NUB[line_ex][5:9] == "    ") or (NUB[line_ex][5:9] == "SNGL"):                    
+                    ITB=1   # テーブル番号
+                    IAP=0   # IAP=0:普通,1:AFW,2:PPW
+                elif (NUB[line_ex][7:9] == "06"):
+                    ITB=2
+                elif (NUB[line_ex][7:9] == "12"):
+                    ITB=3
+                elif (NUB[line_ex][5:9] == "DLBT"):
+                    ITB=4
+                    IAP=0
+                elif (NUB[line_ex][5:9] == "AFWN"):
+                    ITB=4
+                    IAP=1
+                else:
+                    raise Exception("WNDWの窓種グループが不正です")
+
+                if ITB == 2 or ITB == 3:
+                    if (NUB[line_ex][5:7] == "DL"):
+                        IAP=0
+                    elif (NUB[line_ex][5:7] == "PP"):
+                        IAP=2
+                    else:
+                        raise Exception("WNDWの窓種グループが不正です")
+                    
+                M1 = NUB[line_ex][14:17]  # 品種番号
+                if NUB[line_ex][17:20] == "   ":  # ブラインド番号
+                    M2 = 0
+                else:
+                    M2 = NUB[line_ex][17:20]
+
+                if abs(GLK[int(M1),0,int(ITB)]-9.999) < 0.001:
+                    raise Exception("WNDWの設定が不正です")
+                if abs(GLC[int(M1),0,int(ITB)]-9.999) < 0.001:
+                    raise Exception("WNDWの設定が不正です")
+                if abs(GLR[int(M1),0,int(ITB)]-9.999) < 0.001:
+                    raise Exception("WNDWの設定が不正です")          
+                if abs(GLK[int(M1),int(M2),int(ITB)]-9.999) < 0.001:
+                    raise Exception("WNDWの設定が不正です")
+                if abs(GLC[int(M1),int(M2),int(ITB)]-9.999) < 0.001:
+                    raise Exception("WNDWの設定が不正です")
+                if abs(GLR[int(M1),int(M2),int(ITB)]-9.999) < 0.001:
+                    raise Exception("WNDWの設定が不正です")       
+
+                X[L+2] = A * GLK[int(M1),0,int(ITB)]
+                X[L+3] = A * GLC[int(M1),0,int(ITB)]
+                X[L+4] = A * GLR[int(M1),0,int(ITB)]
+                X[L+5] = A * GLK[int(M1),int(M2),int(ITB)]
+                X[L+6] = A * GLC[int(M1),int(M2),int(ITB)]
+                X[L+7] = A * GLR[int(M1),int(M2),int(ITB)]
+
+                X[L+38] = IAP
+                X[L+45] = GLKR[int(MGT[int(M1),int(ITB)])]
+
+                if (abs(X[L+45]-9.999) < 0.001):
+                    raise Exception("WNDWの設定が不正です") 
+                
+                if (ITB == 4) or (M2 == 0):  # 室内側にブラインドなし
+                    X[L+46] = X[L+45]   # ブラインド開時のkLRと同じ
+                else:
+                    if abs(GLKRB-9.999) < 0.001:
+                        raise Exception("WNDWの設定が不正です") 
+                        X[L+46] = GLKRB
+
+
+                #       IF(IAP.GE.1) THEN
+                #        IF(QD(21:26).EQ.'      ') QD(21:26)='     0'
+                #        READ(QD(21:26),'(F6.0)') W1   ! 窓通気量
+                #        W1=W1/3.6   ! [m3/m2h]から[L/m2s]への変換
+                #        IF(QD(27:29).EQ.'   ') QD(27:29)=' 40'
+                #        READ(QD(27:29),'(F3.0)') W2   ! 窓排気率
+                #        W2=W2*0.01
+                #        DO 258 II=1,2   ! ΔSC,ΔUループ
+                #        DO 258 I=1,2    ! ブラインド開、閉ループ
+                #         I1=(IAP-1)*2+II
+                #         IF(I.EQ.1) THEN
+                #          M3=0
+                #         ELSE
+                #          M3=M2
+                #         END IF
+                #         IF(ABS(GLD(1,0,0,I1)-9.999).LT.0.001) CALL ERROR(53,NERR)
+                #         IF(ABS(GLD(1,0,0,I1+2)-9.999).LT.0.001) CALL ERROR(53,NERR)
+                #         IF(ABS(GLD(1,M3,MGT(M1,ITB)/10,I1)-9.999).LT.0.001)
+                #      -   CALL ERROR(53,NERR)
+                #         IF(ABS(GLD(1,M3,MGT(M1,ITB)/10,I1+2)-9.999).LT.0.001)
+                #      -   CALL ERROR(53,NERR)
+                #         GLWK(I,II)=A*DLTGL(IAP,W1,W2,
+                #      -         NVS(I1),GLD(1,0,0,I1),GLD(1,M3,MGT(M1,ITB)/10,I1),
+                #      -         NVS(I1+2),GLD(1,0,0,I1+2),GLD(1,M3,MGT(M1,ITB)/10,I1+2))
+                #         ! A*ΔSC, A*ΔU
+                #   258  CONTINUE
+                #        IF(IAP.EQ.1) THEN   ! AFW
+                #         X(L+41)=GLWK(1,1)*X(L+45)
+                #         X(L+44)=GLWK(2,1)*X(L+46)
+                #        ELSE   ! PPW
+                #         X(L+41)=0.0
+                #         IF(M2.EQ.0) THEN
+                #          X(L+44)=0.0
+                #         ELSE
+                #          I1=3
+                #          IF(ABS(GLKRBO-9.999).LT.0.001) CALL ERROR(53,NERR)
+                #          X(L+44)=(GLKRBO-GLKRB)*X(L+6)/(1-GLKRB)
+                #      -   +GLKRBO*A*DLTGL(IAP,W1,1.0,
+                #      -         NVS(I1),GLD(1,0,0,I1),GLD(1,M2,MGT(M1,ITB)/10,I1),
+                #      -         NVS(I1+2),GLD(1,0,0,I1+2),GLD(1,M2,MGT(M1,ITB)/10,I1+2))
+                #         END IF
+                #        END IF
+                #        DO 259 I=1,2   ! ブラインド開、閉ループ
+                #         X(L+39+(I-1)*3)=GLWK(I,2)
+                #         X(L+40+(I-1)*3)=GLWK(I,1)-X(L+41+(I-1)*3)
+                #   259  CONTINUE
+                #       END IF
+                #       X(L+8)=A*X(158)
+                #       DO 251 J=0,9
+                #   251 GRM(J)=GRM(J)+X(L+5)
+                # *
+                #       CALL RETRIV(100,QD(10:13),NNAM,LC,LD)
+                #       IF(LD.NE.LC) THEN
+                #        CALL ERROR(5,NERR)
+                #        GO TO 253
+                #       END IF
+                #       M(L+1)=LC
+                #       V1=X(LC+26)
+                #       V2=X(LC+11)
+                #       V4=X(LC+27)
+                #       IF(X(LC+12).EQ.0.) THEN
+                #        V3=0.
+                #       ELSE
+                #        W=SQRT(X(LC+12)**2+(X(LC+13)-X(LL+5))**2)
+                #        W=(X(LC+6)*X(LC+12)-X(LC+5)*(X(LC+13)-X(LL+5)))/W
+                #        V3=(1.-W)/2.
+                #       END IF
+                # *
+                #       IF(V2.GT.V3) THEN
+                #        IF(V1+V2.GT.1.) THEN
+                #         U1=0.
+                #         U2=(1.-V1-V3)*(1.-V4)
+                #        ELSE
+                #         U1=(1.-V1-V2)*(1.-V4)
+                #         U2=(V2-V3)*(1.-V4)
+                #        END IF
+                #       ELSE
+                #        IF(V1+V3.GT.1.) THEN
+                #         U1=0.
+                #         U2=0.
+                #        ELSE
+                #         U1=(1.-V1-V3)*(1.-V4)
+                #         U2=0.
+                #        END IF
+                #       END IF
+                # *
+                #   253 X(L+9)=0.808*X(154)*U2
+                #       X(L+11)=0.808*U1
+                #       X(L+10)=X(L+9)+X(L+11)
+                #       X(L+12)=0.9*U1/HO
+                # *
+                #       IF(X(LC+12).EQ.0.) THEN
+                #        X(L+13)=0.
+                #        X(L+14)=0.
+                #       ELSE
+                #        W=(X(LC+13)-X(LL+5))/X(LC+12)
+                #        X(L+13)=W*X(LC+3)
+                #        X(L+14)=W*X(LC+4)
+                #       END IF
+                # *
+                #       IF(X(LL+43).EQ.0.) THEN
+                #        DO 252 I=15,19
+                #   252  X(L+I)=0.
+                #       ELSE
+                #        READ(QD(30:41),'(2F6.0)') U,W
+                #        V=A/W
+                #        IF(U.LT.0.75) V=V+U-0.75
+                #        V1=109.*0.5*(1.-X(LL+44)/SQRT(X(LL+44)**2+V**2))
+                #        V2=109.*A*X(LL+45)
+                #        V3=109.*A*X(LL+46)
+                #        X(L+15)=V1
+                #        X(L+16)=V2
+                #        X(L+17)=V3
+                #        X(L+18)=V1+(V2+V3)/2.
+                #        X(L+19)=X(LL+44)*W/X(LL+2)
+                #       END IF
+                #       DO 254 I=0,5
+                #   254 M(L+20+I*3)=0   ! デフォルトで物性値は品種番号の物性値のとおり
+                #       READ(NUB,'(A80)') QD
+                #       IF(QD(1:4).EQ.'+   ')THEN   ! 継続行
+                #        WRITE(6,'(1X,A80)') QD
+                #        CALL DCHECK(QD,1302,NERR)
+                #        DO 255 II=0,1   ! ブラインド開閉ループ
+                #         DO 256 I=0,2   ! K,SCC,SCRループ
+                #          K1=10+II*30+I*9   ! 入力欄のカラム位置
+                #          L1=L+20+II*9+I*3  ! XMQ配列の添字（スケジュールオプション）
+                #          IF(QD(K1:K1+3).EQ.'    ')THEN
+                #           M(L1)=1   ! on時%の値を使用
+                #           IF(QD(K1+5:K1+7).EQ.'   ') QD(K1+5:K1+7)='100'
+                #           READ(QD(K1+5:K1+7),'(F3.0)') W
+                #           X(L1+2)=0.01*W
+                #          ELSE
+                #           M(L1)=2   ! DSCH使用
+                #           CALL RETRIV(104,QD(K1:K1+3),NNAM,LC,LD)
+                #           IF(LD.NE.LC) THEN
+                #            CALL ERROR(5,NERR)
+                #           ELSE
+                #            M(L1+1)=LC+1
+                #           END IF
+                #          END IF
+                #   256   CONTINUE
+                #   255  CONTINUE
+                #       ELSE   ! 継続行ではない
+                #        BACKSPACE(NUB)
+                #       END IF
+                # *
+                #       L=L+LSZSPC(3)
+
             # elif KEY == "INFL":
             # elif KEY == "LIGH":
             # elif KEY == "OCUP":
