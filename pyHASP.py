@@ -1563,7 +1563,60 @@ for line in range(1,len(NUB)):
 
                 L=L+LSZSPC[3]
 
-            # elif KEY == "INFL":
+            elif KEY == "INFL":
+
+                M[L] = 4
+
+                # EXPSを検索
+                (NNAM,LC,LD) = pl.RETRIV(100,NUB[line_ex][9:13],M)
+                if LD != LC:
+                    raise Exception("LDがLCと異なります")
+                else:
+                    M[L+1] = LC
+                
+                # 計算方法
+                M[L+2] = int(NUB[line_ex][14:17])
+
+                if (M[L+2] == 0):
+                    # 隙間特性または換気回数
+                    if NUB[line_ex][20:26] == "      ":
+                        W = 5.0
+                    else:
+                        W = float(NUB[line_ex][20:26])
+
+                    A = float(NUB[line_ex][41:])
+                    X[L+3] = W*A
+
+                else:
+                    W = float(NUB[line_ex][20:26])
+                    X[L+3] = W*X[int(LL)+2]*X[int(LL)+4]
+
+                if len(NUB[line_ex]) <= 27 or NUB[line_ex][27:31] == "    ":
+
+                    M[L+4]=0   # オリジナル換気量で一定、あるいは空調on・off時%の値を使用
+                    if len(NUB[line_ex]) <= 27 or NUB[line_ex][32:35] == "   ":
+                        X[L+6] = 100
+                    else:
+                        X[L+6] = float(NUB[line_ex][32:35])
+
+                    if len(NUB[line_ex]) <= 27 or NUB[line_ex][35:38] == "   ":
+                        X[L+7] = 100
+                    else:
+                        X[L+7] = float(NUB[line_ex][35:38])
+
+                else:
+
+                    M[L+4] = 1   # DSCH使用
+
+                    # DSCHを検索
+                    (NNAM,LC,LD) = pl.RETRIV(104,NUB[line_ex][27:31],M)
+                    if LD != LC:
+                        raise Exception("LDがLCと異なります")
+                    else:
+                        M[L+5] = LC+1
+
+                L=L+LSZSPC[4]
+
             # elif KEY == "LIGH":
             # elif KEY == "OCUP":
             # elif KEY == "HEAT":
