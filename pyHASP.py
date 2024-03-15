@@ -257,7 +257,6 @@ for II in [1,2,3,4,5,6]:
         sheets = wb.sheet_by_name("PPW日射遮蔽補正1")
     elif II == 6:
         sheets = wb.sheet_by_name("PPW熱貫流率補正1")
-
     else:
         raise Exception("シート名が不正です")
 
@@ -281,7 +280,6 @@ for II in [1,2,3,4,5,6]:
 
 # kLR等の読み込み
 sheets = wb.sheet_by_name("kLR")
-
 row_data = sheets.row_values(1)
 L1 = int(row_data[0])
 
@@ -293,8 +291,8 @@ for I in range(1,L1+1):
 # 熱伝達比率
 sheets = wb.sheet_by_name("熱伝達比率")
 row_data = sheets.row_values(1)
-GLKRB = row_data[0]
-GLKRBO = row_data[1]
+GLKRB = row_data[0]    # 内側ブラインドのkLR
+GLKRBO = row_data[1]   # PPWブラインドにおける放射熱伝達率／総合熱伝達率
 
 
 # 入力ファイル 5行目 建材のファイル 
@@ -1410,156 +1408,160 @@ for line in range(1,len(NUB)):
                 else:
                     if abs(GLKRB-9.999) < 0.001:
                         raise Exception("WNDWの設定が不正です") 
-                        X[L+46] = GLKRB
+                    X[L+46] = GLKRB
 
+                if (IAP >= 1):  # # IAP=0:普通,1:AFW,2:PPW
+                    
+                    print("省略")
 
-                #       IF(IAP.GE.1) THEN
-                #        IF(QD(21:26).EQ.'      ') QD(21:26)='     0'
-                #        READ(QD(21:26),'(F6.0)') W1   ! 窓通気量
-                #        W1=W1/3.6   ! [m3/m2h]から[L/m2s]への変換
-                #        IF(QD(27:29).EQ.'   ') QD(27:29)=' 40'
-                #        READ(QD(27:29),'(F3.0)') W2   ! 窓排気率
-                #        W2=W2*0.01
-                #        DO 258 II=1,2   ! ΔSC,ΔUループ
-                #        DO 258 I=1,2    ! ブラインド開、閉ループ
-                #         I1=(IAP-1)*2+II
-                #         IF(I.EQ.1) THEN
-                #          M3=0
-                #         ELSE
-                #          M3=M2
-                #         END IF
-                #         IF(ABS(GLD(1,0,0,I1)-9.999).LT.0.001) CALL ERROR(53,NERR)
-                #         IF(ABS(GLD(1,0,0,I1+2)-9.999).LT.0.001) CALL ERROR(53,NERR)
-                #         IF(ABS(GLD(1,M3,MGT(M1,ITB)/10,I1)-9.999).LT.0.001)
-                #      -   CALL ERROR(53,NERR)
-                #         IF(ABS(GLD(1,M3,MGT(M1,ITB)/10,I1+2)-9.999).LT.0.001)
-                #      -   CALL ERROR(53,NERR)
-                #         GLWK(I,II)=A*DLTGL(IAP,W1,W2,
-                #      -         NVS(I1),GLD(1,0,0,I1),GLD(1,M3,MGT(M1,ITB)/10,I1),
-                #      -         NVS(I1+2),GLD(1,0,0,I1+2),GLD(1,M3,MGT(M1,ITB)/10,I1+2))
-                #         ! A*ΔSC, A*ΔU
-                #   258  CONTINUE
-                #        IF(IAP.EQ.1) THEN   ! AFW
-                #         X(L+41)=GLWK(1,1)*X(L+45)
-                #         X(L+44)=GLWK(2,1)*X(L+46)
-                #        ELSE   ! PPW
-                #         X(L+41)=0.0
-                #         IF(M2.EQ.0) THEN
-                #          X(L+44)=0.0
-                #         ELSE
-                #          I1=3
-                #          IF(ABS(GLKRBO-9.999).LT.0.001) CALL ERROR(53,NERR)
-                #          X(L+44)=(GLKRBO-GLKRB)*X(L+6)/(1-GLKRB)
-                #      -   +GLKRBO*A*DLTGL(IAP,W1,1.0,
-                #      -         NVS(I1),GLD(1,0,0,I1),GLD(1,M2,MGT(M1,ITB)/10,I1),
-                #      -         NVS(I1+2),GLD(1,0,0,I1+2),GLD(1,M2,MGT(M1,ITB)/10,I1+2))
-                #         END IF
-                #        END IF
-                #        DO 259 I=1,2   ! ブラインド開、閉ループ
-                #         X(L+39+(I-1)*3)=GLWK(I,2)
-                #         X(L+40+(I-1)*3)=GLWK(I,1)-X(L+41+(I-1)*3)
-                #   259  CONTINUE
-                #       END IF
-                #       X(L+8)=A*X(158)
-                #       DO 251 J=0,9
-                #   251 GRM(J)=GRM(J)+X(L+5)
-                # *
-                #       CALL RETRIV(100,QD(10:13),NNAM,LC,LD)
-                #       IF(LD.NE.LC) THEN
-                #        CALL ERROR(5,NERR)
-                #        GO TO 253
-                #       END IF
-                #       M(L+1)=LC
-                #       V1=X(LC+26)
-                #       V2=X(LC+11)
-                #       V4=X(LC+27)
-                #       IF(X(LC+12).EQ.0.) THEN
-                #        V3=0.
-                #       ELSE
-                #        W=SQRT(X(LC+12)**2+(X(LC+13)-X(LL+5))**2)
-                #        W=(X(LC+6)*X(LC+12)-X(LC+5)*(X(LC+13)-X(LL+5)))/W
-                #        V3=(1.-W)/2.
-                #       END IF
-                # *
-                #       IF(V2.GT.V3) THEN
-                #        IF(V1+V2.GT.1.) THEN
-                #         U1=0.
-                #         U2=(1.-V1-V3)*(1.-V4)
-                #        ELSE
-                #         U1=(1.-V1-V2)*(1.-V4)
-                #         U2=(V2-V3)*(1.-V4)
-                #        END IF
-                #       ELSE
-                #        IF(V1+V3.GT.1.) THEN
-                #         U1=0.
-                #         U2=0.
-                #        ELSE
-                #         U1=(1.-V1-V3)*(1.-V4)
-                #         U2=0.
-                #        END IF
-                #       END IF
-                # *
-                #   253 X(L+9)=0.808*X(154)*U2
-                #       X(L+11)=0.808*U1
-                #       X(L+10)=X(L+9)+X(L+11)
-                #       X(L+12)=0.9*U1/HO
-                # *
-                #       IF(X(LC+12).EQ.0.) THEN
-                #        X(L+13)=0.
-                #        X(L+14)=0.
-                #       ELSE
-                #        W=(X(LC+13)-X(LL+5))/X(LC+12)
-                #        X(L+13)=W*X(LC+3)
-                #        X(L+14)=W*X(LC+4)
-                #       END IF
-                # *
-                #       IF(X(LL+43).EQ.0.) THEN
-                #        DO 252 I=15,19
-                #   252  X(L+I)=0.
-                #       ELSE
-                #        READ(QD(30:41),'(2F6.0)') U,W
-                #        V=A/W
-                #        IF(U.LT.0.75) V=V+U-0.75
-                #        V1=109.*0.5*(1.-X(LL+44)/SQRT(X(LL+44)**2+V**2))
-                #        V2=109.*A*X(LL+45)
-                #        V3=109.*A*X(LL+46)
-                #        X(L+15)=V1
-                #        X(L+16)=V2
-                #        X(L+17)=V3
-                #        X(L+18)=V1+(V2+V3)/2.
-                #        X(L+19)=X(LL+44)*W/X(LL+2)
-                #       END IF
-                #       DO 254 I=0,5
-                #   254 M(L+20+I*3)=0   ! デフォルトで物性値は品種番号の物性値のとおり
-                #       READ(NUB,'(A80)') QD
-                #       IF(QD(1:4).EQ.'+   ')THEN   ! 継続行
-                #        WRITE(6,'(1X,A80)') QD
-                #        CALL DCHECK(QD,1302,NERR)
-                #        DO 255 II=0,1   ! ブラインド開閉ループ
-                #         DO 256 I=0,2   ! K,SCC,SCRループ
-                #          K1=10+II*30+I*9   ! 入力欄のカラム位置
-                #          L1=L+20+II*9+I*3  ! XMQ配列の添字（スケジュールオプション）
-                #          IF(QD(K1:K1+3).EQ.'    ')THEN
-                #           M(L1)=1   ! on時%の値を使用
-                #           IF(QD(K1+5:K1+7).EQ.'   ') QD(K1+5:K1+7)='100'
-                #           READ(QD(K1+5:K1+7),'(F3.0)') W
-                #           X(L1+2)=0.01*W
-                #          ELSE
-                #           M(L1)=2   ! DSCH使用
-                #           CALL RETRIV(104,QD(K1:K1+3),NNAM,LC,LD)
-                #           IF(LD.NE.LC) THEN
-                #            CALL ERROR(5,NERR)
-                #           ELSE
-                #            M(L1+1)=LC+1
-                #           END IF
-                #          END IF
-                #   256   CONTINUE
-                #   255  CONTINUE
-                #       ELSE   ! 継続行ではない
-                #        BACKSPACE(NUB)
-                #       END IF
-                # *
-                #       L=L+LSZSPC(3)
+                    # # 窓通気量
+                    # if NUB[line_ex][20:26] == "      ":
+                    #     W1 = 0
+                    # else:
+                    #     W1 = float(NUB[line_ex][20:26])
+                    #     W1=W1/3.6   # [m3/m2h]から[L/m2s]への変換
+
+                    # # 窓排気率
+                    # if NUB[line_ex][26:30] == "   ":
+                    #     W2 = 40
+                    # else:
+                    #     W2 = float(NUB[line_ex][26:30])
+                    #     W2 = W2*0.01
+
+                    # for II in [1,2]:  # ΔSC,ΔUループ
+                    #     for I in [1,2]:  # ブラインド開、閉ループ
+                    #         I1=(IAP-1)*2+II
+                    #         if (I == 1):
+                    #             M3=0
+                    #         else:
+                    #             M3=M2
+                    #
+                    #         GLWK[I,II] = A*DLTGL(IAP,W1,W2, \
+                    #             NVS(I1),GLD(1,0,0,I1),GLD(1,M3,MGT(M1,ITB)/10,I1),\
+                    #             NVS(I1+2),GLD(1,0,0,I1+2),GLD(1,M3,MGT(M1,ITB)/10,I1+2))
+                    #
+                    #        DO 258 II=1,2   ! ΔSC,ΔUループ
+                    #        DO 258 I=1,2    ! ブラインド開、閉ループ
+                    #         I1=(IAP-1)*2+II
+                    #         IF(I.EQ.1) THEN
+                    #          M3=0
+                    #         ELSE
+                    #          M3=M2
+                    #         END IF
+                    #         IF(ABS(GLD(1,0,0,I1)-9.999).LT.0.001) CALL ERROR(53,NERR)
+                    #         IF(ABS(GLD(1,0,0,I1+2)-9.999).LT.0.001) CALL ERROR(53,NERR)
+                    #         IF(ABS(GLD(1,M3,MGT(M1,ITB)/10,I1)-9.999).LT.0.001)
+                    #      -   CALL ERROR(53,NERR)
+                    #         IF(ABS(GLD(1,M3,MGT(M1,ITB)/10,I1+2)-9.999).LT.0.001)
+                    #      -   CALL ERROR(53,NERR)
+                    #         GLWK(I,II)=A*DLTGL(IAP,W1,W2,
+                    #      -         NVS(I1),GLD(1,0,0,I1),GLD(1,M3,MGT(M1,ITB)/10,I1),
+                    #      -         NVS(I1+2),GLD(1,0,0,I1+2),GLD(1,M3,MGT(M1,ITB)/10,I1+2))
+                    #         ! A*ΔSC, A*ΔU
+                    #   258  CONTINUE
+                    #        IF(IAP.EQ.1) THEN   ! AFW
+                    #         X(L+41)=GLWK(1,1)*X(L+45)
+                    #         X(L+44)=GLWK(2,1)*X(L+46)
+                    #        ELSE   ! PPW
+                    #         X(L+41)=0.0
+                    #         IF(M2.EQ.0) THEN
+                    #          X(L+44)=0.0
+                    #         ELSE
+                    #          I1=3
+                    #          IF(ABS(GLKRBO-9.999).LT.0.001) CALL ERROR(53,NERR)
+                    #          X(L+44)=(GLKRBO-GLKRB)*X(L+6)/(1-GLKRB)
+                    #      -   +GLKRBO*A*DLTGL(IAP,W1,1.0,
+                    #      -         NVS(I1),GLD(1,0,0,I1),GLD(1,M2,MGT(M1,ITB)/10,I1),
+                    #      -         NVS(I1+2),GLD(1,0,0,I1+2),GLD(1,M2,MGT(M1,ITB)/10,I1+2))
+                    #         END IF
+                    #        END IF
+                    #        DO 259 I=1,2   ! ブラインド開、閉ループ
+                    #         X(L+39+(I-1)*3)=GLWK(I,2)
+                    #         X(L+40+(I-1)*3)=GLWK(I,1)-X(L+41+(I-1)*3)
+                    #   259  CONTINUE
+                    #       END IF
+                        
+
+                X[L+8] = A*X[158]
+
+                for J in range(0,10):
+                    GRM[J] = GRM[J] + X[L+5]
+
+                # EXPSを検索
+                (NNAM,LC,LD) = pl.RETRIV(100,NUB[line_ex][9:13],M)
+                if LD != LC:
+                    raise Exception("LDがLCと異なります")
+            
+                M[L+1] = int(LC)
+                V1 = X[int(LC)+26]
+                V2 = X[int(LC)+11]
+                V4 = X[int(LC)+27]
+
+                if (X[int(LC)+12] == 0):
+                    V3=0.0
+                else:
+                    W=math.sqrt(X[int(LC)+12]**2+(X[int(LC)+13]-X[int(LL)+5])**2)
+                    W=(X[int(LC)+6]*X[int(LC)+12]-X[int(LC)+5]*(X[int(LC)+13]-X[int(LL)+5]))/W
+                    V3=(1.-W)/2.
+
+                if V2 > V3:
+                    if V1+V2 > 1:
+                        U1=0.0
+                        U2=(1.-V1-V3)*(1.-V4)
+                    else:
+                        U1=(1.-V1-V2)*(1.-V4)
+                        U2=(V2-V3)*(1.-V4)
+                else:
+                    if V1+V3 > 1:
+                        U1=0.
+                        U2=0.
+                    else:
+                        U1=(1.-V1-V3)*(1.-V4)
+                        U2=0.
+
+                X[L+9]  =0.808*X[154]*U2
+                X[L+11] =0.808*U1
+                X[L+10] =X[L+9]+X[L+11]
+                X[L+12] =0.9*U1/HO
+
+                if X[int(LC)+12] == 0:
+                    X[L+13] = 0.
+                    X[L+14] = 0.
+                else:
+                    W = (X[int(LC)+13]-X[int(LL)+5])/X[int(LC)+12]
+                    X[L+13] = W*X[int(LC)+3]
+                    X[L+14] = W*X[int(LC)+4]
+                    
+                if X[int(LL)+43] == 0:
+                    for I in [15,16,17,18,19]:
+                        X[L+I]=0.0
+                else:
+                    U = NUB[line_ex][29:35]
+                    W = NUB[line_ex][35:41]
+                    V=A/W
+
+                    if (U < 0.75): 
+                        V=V+U-0.75
+
+                    V1=109.*0.5*(1.-X[int(LL)+44]/math.sqrt(X[int(LL)+44]**2+V**2))
+                    V2=109.*A*X[int(LL)+45]
+                    V3=109.*A*X[int(LL)+46]
+
+                    X[L+15]=V1
+                    X[L+16]=V2
+                    X[L+17]=V3
+                    X[L+18]=V1+(V2+V3)/2.
+                    X[L+19]=X[int(LL)+44]*W/X[int(LL)+2]
+                    
+                for I in [0,1,2,3,4,5]:
+                    M[L+20+I*3] = 0   # デフォルトで物性値は品種番号の物性値のとおり
+            
+
+                # 継続行の処理は省略
+                if NUB[line_ex+1][0:4] == "+   ":
+                    raise Exception("継続行の処理は省略")
+
+                L=L+LSZSPC[3]
 
             # elif KEY == "INFL":
             # elif KEY == "LIGH":
