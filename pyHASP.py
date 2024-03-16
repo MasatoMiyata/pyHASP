@@ -183,9 +183,16 @@ FL = [  [0.4438,0.0534,0.8972],
         [0.0000,0.0000,0.0000]   ]
 
 # OCCUPANCY HEAT DISCHARGE
-AM = [  79.,50.,-3.0,91.,53.,-3.1,102.,54.,-3.4,113.,55.,-3.6,
-        125.,59.,-3.8,170.,65.,-5.6,194.,72.,-6.0,227.,85.,-6.3,
-        329.,118.,-5.4 ]
+AM = [  [79.,50.,-3.0],
+        [91.,53.,-3.1],
+        [102.,54.,-3.4],
+        [113.,55.,-3.6],
+        [125.,59.,-3.8],
+        [170.,65.,-5.6],
+        [194.,72.,-6.0],
+        [227.,85.,-6.3],
+        [329.,118.,-5.4] 
+    ]
 
 #**********************************************************************************************************
 
@@ -1638,7 +1645,7 @@ for line in range(1,len(NUB)):
                 if NUB[line_ex][17:23] == '      ':
                     W = 20      
                 else:
-                    W = int(NUB[line_ex][17:23])
+                    W = float(NUB[line_ex][17:23])
 
                 # 電気容量の単位(1: W/m2、2: kW)
                 if len(NUB[line_ex]) <= 25 or NUB[line_ex][23:26] == '   ':
@@ -1670,7 +1677,41 @@ for line in range(1,len(NUB)):
                         W = int(NUB[line_ex][32:38])
                     X[int(LL)+43] = W/2.
 
-            # elif KEY == "OCUP":
+            elif KEY == "OCUP":
+
+                # DSCHを検索
+                (NNAM,LC,LD) = pl.RETRIV(104,NUB[line_ex][5:9],M)
+                if LD != LC:
+                    raise Exception("LDがLCと異なります")
+                else:
+                    M[LL+51] = LC+1
+
+                # 作業指数
+                if NUB[line_ex][14:17] == '   ':
+                    M1 = 3       
+                else:
+                    M1 = int(NUB[line_ex][14:17])
+
+                # 人数
+                if NUB[line_ex][17:23] == '      ':
+                    W = 0.2       
+                else:
+                    W = float(NUB[line_ex][17:23])
+
+                # 単位（1: 人/m2、 2:人）
+                if len(NUB[line_ex]) <= 25 or NUB[line_ex][23:26] == '   ':
+                    M2 = 1
+                else:
+                    M2 = int(NUB[line_ex][23:26])
+                    
+                if (M2 == 1):
+                    W=W*X[int(LL)+2]
+
+                X[int(LL)+52] = W*AM[0][M1-1]
+                X[int(LL)+53] = W*AM[1][M1-1]
+                X[int(LL)+54] = W*AM[2][M1-1]
+
+
             # elif KEY == "HEAT":
             # elif KEY == "FURN":
             # elif KEY == "CFLW":
