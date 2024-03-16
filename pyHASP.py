@@ -1712,13 +1712,53 @@ for line in range(1,len(NUB)):
                 X[int(LL)+54] = W*AM[2][M1-1]
 
 
-            # elif KEY == "HEAT":
+            elif KEY == "HEAT":
+
+                # DSCHを検索
+                (NNAM,LC,LD) = pl.RETRIV(104,NUB[line_ex][5:9],M)
+                if LD != LC:
+                    raise Exception("LDがLCと異なります")
+                else:
+                    M[LL+47] = LC+1
+
+                # 冷却方式(1: 自然放熱、 2: 強制空冷)
+                if NUB[line_ex][14:17] == '   ':
+                    M1 = 1       
+                else:
+                    M1 = int(NUB[line_ex][14:17])
+
+                # 単位 1: W/m2、 2: kW
+                if NUB[line_ex][29:32] == '   ':
+                    M2 = 1       
+                else:
+                    M2 = int(NUB[line_ex][29:32])
+
+                W = float(NUB[line_ex][17:23])
+                X[int(LL)+50] = float(NUB[line_ex][23:29])
+
+                if (M2 == 1):
+                    W = 0.001*W*X[int(LL)+2]
+                    X[int(LL)+50] = 0.001*X[int(LL)+50]*X[int(LL)+2]
+
+                W=860.*W
+                X[int(LL)+50] = 860.*X[int(LL)+50]
+
+                if (M1 == 1):
+                    # 自然放熱（放射伝熱を伴う）
+                    X[int(LL)+48] = HC*W/HT
+                    X[int(LL)+49] = HR*W/HT
+                else:
+                    # 強制空冷（機器内部からファン等で強制的に排熱。対流伝熱で瞬時に負荷に）
+                    X[int(LL)+48] = W
+                    X[int(LL)+49] = 0.
+
+
             # elif KEY == "FURN":
             # elif KEY == "CFLW":
             # elif KEY == "SOPC":
 
 
-
+# 
 
 
     elif KEY == "CMPL":
