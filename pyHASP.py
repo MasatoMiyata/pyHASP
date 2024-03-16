@@ -176,9 +176,11 @@ ROL = [0.3, 0.2, 0.1]
 # GLKRBO = 102*9.999
 
 # WF FOR LIGHTING FIXTURE
-FL = [  0.4438,0.0534,0.8972,0.0362,0.0000,
-        0.7321,0.0254,0.8926,0.0309,0.0000,
-        1.0000,0.0000,0.0000,0.0000,0.0000  ]
+FL = [  [0.4438,0.0534,0.8972],
+        [0.0362,0.0000,0.7321],
+        [0.0254,0.8926,0.0309],
+        [0.0000,1.0000,0.0000],
+        [0.0000,0.0000,0.0000]   ]
 
 # OCCUPANCY HEAT DISCHARGE
 AM = [  79.,50.,-3.0,91.,53.,-3.1,102.,54.,-3.4,113.,55.,-3.6,
@@ -1617,7 +1619,57 @@ for line in range(1,len(NUB)):
 
                 L=L+LSZSPC[4]
 
-            # elif KEY == "LIGH":
+            elif KEY == "LIGH":
+
+                # DSCHを検索
+                (NNAM,LC,LD) = pl.RETRIV(104,NUB[line_ex][5:9],M)
+                if LD != LC:
+                    raise Exception("LDがLCと異なります")
+                else:
+                    M[LL+35] = LC+1
+
+                # 器具形式
+                if NUB[line_ex][14:17] == '   ':
+                    M1 = 1       
+                else:
+                    M1 = int(NUB[line_ex][14:17])
+
+                # 電気容量
+                if NUB[line_ex][17:23] == '      ':
+                    W = 20      
+                else:
+                    W = int(NUB[line_ex][17:23])
+
+                # 電気容量の単位(1: W/m2、2: kW)
+                if len(NUB[line_ex]) <= 25 or NUB[line_ex][23:26] == '   ':
+                    M2 = 1       
+                else:
+                    M2 = int(NUB[line_ex][23:26])
+
+                if (M2 == 1):
+                    W=0.001*W*X[int(LL)+2]
+                
+                # 蛍光灯の場合は15%相当を安定器損失として加算
+                if (M1 <= 3):
+                    W = 1.15*W
+
+                W = 860.0*W
+
+                # 0:埋め込み器具、1:直付け器具、2:吊り下げ器具
+                M1 =int( (M1-1)%3 )
+                X[int(LL)+36] = FL[0][M1]*W
+                X[int(LL)+37] = FL[1][M1]*W
+                X[int(LL)+38] = FL[2][M1]
+                X[int(LL)+39] = FL[3][M1]*W
+                X[int(LL)+40] = FL[4][M1]
+            
+                if (X[int(LL)+43] != 0):
+                    if NUB[line_ex][32:38] == '      ':
+                        W = 700    
+                    else:
+                        W = int(NUB[line_ex][32:38])
+                    X[int(LL)+43] = W/2.
+
             # elif KEY == "OCUP":
             # elif KEY == "HEAT":
             # elif KEY == "FURN":
