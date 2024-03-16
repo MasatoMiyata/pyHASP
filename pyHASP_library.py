@@ -183,6 +183,32 @@ def RETRIV(LO,QNAM,M):
         LC = LD
 
 
+def NAME(NNAM):
+    """
+    RETRIVの逆処理
+    数値を文字列化
+
+    NAME("15010101")
+    """
+    QLIT = " ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789=+-*/(),.:"
+
+    QNAM = ""
+    NN = NNAM
+
+    for I in [1,2,3,4]:
+
+        # 冒頭の2桁を取り出す
+        N=int(int(NN)/100**(4-I))
+
+        # 文字列の連結演算子
+        QNAM = QNAM + QLIT[N-1]
+
+        # 処理済みの数値を削除
+        NN = int(NN)-N*100**(4-I)
+
+    return QNAM
+
+
 # ***          4.2. DECODING ARITHMETIC EXPRESSION *********************
         
 def ARITH(Q, NERR):
@@ -326,7 +352,7 @@ def GVECTR(QWL,NL,MT,TH,HT,HO,TCM=np.zeros([2,100])):
                 TRNS[J]=0.0
                 SUM = 0.0
                 for K in range(0,22):
-                    if math.abs(EPS[K]) < 0.0001:
+                    if abs(EPS[K]) < 0.0001:
                         SUM=SUM+XN[K]*G0QC[K]
                     else:
                         SUM=SUM+XN[K]*(G0QC[K]+G1QC[K]/(S[J]+EPS[K]))
@@ -360,12 +386,12 @@ def GVECTR(QWL,NL,MT,TH,HT,HO,TCM=np.zeros([2,100])):
             R[int(NL)]=1/HO
             C[int(NL)]=0.
 
-        print("----NL----")
-        print(NL)
-        print("----R----")
-        print(R)
-        print("----C----")
-        print(C)
+        # print("----NL----")
+        # print(NL)
+        # print("----R----")
+        # print(R)
+        # print("----C----")
+        # print(C)
 
 
         for J in range(0,10):
@@ -380,9 +406,9 @@ def GVECTR(QWL,NL,MT,TH,HT,HO,TCM=np.zeros([2,100])):
             
                 W = math.sqrt(S[J]*R[L]*C[L])
 
-                print(f"L: {L}")
-                print(f"J: {J}")
-                print(f"W: {W}")
+                # print(f"L: {L}")
+                # print(f"J: {J}")
+                # print(f"W: {W}")
 
                 if (W == 0):
                     V1=1.
@@ -443,10 +469,10 @@ def CPARAM(nt, g):
 
     n = 1
 
-    print("----s-----")
-    print(s)
-    print("----g-----")
-    print(g)
+    # print("----s-----")
+    # print(s)
+    # print("----g-----")
+    # print(g)
 
 #    12 continue
     goto12 = True
@@ -574,15 +600,78 @@ def CPARAM(nt, g):
         p[3*i+1] = 0
         p[3*i+2] = 0
 
-    print('approximate step response:')
-    print(f'g[0] = {g[0]}')
-    print(f'a[1] = {a[1]}')
-    print(f'e[1] = {e[1]}')
-    print(f'a[2] = {a[2]}')
-    print(f'e[2] = {e[2]}')
+    # print('approximate step response:')
+    # print(f'g[0] = {g[0]}')
+    # print(f'a[1] = {a[1]}')
+    # print(f'e[1] = {e[1]}')
+    # print(f'a[2] = {a[2]}')
+    # print(f'e[2] = {e[2]}')
 
     return p
 
 
+#-----------------------------------------------------------------------
+#     SPACデータのうち、次のIWALデータを探して先頭ポインタ等を返す
+#-----------------------------------------------------------------------
+def RTVADJ(LSZSPC, L, M):
+
+    #       INTEGER     LSZSPC(0:4)          ! I   XMQ配列のうち、(0):SPAC, (1):OWAL, (2):IWAL,
+    #                                        !     (3):WNDW, (4):INFL の変数の数
+    #       INTEGER     L                    ! I   SPACデータのうち、OWAL, IWAL等の先頭ポインタ
+    #                                        !     （検索開始点）
+    #                                        ! O   同 検索されたIWAL(adjacent)の先頭ポインタ
+    #                                        !     (ISTAT=1,-2のときのみ有効)
+    #       INTEGER     JZ                   ! O   検索されたIWAL(adjacent)の隣接スペースは、当該
+    #                                        !     グループの何スペース目か(ISTAT=1のときのみ有効）
+    #       INTEGER     ISTAT                ! O   =1 : IWAL(adjacent)が見つかった
+    #                                        !     =0 : IWAL(adjacent)は見つからずに正常終了
+    #                                        !     =-1: 異常終了
+    #                                        !     =-2: adjacent wallにも関わらず隣接SPACが見つからない
+    # C     M(L)                             I   =1:OWAL, =2:IWAL, =3:WNDW, 4:INFL, 5:SPAC終了
+    # C     M(L+1) (IWALデータ)              I   隣室モード(=3のときadjacent wall)
+    # C     Q(L+2) (IWALデータ)              I   隣室SPAC名(M(L+1)=3のとき有効)
+
+    # ローカル変数
+    JZ = 0
+    ISTAT = 0
+
+    # メインループ
+    for II in range(9999):
+
+        if M[L] < 1 or M[L] > 5:
+            raise Exception("RTVADJでエラーが発生しました")
+
+        elif M[L] == 5:  # SPACデータ終了
+            ISTAT = 0
+            return L, JZ, ISTAT
+        
+        elif M[L] != 2:  # IWAL以外
+            L += LSZSPC[M[L]]
+
+        elif M[L + 1] != 3:  # IWALだがadjacent wallではない
+            L += LSZSPC[M[L]]
+
+    #     else:  # IWAL で adjacent wall
+
+    #         QSP = ""
+    #         NAME(QSP, LSZSPC[L + 2])
+    #         NNAM = 0
+    #         LC = 0
+    #         LD = 0
+    #         RETRIV(106, QSP, NNAM, LC, LD)
+    #         if LD != LC:
+    #             ISTAT = -2
+    #         else:
+    #             JZ = LC + 101
+    #             ISTAT = 1
+    #         return L, JZ, ISTAT
+
+    # ERROR2(192, 2)
+    ISTAT = -1
+    
+    return L, JZ, ISTAT
+
+
 # if __name__ == '__main__':
 
+#     print(NAME("15010101"))
