@@ -1756,13 +1756,13 @@ for line in range(1,len(NUB)):
             elif KEY == "FURN":
 
                 # 顕熱容量 (kJ/m2K)
-                if NUB[line_ex][14:20] == '      ':
+                if len(NUB[line_ex]) < 15 or [line_ex][14:20] == '      ':
                     W1 = 40   
                 else:
                     W1 = float(NUB[line_ex][14:20])
 
                 # 潜熱容量 (kJ/m2K)
-                if NUB[line_ex][20:26] == '      ':
+                if len(NUB[line_ex]) < 21 or NUB[line_ex][20:26] == '      ':
                     W2 = 80
                 else:
                     W2 = float(NUB[line_ex][20:26])
@@ -1782,14 +1782,63 @@ for line in range(1,len(NUB)):
                     GRL[J] = GRL[J] + GAD[J]
 
 
-            # elif KEY == "CFLW":
-            # elif KEY == "SOPC":
+            elif KEY == "SOPC":
+
+                # OPCOを検索
+                (NNAM,LC,LD) = pl.RETRIV(145,NUB[line_ex][5:9],M)
+                if LD != LC:
+                    raise Exception("LDがLCと異なります")
+                else:
+                    M[int(LL)+55] = LC
+
+                X[int(LL+56+0)] = float(NUB[line_ex][11:17])  # 除去熱量（顕熱）
+                X[int(LL+56+1)] = float(NUB[line_ex][17:23])  # 除去熱量（潜熱）
+                X[int(LL+56+2)] = float(NUB[line_ex][23:29])  # 供給熱量（顕熱）
+                X[int(LL+56+3)] = float(NUB[line_ex][29:35])  # 供給熱量（潜熱）
+
+                for I in [0,1,2,3]:
+                    X[int(LL)+56+I] = 0.860*X[int(LL)+56+I]
+
+                # OAHUの検索
+                if NUB[line_ex][37:41] != "    ":
+                    # OPCOを検索
+                    (NNAM,LC,LD) = pl.RETRIV(98,NUB[line_ex][37:41],M)
+                    if LD != LC:
+                        raise Exception("LDがLCと異なります")
+                    else:
+                        M[int(LL)+202] = LC
+
+                for II in [0,1,2]:  # 季節ループ
+
+                    QWK = 'CDHS' 
+
+                    # 装置容量の設定                                                        
+                    for I in [0,1,2,3]:  # CDHSループ    
+
+                        J=41+4*II+I+1
+
+                    if (NUB[line_ex][J-1] == ' ') or (NUB[line_ex][J-1] == QWK[I]):
+                        X[ LL+203+4*II+I ] = X[ LL+56+I ]            
+                    elif (NUB[line_ex][J-1] == '-'): 
+
+                        s = list(QWK)
+                        s[I] = "-"
+                        QWK = "".join(s)
+
+                        X[ LL+203+4*II+I]  = 0.0                                             
+
+                    # 人体発熱顕熱比率算出用温度                                            
+                    if (MCNTL[32] == 0):                                                
+                        X[ LL+215+II ] = X[155]                                                  
+                    elif (QWK[0] == 'C') and (QWK[2] == '-') :                  
+                        X[ LL+215+II ] = X[ M(LL+55)+2+4*II ]           
+                    elif (QWK[0] == '-') and (QWK[2] == 'H') :                 
+                        X[ LL+215+II ] = X[ M(LL+55)+3+4*II ]                                      
+                    else:                                                                   
+                        X[ LL+215+II ] = 0.5*(X[ M(LL+55)+2+4*II ] + X[ M(LL+55)+3+4*II ] )        
 
 
-# 
-
-
-    elif KEY == "CMPL":
+    elif KEY == "CMPL" or KEY == "CFLW": 
         print("読み込み完了")
         break
 
