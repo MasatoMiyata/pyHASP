@@ -1753,7 +1753,35 @@ for line in range(1,len(NUB)):
                     X[int(LL)+49] = 0.
 
 
-            # elif KEY == "FURN":
+            elif KEY == "FURN":
+
+                # 顕熱容量 (kJ/m2K)
+                if NUB[line_ex][14:20] == '      ':
+                    W1 = 40   
+                else:
+                    W1 = float(NUB[line_ex][14:20])
+
+                # 潜熱容量 (kJ/m2K)
+                if NUB[line_ex][20:26] == '      ':
+                    W2 = 80
+                else:
+                    W2 = float(NUB[line_ex][20:26])
+
+                W1 = W1 * X[int(LL)+2] / 4.186
+                W2 = W2 * X[int(LL)+2] / 4.186
+
+                if (abs(W1)>0.1):
+                    IFURS=1
+
+                GTR,GAD = pl.GVECTR('FURS',0,MT,TH,HT,W1,TCM)
+                for J in range(0,10):
+                    GAS[J] = GAS[J] + GAD[J]
+
+                GTR,GAD = pl.GVECTR('FURN',0,MT,TH,HT,W2,TCM)
+                for J in range(0,10):
+                    GRL[J] = GRL[J] + GAD[J]
+
+
             # elif KEY == "CFLW":
             # elif KEY == "SOPC":
 
