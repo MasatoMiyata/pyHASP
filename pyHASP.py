@@ -1227,14 +1227,20 @@ for line in range(1,len(NUB)):
 
                 if NUB[line_ex][11:14] != "   ":
                     I = int(NUB[line_ex][11:14])  # 隣室モード
-                    W1 = float(NUB[line_ex][14:20]) # 隣室条件α
                 else:
                     I = 0
+
+                if NUB[line_ex][14:20] != "      ":
+                    W1 = float(NUB[line_ex][14:20]) # 隣室条件α
+                else:
                     W1 = 0
 
-                if I == 0 and W1 == 0:
+                if I == 0 and W1 == 0:  # 隣室設定なし
+
                     for J in range(0,10):
                         GRM[J] = GRM[J] + A*(GAD[J]-GTR[J])
+                    # ここで処理終了
+                        
                 else:
                     M[L]=2
                     M[L+1]=I
@@ -1244,34 +1250,34 @@ for line in range(1,len(NUB)):
                         else:
                             GRM[J] = GRM[J] + A*GAD[J]
 
-                if M[L+1] == 3:
+                    if M[L+1] == 3:
 
-                    # 隣室SPAC名
-                    (NNAM,LC,LD) = pl.RETRIV(102,NUB[line_ex][20:24],M) # NNAMへの変換機能のみ利用
-                    M[L+2] = NNAM
+                        # 隣室SPAC名
+                        (NNAM,LC,LD) = pl.RETRIV(102,NUB[line_ex][20:24],M) # NNAMへの変換機能のみ利用
+                        M[L+2] = NNAM
 
-                    for J in range(0,10):
-                        X[L+16+J] = A*GTR[J]
+                        for J in range(0,10):
+                            X[L+16+J] = A*GTR[J]
 
-                else:
-                    P = pl.CPARAM(2,GTR)
-                    X[L+3] = A*P[1]
-                    X[L+4] = A*P[2]
-                    X[L+5] = A*P[3]
-                    X[L+6] = A*P[4]
-                    X[L+7] = P[5]
-                    X[L+8] = A*P[6]
-                    X[L+9] = A*P[7]
-                    X[L+10] = P[8]
-                        
+                    else:
+                        P = pl.CPARAM(2,GTR)
+                        X[L+3] = A*P[1]
+                        X[L+4] = A*P[2]
+                        X[L+5] = A*P[3]
+                        X[L+6] = A*P[4]
+                        X[L+7] = P[5]
+                        X[L+8] = A*P[6]
+                        X[L+9] = A*P[7]
+                        X[L+10] = P[8]
+                            
 
-                X[L+11] = 0.0
-                X[L+12] = 0.0
-                X[L+13] = 0.0
-                X[L+14] = 0.0
-                X[L+15] = W1
+                    X[L+11] = 0.0
+                    X[L+12] = 0.0
+                    X[L+13] = 0.0
+                    X[L+14] = 0.0
+                    X[L+15] = W1
 
-                L=L+LSZSPC[2]
+                    L=L+LSZSPC[2]
 
             elif KEY == "GWAL":
                 
@@ -1838,10 +1844,183 @@ for line in range(1,len(NUB)):
                         X[ LL+215+II ] = 0.5*(X[ M(LL+55)+2+4*II ] + X[ M(LL+55)+3+4*II ] )        
 
 
-    elif KEY == "CMPL" or KEY == "CFLW": 
-        print("読み込み完了")
-        break
+        # ***          2.20. SPACE WEIGHTING FACTOR ****************************
+                        
+        print(f"室名： {QSP}")
+        M[L] = 5
+        X[LL+63] = ARM
+
+        for J in range(0,10):
+            G[J] = (HC*ARM-FC*GRM[J])/(HC*ARM+FR*GRM[J])
+
+        P = pl.CPARAM(1,G)
+        X[LL+8]  = P[1]
+        X[LL+9]  = P[3]
+        X[LL+10] = P[5]
+    
+        for J in range(0,10):
+            G[J] = HC*ARM*GRM[J]/(HC*ARM+FR*GRM[J])+GAS[J]
+        
+        P = pl.CPARAM(2,G)
+        for I in range(1,9):
+            X[LL+I+14] = P[I]
+
+        P = pl.CPARAM(1,GRL)
+        for I in range(1,6):
+            X[LL+I+24] = P[I]
+
+        L2=LL+LSZSPC[0]
+        print(f"L2: {L2}")
+        print(f"LL: {LL}")
+        print(f"LSZSPC[0]: {LSZSPC[0]}")
+
+        flag = True
+        while flag:
+
+            (L2, JZ, ISTAT2) = pl.RTVADJ(LSZSPC, L2, M)
+            print(f"L2: {L2}")
+            print(f"JZ: {JZ}")
+            print(f"ISTAT2: {ISTAT2}")
+
+            if (ISTAT2 == 1) or (ISTAT2 == -2):
+                for J in range(0,10):
+                    G[J] = HC*ARM/(HC*ARM+FR*GRM[J])*X[int(L2)+16+J]
+                P = pl.CPARAM(2,G)
+                for J in range(1,9):
+                    X[int(L2)+I+2]=P[I]
+                L2 = L2 + LSZSPC(M[int(L2)])
+            else:
+                break
+        
 
 
-pl.display_XMQ_matrix(X,M,2100,2101)
+#       IF((ISTAT2.EQ.1).OR.(ISTAT2.EQ.-2)) THEN
+#        DO 322 J=0,9
+#   322  G(J)=HC*ARM/(HC*ARM+FR*GRM(J))*X(L2+16+J)
+#        CALL CPARAM(2,G,P)
+#        DO 323 I=1,8
+#   323  X(L2+I+2)=P(I)
+#        L2=L2+LSZSPC(M(L2))
+#        GO TO 321
+#       END IF
+                
+#       IF(IFURS.GE.1) THEN
+#        CALL CPARAM(2,GAS,P)   ! 家具の蓄熱応答係数のみ計算（簡易MRT計算用）
+#        DO 318 I=1,8
+#   318  X(LL+I+63)=P(I)
+#       END IF
+# *
+#       M(LL+101)=IZ
+#       IF(QKY.EQ.':   ')THEN   ! スペースの結合(グループの継続)が指示された場合
+#        IZ=IZ+1
+#        IF(IZ.GT.NAZ) CALL ERROR(41,NERR)
+#       ELSE IF(QKY.EQ.'CFLW')THEN   ! 空気移動量が指定された場合
+#                                    ! (現在のグループのうち最後のスペースのはず)
+#   316  CALL DCHECK(QD,1201,NERR)
+#        IF(QD(10:13).EQ.'    ') THEN   ! DSCH名を引用していない
+#         MFLWK(1)=2
+#         IF(QD(15:17).EQ.'   ') QD(15:17)='100'
+#         IF(QD(18:20).EQ.'   ') QD(18:20)='100'
+#         READ(QD(15:20),'(2F3.2)') XFLWK(1), XFLWK(2)
+#        ELSE   ! DSCH名引用
+#         MFLWK(1)=1
+#         CALL RETRIV(104,QD(10:13),NNAM,LC,LD)
+#         IF(LD.NE.LC) THEN
+#          CALL ERROR(5,NERR)
+#         ELSE
+#          MFLWK(2)=LC+1
+#         END IF
+#        END IF
+#        IF(QD(21:26).EQ.'      ') QD(21:26)='   150'
+#        IF(QD(36:38).EQ.'   ') QD(36:38)='  0'
+#        IF(QD(39:44).EQ.'      ') QD(39:44)='     0'
+#        IF(QD(54:56).EQ.'   ') QD(54:56)='  0'
+#        IF(QD(57:62).EQ.'      ') QD(57:62)='     0'
+#        IF(QD(72:74).EQ.'   ') QD(72:74)='  0'
+#        IF(QD(75:80).EQ.'      ') QD(75:80)='     0'
+#        READ(QD(21:26),'(F6.0)') V1
+#        DO 317 II=1,3
+#         IF(QD(18*II+10:18*II+13).EQ.'    ')THEN
+#          GO TO 317
+#         ELSE
+#          CALL RETRIV(LCGB,QD(18*II+10:18*II+13),NNAM,LC1,LD)
+#          IF(LD.NE.LC1)THEN
+#           CALL ERROR(42,NERR)
+#           GO TO 317
+#          END IF
+#         END IF
+#         CALL RETRIV(LCGB,QD(18*II+14:18*II+17),NNAM,LC2,LD)
+#         IF(LD.NE.LC2)THEN
+#          CALL ERROR(42,NERR)
+#          GO TO 317
+#         END IF
+#         IF(LC1.EQ.LC2) CALL ERROR(43,NERR)
+#         READ(QD(18*II+18:18*II+26),'(I3,F6.0)') I, V2
+#         IF((I.EQ.0).OR.(I.EQ.1))THEN
+#          L1=LC2+101+(M(LC1+101)-1)*5
+#          X(L1+1)=V1*V2
+#          M(L1+2)=MFLWK(1)
+#          IF(MFLWK(1).EQ.2) THEN
+#           X(L1+4)=XFLWK(1)
+#           X(L1+5)=XFLWK(2)
+#          ELSE
+#           M(L1+3)=MFLWK(2)
+#          END IF
+#         END IF
+#         IF((I.EQ.0).OR.(I.EQ.2))THEN
+#          L1=LC1+101+(M(LC2+101)-1)*5
+#          X(L1+1)=V1*V2
+#          M(L1+2)=MFLWK(1)
+#          IF(MFLWK(1).EQ.2) THEN
+#           X(L1+4)=XFLWK(1)
+#           X(L1+5)=XFLWK(2)
+#          ELSE
+#           M(L1+3)=MFLWK(2)
+#          END IF
+#         END IF
+#   317  CONTINUE
+#        READ(NUB,'(A80)') QD
+#        WRITE(6,'(1X,A80)') QD
+#        QKY=QD(1:4)
+#        IF(QKY.EQ.'+   ')THEN
+#         GO TO 316   ! 複数行「CFLW」データを指定することが可能
+#        ELSE IF(QKY.NE.'    ')THEN
+#         CALL ERROR(44,NERR)
+#        END IF
+#       ELSE   ! グループの終了
+#        IF(QKY.NE.'    ') CALL ERROR2(80,2)
+#       END IF
+
+#       IF(QKY.EQ.'    ') THEN
+#         IF(IZ.GE.2) THEN
+#         ! IWAL(adjacent)の参照error check
+#          L1=LCGB
+#          DO 319 I=1,IZ
+#           L2=L1+LSZSPC(0)
+#   320     CALL RTVADJ(LSZSPC,L2,JZ,ISTAT2)
+#           IF(ISTAT2.EQ.-2) THEN
+#            CALL ERROR(5,NERR)
+#           ELSE IF(ISTAT2.EQ.-1) THEN
+#            CALL ERROR2(81,2)
+#           ELSE IF((ISTAT2.EQ.0).AND.(I.NE.IZ)) THEN
+#            L1=M(L1)
+#           ELSE IF(ISTAT2.EQ.1) THEN
+#            L2=L2+LSZSPC(M(L2))
+#            GO TO 320
+#           END IF
+#   319    CONTINUE
+#         END IF
+#         ! 次のグループのためのセット
+#         IZ=1
+#         LCGB=L+1
+#       END IF
+# *
+#       L=L+1
+#       GO TO 204
+
+
+
+
+
+# pl.display_XMQ_matrix(X,M,2000,3000)
 
