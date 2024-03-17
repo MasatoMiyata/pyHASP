@@ -50,7 +50,7 @@ MT = np.zeros(21)
 TH = np.zeros(21)
 G = np.zeros(10)  # G(0:9)
 P = np.zeros(8)
-WF = np.zeros((9,4))
+WF = np.zeros((10,5))
 GTR = np.zeros(10) # GTR(0:9)
 GAD = np.zeros(10) # GAD(0:9)
 GRM = np.zeros(10) # GRM(0:9)
@@ -1870,7 +1870,7 @@ for line in range(bldg_end+1,len(NUB)):
                 # ***          2.20. SPACE WEIGHTING FACTOR ****************************
                                                 
                 # print(f"室名： {QSP}")
-                
+
                 M[L] = 5
                 X[LL+63] = ARM
 
@@ -1960,6 +1960,57 @@ for line in range(bldg_end+1,len(NUB)):
                 # print(f"L: {L}")
                 # print(f"LCGB: {LCGB}")
 
+
+# ***          2.21. OUTPUT 1 (JOB NAME AND SPACE WF) ******************
+
+LL = int(M[106])  # SPACポインタ
+NRM = 0
+
+while (LL != 0):
+
+    NRM=NRM+1
+
+    WF[1,1] = X[LL+15]
+    WF[1,2] = X[LL+16]
+    U1 = X[LL+17]
+    V1 = X[LL+18]
+    R1 = X[LL+19]
+    U2 = X[LL+20]
+    V2 = X[LL+21]
+    R2 = X[LL+22]
+
+    for J in range(2,9):
+        WF[J,1] = U1+U2
+        WF[J,2] = V1+V2
+        U1 = U1*R1
+        V1 = V1*R1
+        U2 = U2*R2
+        V2 = V2*R2
+
+    WF[9,1] = (U1/(1.-R1)+U2/(1.-R2))/(U1/((1.-R1)*R1)+U2/((1.-R2)*R2))
+    WF[9,2] = (V1/(1.-R1)+V2/(1.-R2))/(V1/((1.-R1)*R1)+V2/((1.-R2)*R2))
+
+    WF[1,3] = X[LL+25]
+    WF[1,4] = X[LL+26]
+    U1 = X[LL+27]
+    V1 = X[LL+28]
+
+    for J in range(2,9):
+        WF[J,3] = U1
+        WF[J,4] = V1
+        U1 = U1*X[LL+29]
+        V1  =V1*X[LL+29]
+        
+    WF[9,3] = X[LL+29]
+    WF[9,4] = X[LL+29]
+    
+    QSP = pl.NAME(M[LL + 1])
+
+    LL = int(M[LL])
+
+
+# *****       3. MAIN PROCESS ******************************************
+# ***          3.1. DATING AND JOB CONTROL *****************************
 
 
 
