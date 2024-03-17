@@ -636,37 +636,48 @@ def RTVADJ(LSZSPC, L, M):
     ISTAT = 0
 
     # メインループ
-    for II in range(9999):
+    for II in range(1, 10000):
+
+        # print(f"II: {II}")
+        # print(f"L:{L}")
+        # print(f"M[L]:{M[L]}")
+        # print(f"M[L+1]:{M[L+1]}")
+        # print(f"LSZSPC[int(M[L])]:{LSZSPC[int(M[L])]}")
 
         if M[L] < 1 or M[L] > 5:
+            # print("--aルート---")
             raise Exception("RTVADJでエラーが発生しました")
 
         elif M[L] == 5:  # SPACデータ終了
+            # print("--bルート---")
             ISTAT = 0
             return L, JZ, ISTAT
         
         elif M[L] != 2:  # IWAL以外
-            L += LSZSPC[M[L]]
+            # print("--cルート---")
+            L += LSZSPC[int(M[L])]
 
-        elif M[L + 1] != 3:  # IWALだがadjacent wallではない
-            L += LSZSPC[M[L]]
+        elif M[L+1] != 3:  # IWALだがadjacent wallではない
+            # print("--dルート---")
+            L += LSZSPC[int(M[L])]
 
-    #     else:  # IWAL で adjacent wall
+        else:  # IWAL で adjacent wall
+            # print("--eルート---")
 
-    #         QSP = ""
-    #         NAME(QSP, LSZSPC[L + 2])
-    #         NNAM = 0
-    #         LC = 0
-    #         LD = 0
-    #         RETRIV(106, QSP, NNAM, LC, LD)
-    #         if LD != LC:
-    #             ISTAT = -2
-    #         else:
-    #             JZ = LC + 101
-    #             ISTAT = 1
-    #         return L, JZ, ISTAT
+            QSP = NAME(LSZSPC[L + 2])
+            # print(f"QSP: {QSP}")
 
-    # ERROR2(192, 2)
+            (NNAM,LC,LD) = RETRIV(106,QSP,M)
+
+            if LD != LC:
+                ISTAT = -2  # adjacent wallだが隣接SPACは見つからない（ERROR5相当。ただしL だけは正しく返せる）
+            else:
+                JZ = M[LC+101]  # ! 隣接スペースは当該グループのうち何番目に登録されているか
+                ISTAT = 1       # IWAL(adjacent)とその隣接スペースが見つかった
+            
+            return L, JZ, ISTAT
+
+    # 異常終了
     ISTAT = -1
     
     return L, JZ, ISTAT
