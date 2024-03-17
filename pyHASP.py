@@ -55,8 +55,8 @@ GTR = np.zeros(10) # GTR(0:9)
 GAD = np.zeros(10) # GAD(0:9)
 GRM = np.zeros(10) # GRM(0:9)
 GRL = np.zeros(10) # GRL(0:9)
-WD = np.zeros((7,24))
-ID = np.zeros((7,5))
+WD = np.zeros((7+1,24+1))
+ID = np.zeros((7+1,5+1))
 SH = np.zeros(24)
 CHSA = np.zeros(24)
 CHCA = np.zeros(24)
@@ -95,12 +95,12 @@ MCNTL = np.zeros(32+1)   # 「CNTL」カードのデータ内容(XMQ配列に相
 
 #       COMMON /ETC/MCNTL
 
-MDW = np.zeros(2)    # MDW(1)  :本日の曜日(=1:月,2:火,..,7:日,8:祝,9:特), MDW(2)  :明日の曜日
+MDW = np.zeros(2+1)    # MDW(1)  :本日の曜日(=1:月,2:火,..,7:日,8:祝,9:特), MDW(2)  :明日の曜日
 WDND = np.zeros((7,24))    # WDND    :明日の気象データ
 IDND = np.zeros((7,5))    # IDND    :明日の日付データ
 KSCH = np.zeros(2)    # KSCH(1) :本日のスケジュール(=1:全日,2:半日,3:1日中0%), KSCH(2) :明日のスケジュール
 
-ISEAS = np.zeros(2)    #  ISEAS(1):本日の季節(=1:夏期,2:冬期,3:中間期), ISEAS(2):明日の季節
+ISEAS = np.zeros(2+1)    #  ISEAS(1):本日の季節(=1:夏期,2:冬期,3:中間期), ISEAS(2):明日の季節
 
 NAZ=20   # NAZ     :1グループあたりの最大スペース数(変更の場合は関連ルーチンのPARAMETER文を全て変更する必要あり)
 NHR=24   # NHR     :1日のステップ数(24以外不可)
@@ -126,7 +126,7 @@ RMMN  = np.zeros((NAZ,NSL))         # 各スペースの設定温湿度下限
 # LOPC                  # OPCOデータへのポインタ(L)
 # IZ                    # 当該スペースは現在のグループの何スペース目か
 
-IDWK = np.zeros(3)               # 年・月・日
+IDWK = np.zeros(3+1)               # 年・月・日
 # NZ                    # 現在のグループのスペース数
 VFLOW = np.zeros((NAZ,NAZ,NHR))    # 第1添字目のスペースから第2添字目のスペースへの流入
                         #     風量（体積流量、0以上、対角項は0とする）
@@ -2010,8 +2010,80 @@ while (LL != 0):
 
 
 # *****       3. MAIN PROCESS ******************************************
+    
 # ***          3.1. DATING AND JOB CONTROL *****************************
 
+ICYCL = 1
+
+# print(MCNTL[5])  # データ形式 1:標準年気象データ（周期データ）、2:ピークデータ（周期データ）、3:実データ （2で割ることで、=0:周期データ, =1:実在データ）
+# print(MCNTL[31])   # データカラム数
+
+ICYCL,WDND,IDND,ISTAT = pl.INWD(NUW, int(MCNTL[5]/2), int(MCNTL[31]), int(ICYCL)) 
+
+# print(f"WDND: {WDND}")
+# print(f"IDND: {IDND}")
+
+# # 周期の処理 <あとまわし>
+# if MCNTL[5] != 1:
+#     KDYF = pl.NDATF(IDND[1,1],IDND[1,2],IDND[1,3])   # 1899/12/31を1とした通算日数
+#     if (MCNTL[5] == 0 and ICYCL == 2) or (MCNTL[5] == 2 and KDYF > MCNTL[19]):
+#         raise Exception("エラー")
+#     elif (MCNTL[5] == 0 and KDYF != MCNTL[19]) or (MCNTL[5] == 2 and KDYF < MCNTL[19]):
+#         continue
+
+MODE=1
+KWK=0
+
+# 行番号 501 あとで戻ってくる
+
+for I in range(1,8):
+    for J in range(1,25):
+        WD[I,J] = WDND[I,J]
+    for J in range(1,6):
+        ID[I,J]=IDND[I,J]
+
+KDY  = pl.NDATE(ID[1,2],ID[1,3])
+KDYF = pl.NDATF(ID[1,1],ID[1,2],ID[1,3])
+
+MDW[1]   = pl.MKMDW(ID, M)
+ISEAS[1] = int(M[980+int(ID[1,2])])
+IDWK[1]  = int(ID[1,1])  # 今日の年
+IDWK[2]  = int(ID[1,2])   # 今日の月
+IDWK[3]  = int(ID[1,3])   # 今日の日
+
+print(f"{IDWK[1]}年 {IDWK[2]}月 {IDWK[3]}日")
+
+ICYCLO=ICYCL
+
+ICYCL,WDND,IDND,ISTAT = pl.INWD(NUW, int(MCNTL[5]/2), int(MCNTL[31]), int(ICYCL)) 
+
+if ISTAT == 0: # 実在気象データの最終日＝計算最終日
+    if (KDYF != MCNTL[21]):
+        raise Exception("エラーです")
+    MDW[2] = MDW[1]  # 計算最終日の翌日の季節・曜日 ＝ 最終日
+    ISEAS[2] = ISEAS[1]
+else:
+    MDW[2] = pl.MKMDW(IDND, M)
+    ISEAS[2] = M[980+int(IDND[1,2])]
+
+if MODE == 1:
+    if MCNTL[5] == 1:
+        if ICYCLO == MCNTL[15]:
+            MODE = 2
+    else:
+        if KDYF == MCNTL[20]:
+            MODE = 2
+
+if MODE == 2:
+    if MCNTL[5] == 1:
+        if ICYCL == MCNTL[15]+1:
+            MODE = 3
+    else:
+        if KDYF == MCNTL[21]:
+            MODE = 3
+
+
+# ***          3.2 WEATHER DATA ****************************************
 
 
 
