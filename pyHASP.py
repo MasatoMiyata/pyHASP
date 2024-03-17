@@ -318,9 +318,20 @@ NUBW = xlrd.open_workbook("./input/wcontabl.xlsx")
 
 L = 1500
 
-for line in range(1,len(NUB)):
+# Building Dataの終了行を探す。
+bldg_end = 0
+for line in range(1, len(NUB)):
+    if len(NUB[line]) == 1:  # 空白行を探す
+        bldg_end = line
+        break
+print(f"建物データの最終行: {bldg_end}")
+
+
+for line in range(1,bldg_end):
     
     KEY = NUB[line][0:4]
+
+    print(f"KEY: {KEY}")
 
     if KEY == "BUIL":
 
@@ -957,19 +968,29 @@ for line in range(1,len(NUB)):
         # Lの更新 （183個 間隔）
         L=L+183
 
+print("---建物データの読み込み終了---")
+
+NRM = 0
+IZ = 1
+LCGB = L   # 現在のグループの先頭スペースのSPACデータポインタ(L)
+TCM = pl.GVECTR("INIT",NL,MT,TH,HT,NUBW)
+
+for line in range(bldg_end+1,len(NUB)):
+
+    KEY = NUB[line][0:4]
+
+    if KEY == "CMPL":
+
+        print("---SPACデータの読み込み終了---")
+        break
 
     elif KEY == "SPAC":
 
-        NRM = 0
-        IZ = 1
-        LCGB = L   # 現在のグループの先頭スペースのSPACデータポインタ(L)
-
-        TCM = pl.GVECTR("INIT",NL,MT,TH,HT,NUBW)
-
         # SPAC名
         QSP=NUB[line][5:9]
-
         (NNAM,LC,LD) = pl.RETRIV(106,QSP,M)
+
+        print(f"SPAC: 室名{QSP}")
 
         if LD != 0:
             print(f"SPAC: " + {NUB[line][5:9]})
@@ -1052,11 +1073,12 @@ for line in range(1,len(NUB)):
                 spec_end = line_ex
                 break
         
-        for line_ex in range(line+1, spec_end):
+        for line_ex in range(line+1, spec_end+1):
 
-            KEY = NUB[line_ex][0:4]
+            KEY_SPAC = NUB[line_ex][0:4]
+            print(f"KEY_SPAC: {KEY_SPAC}")
 
-            if KEY == "OWAL":
+            if KEY_SPAC == "OWAL":
 
                 M[L] = 1
                 A = float(NUB[line_ex][41:])
@@ -1195,7 +1217,7 @@ for line in range(1,len(NUB)):
                 L=L+LSZSPC[1]
     
 
-            elif KEY == "IWAL":
+            elif KEY_SPAC == "IWAL":
 
                 A = float(NUB[line_ex][41:])
                 ARM=ARM+A
@@ -1279,7 +1301,7 @@ for line in range(1,len(NUB)):
 
                     L=L+LSZSPC[2]
 
-            elif KEY == "GWAL":
+            elif KEY_SPAC == "GWAL":
                 
                 A = float(NUB[line_ex][41:])
                 ARM=ARM+A
@@ -1317,7 +1339,7 @@ for line in range(1,len(NUB)):
                 for J in range(0,10):
                     GRM[J] = GRM[J] + A*(GAD[J]-GTR[J])
 
-            elif KEY == "BECO":
+            elif KEY_SPAC == "BECO":
                 
                 # 部材延長[m]
                 A = float(NUB[line_ex][41:])
@@ -1356,7 +1378,7 @@ for line in range(1,len(NUB)):
                     GRM[J] = GRM[J] + A*(GAD[J]-GTR[J])
 
 
-            elif KEY == "WNDW":
+            elif KEY_SPAC == "WNDW":
 
                 M[L] = 3
                 A = float(NUB[line_ex][41:])
@@ -1578,7 +1600,7 @@ for line in range(1,len(NUB)):
 
                 L=L+LSZSPC[3]
 
-            elif KEY == "INFL":
+            elif KEY_SPAC == "INFL":
 
                 M[L] = 4
 
@@ -1632,7 +1654,7 @@ for line in range(1,len(NUB)):
 
                 L=L+LSZSPC[4]
 
-            elif KEY == "LIGH":
+            elif KEY_SPAC == "LIGH":
 
                 # DSCHを検索
                 (NNAM,LC,LD) = pl.RETRIV(104,NUB[line_ex][5:9],M)
@@ -1683,7 +1705,7 @@ for line in range(1,len(NUB)):
                         W = int(NUB[line_ex][32:38])
                     X[int(LL)+43] = W/2.
 
-            elif KEY == "OCUP":
+            elif KEY_SPAC == "OCUP":
 
                 # DSCHを検索
                 (NNAM,LC,LD) = pl.RETRIV(104,NUB[line_ex][5:9],M)
@@ -1718,7 +1740,7 @@ for line in range(1,len(NUB)):
                 X[int(LL)+54] = W*AM[2][M1-1]
 
 
-            elif KEY == "HEAT":
+            elif KEY_SPAC == "HEAT":
 
                 # DSCHを検索
                 (NNAM,LC,LD) = pl.RETRIV(104,NUB[line_ex][5:9],M)
@@ -1759,7 +1781,7 @@ for line in range(1,len(NUB)):
                     X[int(LL)+49] = 0.
 
 
-            elif KEY == "FURN":
+            elif KEY_SPAC == "FURN":
 
                 # 顕熱容量 (kJ/m2K)
                 if len(NUB[line_ex]) < 15 or [line_ex][14:20] == '      ':
@@ -1788,7 +1810,7 @@ for line in range(1,len(NUB)):
                     GRL[J] = GRL[J] + GAD[J]
 
 
-            elif KEY == "SOPC":
+            elif KEY_SPAC == "SOPC":
 
                 # OPCOを検索
                 (NNAM,LC,LD) = pl.RETRIV(145,NUB[line_ex][5:9],M)
@@ -1843,180 +1865,100 @@ for line in range(1,len(NUB)):
                     else:                                                                   
                         X[ LL+215+II ] = 0.5*(X[ M(LL+55)+2+4*II ] + X[ M(LL+55)+3+4*II ] )        
 
-
-        # ***          2.20. SPACE WEIGHTING FACTOR ****************************
-                        
-        print(f"室名： {QSP}")
-        M[L] = 5
-        X[LL+63] = ARM
-
-        for J in range(0,10):
-            G[J] = (HC*ARM-FC*GRM[J])/(HC*ARM+FR*GRM[J])
-
-        P = pl.CPARAM(1,G)
-        X[LL+8]  = P[1]
-        X[LL+9]  = P[3]
-        X[LL+10] = P[5]
-    
-        for J in range(0,10):
-            G[J] = HC*ARM*GRM[J]/(HC*ARM+FR*GRM[J])+GAS[J]
-        
-        P = pl.CPARAM(2,G)
-        for I in range(1,9):
-            X[LL+I+14] = P[I]
-
-        P = pl.CPARAM(1,GRL)
-        for I in range(1,6):
-            X[LL+I+24] = P[I]
-
-        L2=LL+LSZSPC[0]
-        print(f"L2: {L2}")
-        print(f"LL: {LL}")
-        print(f"LSZSPC[0]: {LSZSPC[0]}")
-
-        flag = True
-        while flag:
-
-            (L2, JZ, ISTAT2) = pl.RTVADJ(LSZSPC, L2, M)
-            print(f"L2: {L2}")
-            print(f"JZ: {JZ}")
-            print(f"ISTAT2: {ISTAT2}")
-
-            if (ISTAT2 == 1) or (ISTAT2 == -2):
-                for J in range(0,10):
-                    G[J] = HC*ARM/(HC*ARM+FR*GRM[J])*X[int(L2)+16+J]
-                P = pl.CPARAM(2,G)
-                for J in range(1,9):
-                    X[int(L2)+I+2]=P[I]
-                L2 = L2 + LSZSPC(M[int(L2)])
             else:
-                break
-        
 
-
-#       IF((ISTAT2.EQ.1).OR.(ISTAT2.EQ.-2)) THEN
-#        DO 322 J=0,9
-#   322  G(J)=HC*ARM/(HC*ARM+FR*GRM(J))*X(L2+16+J)
-#        CALL CPARAM(2,G,P)
-#        DO 323 I=1,8
-#   323  X(L2+I+2)=P(I)
-#        L2=L2+LSZSPC(M(L2))
-#        GO TO 321
-#       END IF
+                # ***          2.20. SPACE WEIGHTING FACTOR ****************************
+                                                
+                # print(f"室名： {QSP}")
                 
-#       IF(IFURS.GE.1) THEN
-#        CALL CPARAM(2,GAS,P)   ! 家具の蓄熱応答係数のみ計算（簡易MRT計算用）
-#        DO 318 I=1,8
-#   318  X(LL+I+63)=P(I)
-#       END IF
-# *
-#       M(LL+101)=IZ
-#       IF(QKY.EQ.':   ')THEN   ! スペースの結合(グループの継続)が指示された場合
-#        IZ=IZ+1
-#        IF(IZ.GT.NAZ) CALL ERROR(41,NERR)
-#       ELSE IF(QKY.EQ.'CFLW')THEN   ! 空気移動量が指定された場合
-#                                    ! (現在のグループのうち最後のスペースのはず)
-#   316  CALL DCHECK(QD,1201,NERR)
-#        IF(QD(10:13).EQ.'    ') THEN   ! DSCH名を引用していない
-#         MFLWK(1)=2
-#         IF(QD(15:17).EQ.'   ') QD(15:17)='100'
-#         IF(QD(18:20).EQ.'   ') QD(18:20)='100'
-#         READ(QD(15:20),'(2F3.2)') XFLWK(1), XFLWK(2)
-#        ELSE   ! DSCH名引用
-#         MFLWK(1)=1
-#         CALL RETRIV(104,QD(10:13),NNAM,LC,LD)
-#         IF(LD.NE.LC) THEN
-#          CALL ERROR(5,NERR)
-#         ELSE
-#          MFLWK(2)=LC+1
-#         END IF
-#        END IF
-#        IF(QD(21:26).EQ.'      ') QD(21:26)='   150'
-#        IF(QD(36:38).EQ.'   ') QD(36:38)='  0'
-#        IF(QD(39:44).EQ.'      ') QD(39:44)='     0'
-#        IF(QD(54:56).EQ.'   ') QD(54:56)='  0'
-#        IF(QD(57:62).EQ.'      ') QD(57:62)='     0'
-#        IF(QD(72:74).EQ.'   ') QD(72:74)='  0'
-#        IF(QD(75:80).EQ.'      ') QD(75:80)='     0'
-#        READ(QD(21:26),'(F6.0)') V1
-#        DO 317 II=1,3
-#         IF(QD(18*II+10:18*II+13).EQ.'    ')THEN
-#          GO TO 317
-#         ELSE
-#          CALL RETRIV(LCGB,QD(18*II+10:18*II+13),NNAM,LC1,LD)
-#          IF(LD.NE.LC1)THEN
-#           CALL ERROR(42,NERR)
-#           GO TO 317
-#          END IF
-#         END IF
-#         CALL RETRIV(LCGB,QD(18*II+14:18*II+17),NNAM,LC2,LD)
-#         IF(LD.NE.LC2)THEN
-#          CALL ERROR(42,NERR)
-#          GO TO 317
-#         END IF
-#         IF(LC1.EQ.LC2) CALL ERROR(43,NERR)
-#         READ(QD(18*II+18:18*II+26),'(I3,F6.0)') I, V2
-#         IF((I.EQ.0).OR.(I.EQ.1))THEN
-#          L1=LC2+101+(M(LC1+101)-1)*5
-#          X(L1+1)=V1*V2
-#          M(L1+2)=MFLWK(1)
-#          IF(MFLWK(1).EQ.2) THEN
-#           X(L1+4)=XFLWK(1)
-#           X(L1+5)=XFLWK(2)
-#          ELSE
-#           M(L1+3)=MFLWK(2)
-#          END IF
-#         END IF
-#         IF((I.EQ.0).OR.(I.EQ.2))THEN
-#          L1=LC1+101+(M(LC2+101)-1)*5
-#          X(L1+1)=V1*V2
-#          M(L1+2)=MFLWK(1)
-#          IF(MFLWK(1).EQ.2) THEN
-#           X(L1+4)=XFLWK(1)
-#           X(L1+5)=XFLWK(2)
-#          ELSE
-#           M(L1+3)=MFLWK(2)
-#          END IF
-#         END IF
-#   317  CONTINUE
-#        READ(NUB,'(A80)') QD
-#        WRITE(6,'(1X,A80)') QD
-#        QKY=QD(1:4)
-#        IF(QKY.EQ.'+   ')THEN
-#         GO TO 316   ! 複数行「CFLW」データを指定することが可能
-#        ELSE IF(QKY.NE.'    ')THEN
-#         CALL ERROR(44,NERR)
-#        END IF
-#       ELSE   ! グループの終了
-#        IF(QKY.NE.'    ') CALL ERROR2(80,2)
-#       END IF
+                M[L] = 5
+                X[LL+63] = ARM
 
-#       IF(QKY.EQ.'    ') THEN
-#         IF(IZ.GE.2) THEN
-#         ! IWAL(adjacent)の参照error check
-#          L1=LCGB
-#          DO 319 I=1,IZ
-#           L2=L1+LSZSPC(0)
-#   320     CALL RTVADJ(LSZSPC,L2,JZ,ISTAT2)
-#           IF(ISTAT2.EQ.-2) THEN
-#            CALL ERROR(5,NERR)
-#           ELSE IF(ISTAT2.EQ.-1) THEN
-#            CALL ERROR2(81,2)
-#           ELSE IF((ISTAT2.EQ.0).AND.(I.NE.IZ)) THEN
-#            L1=M(L1)
-#           ELSE IF(ISTAT2.EQ.1) THEN
-#            L2=L2+LSZSPC(M(L2))
-#            GO TO 320
-#           END IF
-#   319    CONTINUE
-#         END IF
-#         ! 次のグループのためのセット
-#         IZ=1
-#         LCGB=L+1
-#       END IF
-# *
-#       L=L+1
-#       GO TO 204
+                for J in range(0,10):
+                    G[J] = (HC*ARM-FC*GRM[J])/(HC*ARM+FR*GRM[J])
+
+                P = pl.CPARAM(1,G)
+                X[LL+8]  = P[1]
+                X[LL+9]  = P[3]
+                X[LL+10] = P[5]
+            
+                for J in range(0,10):
+                    G[J] = HC*ARM*GRM[J]/(HC*ARM+FR*GRM[J])+GAS[J]
+                
+                P = pl.CPARAM(2,G)
+                for I in range(1,9):
+                    X[LL+I+14] = P[I]
+
+                P = pl.CPARAM(1,GRL)
+                for I in range(1,6):
+                    X[LL+I+24] = P[I]
+
+                L2=LL+LSZSPC[0]
+
+                flag_RTVADJ = True
+                while flag_RTVADJ:
+
+                    (L2, JZ, ISTAT2) = pl.RTVADJ(LSZSPC, L2, M)
+
+                    if (ISTAT2 == 1) or (ISTAT2 == -2):
+                        for J in range(0,10):
+                            G[J] = HC*ARM/(HC*ARM+FR*GRM[J])*X[int(L2)+16+J]
+                        P = pl.CPARAM(2,G)
+                        for J in range(1,9):
+                            X[int(L2)+I+2]=P[I]
+                        L2 = L2 + LSZSPC(M[int(L2)])
+                    else:
+                        flag_RTVADJ = False
+                
+                    if (ISTAT2 == 1) or (ISTAT2 == -2):
+                        for J in range(0,10):
+                            G[J] = HC*ARM/(HC*ARM+FR*GRM[J])*X(L2+16+J)
+                        P = pl.CPARAM(2,G)
+                        for I in range(0,9):
+                            X[int(L2)+I+2] = P[I]
+                        L2=L2+LSZSPC[int(M[L2])]
+
+                if IFURS >= 1:
+                    P = pl.CPARAM(2,GAS)   # 家具の蓄熱応答係数のみ計算（簡易MRT計算用）
+                    for I in range(0,9):
+                        X[LL+I+63] = P[I]
+                        
+                M[LL+101] = IZ
+
+                if KEY == ":   ":  # スペースの結合(グループの継続)が指示された場合
+                    raise Exception('まだ作成していません')
+
+                elif KEY == "CFLW":  # 空気移動量が指定された場合(現在のグループのうち最後のスペースのはず)
+                    raise Exception('まだ作成していません')
+
+                else:  
+                    
+                    if (IZ >= 2):
+                        # IWAL(adjacent)の参照error check
+                        L1=LCGB
+                        for I in range(1,IZ+1):
+                            L2=L1+LSZSPC[0]
+
+                            flag_RTVADJ_2 = True
+                            while flag_RTVADJ_2:
+                                (L2, JZ, ISTAT2) = pl.RTVADJ(LSZSPC, L2, M)
+                                if ISTAT2 == -2:
+                                    raise Exception("隣室条件が不正です")
+                                elif ISTAT2 == -1:
+                                    raise Exception("隣室条件が不正です")
+                                elif (ISTAT2==0) and (I != IZ):
+                                    L1=M[int(L1)]
+                                    flag_RTVADJ_2 = False
+                                elif (ISTAT2==1):
+                                    L2=L2+LSZSPC(int(M[L2]))
+
+                    # 次のグループのためのセット
+                    IZ = 1
+                    LCGB=L+1
+
+                L=L+1
+                # print(f"L: {L}")
+                # print(f"LCGB: {LCGB}")
 
 
 
