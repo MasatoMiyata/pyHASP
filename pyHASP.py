@@ -57,9 +57,9 @@ GRM = np.zeros(10) # GRM(0:9)
 GRL = np.zeros(10) # GRL(0:9)
 WD = np.zeros((7+1,24+1))
 ID = np.zeros((7+1,5+1))
-SH = np.zeros(24)
-CHSA = np.zeros(24)
-CHCA = np.zeros(24)
+SH = np.zeros(24+1)
+CHSA = np.zeros(24+1)
+CHCA = np.zeros(24+1)
 WD8 = np.zeros(24+1)   # 外気飽和湿度－外気絶対湿度
 ROH = np.zeros(3)
 ROL = np.zeros(3)
@@ -2111,6 +2111,116 @@ for J in range(1,25):
     WD[6,J] = (WD[6,J]-8.)*22.5
     WD[7,J] = 0.1*WD[7,J]
     WD8[J] = pl.SATX(WD[1,J])-WD[2,J]   # 飽差（外気飽和絶対湿度－外気絶対湿度)
+
+
+# ***          3.3. OUTPUT 2 (WEATHER DATA) ****************************
+# skip
+
+
+M1 = int((KDY+6)/7)
+
+if M1 != KWK:   # GOTO 540
+
+    KWK = M1
+
+    # **           3.4. SOLAR POSITION ******************************
+    W  = 0.0171672*(KDY+3)
+    W1 = 0.362213-23.2476*math.cos(W+0.153231)-0.336891*math.cos(2.*W+0.207099)-0.185265*math.cos(3.*W+0.620129)
+    W2 = -0.000279+0.122772*math.cos(W+1.49831)-0.165458*math.cos(2.*W-1.26155)-0.005354*math.cos(3.*W-1.1571)
+    SD = math.sin(W1*DR)
+    CD = math.cos(W1*DR)
+    ET = (W2+X[152]-12.)
+    SS = X[150]*SD
+    SC = X[150]*CD
+    CS = X[151]*SD
+    CC = X[151]*CD
+
+    for J in range(1,25):
+        W1 = 15.*(ET+J)*DR
+        SH[J] = SS+CC*math.cos(W1)
+        CHSA[J] = CD*math.sin(W1)
+        CHCA[J] = -CS+SC*math.cos(W1)
+
+    # ***          3.5. 'EXPS' UPDATE **************************************
+
+    L = int(M[100])
+
+    while L != 0:
+
+        for J in range(1,25):
+
+            if SH[J] <= 0:
+                X[L+J+27] = 0.
+                X[L+J+51] = 0.
+                L = int(M[L])
+                break   # for文を抜ける
+
+            SS = SH[J] * X[L+6] + CHCA[J] * X[L+9] + CHSA[J] * X[L+7]
+
+            if SS <= 0:
+                X[L+J+27] = 0.
+                X[L+J+51] = 0.  
+                L = int(M[L])
+                break   # for文を抜ける
+
+            if (X[L+14]==0) and (X[L+19]==0):
+                X[L+J+27] = SS 
+                X[L+J+51] = pl.GF(SS**2)
+                L = int(M[L])
+                break   # for文を抜ける
+
+            CS = CHSA[J] * X[L+4] - CHCA[J] * X[L+3]
+            CC = -SH[J]  * X[L+5] + CHCA[J] * X[L+10] + CHSA[J] * X[L+8]
+            U  = X[L+19] * abs(CS)/SS
+            V  = X[L+14] * abs(CC)/SS
+
+            if (U >= X[L+23]) or (V >= X[L+18]):
+                X[L+J+27] = 0. 
+                X[L+J+51] = 0. 
+                L = int(M[L])
+                break   # for文を抜ける
+
+            ST = (X[L+23]-U)*(X[L+18]-V)
+
+            if (X[L+25] == 0):
+                SG = 0
+            else:
+
+                if (CS < 0):
+                    UG = X[L+22]-U
+                    if (UG > X[L+20]):
+                        UG = X[L+20]
+                    if (UG < 0):
+                        UG=0.
+                else:
+                    UG = X[L+21]-U
+                    if (UG > X[L+20]):
+                        UG = X[L+20]
+                    if (UG < 0.):
+                        UG=0.
+
+                if (CC < 0):
+                    VG=X(L+17)-V
+                    if (VG > X[L+15]):
+                        VG = X[L+15]
+                    if (VG < 0.):
+                        VG = 0.
+                else:
+                    VG = X[L+16]-V
+                    if (VG > X[L+15]):
+                        VG = X[L+15]
+                    if (VG < 0):
+                        VG = 0.
+
+                SG = UG*VG
+                X[L+J+51] = pl.GF(SS**2)*SG/X[L+25]     
+
+            if (X[L+24] == 0):  # 壁面全体面積-窓面積=0                           
+                X[L+J+27] = 0.                                 
+            else:                                                                 
+                X[L+J+27] = SS*(ST-SG)/X[L+24]                                         
+
+            L = int(M[L])
 
 
 
