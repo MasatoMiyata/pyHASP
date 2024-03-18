@@ -60,7 +60,7 @@ ID = np.zeros((7+1,5+1))
 SH = np.zeros(24)
 CHSA = np.zeros(24)
 CHCA = np.zeros(24)
-WD8 = np.zeros(24)   # 外気飽和湿度－外気絶対湿度
+WD8 = np.zeros(24+1)   # 外気飽和湿度－外気絶対湿度
 ROH = np.zeros(3)
 ROL = np.zeros(3)
 
@@ -2084,6 +2084,36 @@ if MODE == 2:
 
 
 # ***          3.2 WEATHER DATA ****************************************
+
+for J in range(1,25):
+    
+    if (MCNTL[31] == 3):
+        WD[1,J] = 0.1*(WD[1,J]-500.)
+    else:
+        WD[1,J] = 0.1*WD[1,J]
+    
+    WD[2,J] = 0.1*WD[2,J]
+
+    if (MCNTL[3] == 0):
+        WD[5,J] = 4.88*(0.01*(WD[1,J]+273.16))**4 * (1.-0.062*WD[5,J])*(0.49-2.1*math.sqrt(WD[2,J]/(WD[2,J]+622.0)))
+
+    if (MCNTL[4] == 0):
+        WD[3,J] = WD[3,J]/.4186
+        WD[4,J] = WD[4,J]/.4186
+        if (MCNTL[3] == 1):
+            WD[5,J] = WD[5,J]/.4186
+    elif (MCNTL[4] == 2):
+        WD[3,J] = WD[3,J]/4.186  
+        WD[4,J] = WD[4,J]/4.186
+        if (MCNTL[3] == 1):
+            WD[5,J] = WD[5,J]/4.186 
+
+    WD[6,J] = (WD[6,J]-8.)*22.5
+    WD[7,J] = 0.1*WD[7,J]
+    WD8[J] = pl.SATX(WD[1,J])-WD[2,J]   # 飽差（外気飽和絶対湿度－外気絶対湿度)
+
+
+
 
 
 
