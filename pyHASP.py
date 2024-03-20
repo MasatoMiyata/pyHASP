@@ -2118,10 +2118,10 @@ while MODE != 3:  # 行番号 501
 
     if MODE == 2:
         if MCNTL[5] == 1:   # 気象データ形式 = ピークデータ
-            if ICYCL == MCNTL[15]+1:
+            if ICYCL == MCNTL[15]+1:    # 計算サイクル数が指定のサイクル数を超えたら終了
                 MODE = 3   # 計算終了
         else:
-            if KDYF == MCNTL[21]:
+            if KDYF == MCNTL[21]:      # 計算終了日に達したら
                 MODE = 3   # 計算終了
 
 
@@ -2154,7 +2154,14 @@ while MODE != 3:  # 行番号 501
         WD[7,J] = 0.1*WD[7,J]
         WD8[J] = pl.SATX(WD[1,J])-WD[2,J]   # 飽差（外気飽和絶対湿度－外気絶対湿度)
 
-
+    # print("気象データ")
+    # print(WD[:,1])
+    # print(WD[1,2])
+    # print(WD[1,3])
+    # print(WD[1,4])
+    # print(WD[1,5])
+    # print(WD[1,6])
+        
     # ***          3.3. OUTPUT 2 (WEATHER DATA) ****************************
     # skip
 
