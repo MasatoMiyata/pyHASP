@@ -2223,9 +2223,70 @@ if M1 != KWK:   # GOTO 540
             L = int(M[L])
 
 
+    # ***          3.5.5 OAHU PRE-PROCESS **********************************
+    
+    LL = M[98]
 
+    while LL != 0:
 
+        L1 = int(LL+2+(ISEAS[1]-1)*9)
 
+        for II in [1,2]:
+            X[LL+30+(II-1)*25] = X[LL+54+(II-1)*25]   # 計算初日は0となる
+            X[LL+80+(II-1)*25] = X[LL+104+(II-1)*25]   # 計算初日は0となる
+        X[LL+130] = X[LL+178]    # 計算初日は0となる
+
+        for J in range(0,25):
+            for II in [1,2]:   # 顕熱・潜熱ループ
+
+                # 全熱交出口温湿度
+                if (M[L1+1] >= II):
+                    W1 = X[LL+2] * X[L1+1+II] + (1.0-X[LL+2]) * WD[II,J]
+                else:
+                    W1 = WD[II,J]
+
+                X[LL+30+(II-1)*25+J] = W1
+
+                # 外調機出口温湿度
+                if (M[L1+4] >= II) and (W1 > X[L1+6+(II-1)*2]):
+                    W2 = X[L1+6+(II-1)*2]
+                elif (M[L1+5] >= II) and (W1 < X[L1+7+(II-1)*2]):
+                    W2 = X[L1+7+(II-1)*2]
+                else:
+                    W2 = W1
+
+                X[LL+80+(II-1)*25+J] = W2
+
+            for II in [1,2]:
+                X[LL+130+(J-1)*2+I] = 0.0    # 積算風量ゼロクリア
+
+        LL = int(M[LL])
+
+#       DO 543 J=1,24
+#        DO 544 II=1,2   ! 顕熱・潜熱ループ
+# *       全熱交出口温湿度
+#         IF(M(L1+1).GE.II) THEN
+#          W1=X(LL+2)*X(L1+1+II)+(1.0-X(LL+2))*WD(II,J)
+#         ELSE
+#          W1=WD(II,J)
+#         END IF
+                    
+#         X(LL+30+(II-1)*25+J)=W1
+# *       外調機出口温湿度
+#         IF( (M(L1+4).GE.II).AND.(W1.GT.X(L1+6+(II-1)*2)) ) THEN
+#          W2=X(L1+6+(II-1)*2)
+#         ELSE IF( (M(L1+5).GE.II).AND.(W1.LT.X(L1+7+(II-1)*2)) ) THEN
+#          W2=X(L1+7+(II-1)*2)
+#         ELSE
+#          W2=W1
+#         END IF
+#         X(LL+80+(II-1)*25+J)=W2
+#   544  CONTINUE
+# *      風量
+#        DO 545 I=1,2
+#   545  X(LL+130+(J-1)*2+I)=0.0   ! 積算風量ゼロクリア
+#   543 CONTINUE
+#       LL=M(LL)
 
 # pl.display_XMQ_matrix(X,M,2000,3000)
 
