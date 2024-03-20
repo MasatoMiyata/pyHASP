@@ -98,7 +98,7 @@ MCNTL = np.zeros(32+1)   # 「CNTL」カードのデータ内容(XMQ配列に相
 MDW = np.zeros(2+1)    # MDW(1)  :本日の曜日(=1:月,2:火,..,7:日,8:祝,9:特), MDW(2)  :明日の曜日
 WDND = np.zeros((7,24))    # WDND    :明日の気象データ
 IDND = np.zeros((7,5))    # IDND    :明日の日付データ
-KSCH = np.zeros(2)    # KSCH(1) :本日のスケジュール(=1:全日,2:半日,3:1日中0%), KSCH(2) :明日のスケジュール
+KSCH = np.zeros(2+1)    # KSCH(1) :本日のスケジュール(=1:全日,2:半日,3:1日中0%), KSCH(2) :明日のスケジュール
 
 ISEAS = np.zeros(2+1)    #  ISEAS(1):本日の季節(=1:夏期,2:冬期,3:中間期), ISEAS(2):明日の季節
 
@@ -2034,197 +2034,197 @@ ICYCL,WDND,IDND,ISTAT = pl.INWD(NUW, int(MCNTL[5]/2), int(MCNTL[31]), int(ICYCL)
 MODE=1
 KWK=0
 
-# 行番号 501 あとで戻ってくる
+while MODE != 3:  # 行番号 501 あとで戻ってくる
 
-for I in range(1,8):
-    for J in range(1,25):
-        WD[I,J] = WDND[I,J]
-    for J in range(1,6):
-        ID[I,J]=IDND[I,J]
+    for I in range(1,8):
+        for J in range(1,25):
+            WD[I,J] = WDND[I,J]
+        for J in range(1,6):
+            ID[I,J]=IDND[I,J]
 
-KDY  = pl.NDATE(ID[1,2],ID[1,3])
-KDYF = pl.NDATF(ID[1,1],ID[1,2],ID[1,3])
+    KDY  = pl.NDATE(ID[1,2],ID[1,3])
+    KDYF = pl.NDATF(ID[1,1],ID[1,2],ID[1,3])
 
-MDW[1]   = pl.MKMDW(ID, M)
-ISEAS[1] = int(M[980+int(ID[1,2])])
-IDWK[1]  = int(ID[1,1])  # 今日の年
-IDWK[2]  = int(ID[1,2])   # 今日の月
-IDWK[3]  = int(ID[1,3])   # 今日の日
+    MDW[1]   = pl.MKMDW(ID, M)
+    ISEAS[1] = int(M[980+int(ID[1,2])])
+    IDWK[1]  = int(ID[1,1])  # 今日の年
+    IDWK[2]  = int(ID[1,2])   # 今日の月
+    IDWK[3]  = int(ID[1,3])   # 今日の日
 
-print(f"{IDWK[1]}年 {IDWK[2]}月 {IDWK[3]}日")
+    print(f"{IDWK[1]}年 {IDWK[2]}月 {IDWK[3]}日")
 
-ICYCLO=ICYCL
+    ICYCLO=ICYCL
 
-ICYCL,WDND,IDND,ISTAT = pl.INWD(NUW, int(MCNTL[5]/2), int(MCNTL[31]), int(ICYCL)) 
+    ICYCL,WDND,IDND,ISTAT = pl.INWD(NUW, int(MCNTL[5]/2), int(MCNTL[31]), int(ICYCL)) 
 
-if ISTAT == 0: # 実在気象データの最終日＝計算最終日
-    if (KDYF != MCNTL[21]):
-        raise Exception("エラーです")
-    MDW[2] = MDW[1]  # 計算最終日の翌日の季節・曜日 ＝ 最終日
-    ISEAS[2] = ISEAS[1]
-else:
-    MDW[2] = pl.MKMDW(IDND, M)
-    ISEAS[2] = M[980+int(IDND[1,2])]
-
-if MODE == 1:
-    if MCNTL[5] == 1:
-        if ICYCLO == MCNTL[15]:
-            MODE = 2
+    if ISTAT == 0: # 実在気象データの最終日＝計算最終日
+        if (KDYF != MCNTL[21]):
+            raise Exception("エラーです")
+        MDW[2] = MDW[1]  # 計算最終日の翌日の季節・曜日 ＝ 最終日
+        ISEAS[2] = ISEAS[1]
     else:
-        if KDYF == MCNTL[20]:
-            MODE = 2
+        MDW[2] = pl.MKMDW(IDND, M)
+        ISEAS[2] = M[980+int(IDND[1,2])]
 
-if MODE == 2:
-    if MCNTL[5] == 1:
-        if ICYCL == MCNTL[15]+1:
-            MODE = 3
-    else:
-        if KDYF == MCNTL[21]:
-            MODE = 3
+    if MODE == 1:
+        if MCNTL[5] == 1:
+            if ICYCLO == MCNTL[15]:
+                MODE = 2
+        else:
+            if KDYF == MCNTL[20]:
+                MODE = 2
 
-
-# ***          3.2 WEATHER DATA ****************************************
-
-for J in range(1,25):
-    
-    if (MCNTL[31] == 3):
-        WD[1,J] = 0.1*(WD[1,J]-500.)
-    else:
-        WD[1,J] = 0.1*WD[1,J]
-    
-    WD[2,J] = 0.1*WD[2,J]
-
-    if (MCNTL[3] == 0):
-        WD[5,J] = 4.88*(0.01*(WD[1,J]+273.16))**4 * (1.-0.062*WD[5,J])*(0.49-2.1*math.sqrt(WD[2,J]/(WD[2,J]+622.0)))
-
-    if (MCNTL[4] == 0):
-        WD[3,J] = WD[3,J]/.4186
-        WD[4,J] = WD[4,J]/.4186
-        if (MCNTL[3] == 1):
-            WD[5,J] = WD[5,J]/.4186
-    elif (MCNTL[4] == 2):
-        WD[3,J] = WD[3,J]/4.186  
-        WD[4,J] = WD[4,J]/4.186
-        if (MCNTL[3] == 1):
-            WD[5,J] = WD[5,J]/4.186 
-
-    WD[6,J] = (WD[6,J]-8.)*22.5
-    WD[7,J] = 0.1*WD[7,J]
-    WD8[J] = pl.SATX(WD[1,J])-WD[2,J]   # 飽差（外気飽和絶対湿度－外気絶対湿度)
+    if MODE == 2:
+        if MCNTL[5] == 1:
+            if ICYCL == MCNTL[15]+1:
+                MODE = 3
+        else:
+            if KDYF == MCNTL[21]:
+                MODE = 3
 
 
-# ***          3.3. OUTPUT 2 (WEATHER DATA) ****************************
-# skip
-
-
-M1 = int((KDY+6)/7)
-
-if M1 != KWK:   # GOTO 540
-
-    KWK = M1
-
-    # **           3.4. SOLAR POSITION ******************************
-    W  = 0.0171672*(KDY+3)
-    W1 = 0.362213-23.2476*math.cos(W+0.153231)-0.336891*math.cos(2.*W+0.207099)-0.185265*math.cos(3.*W+0.620129)
-    W2 = -0.000279+0.122772*math.cos(W+1.49831)-0.165458*math.cos(2.*W-1.26155)-0.005354*math.cos(3.*W-1.1571)
-    SD = math.sin(W1*DR)
-    CD = math.cos(W1*DR)
-    ET = (W2+X[152]-12.)
-    SS = X[150]*SD
-    SC = X[150]*CD
-    CS = X[151]*SD
-    CC = X[151]*CD
+    # ***          3.2 WEATHER DATA ****************************************
 
     for J in range(1,25):
-        W1 = 15.*(ET+J)*DR
-        SH[J] = SS+CC*math.cos(W1)
-        CHSA[J] = CD*math.sin(W1)
-        CHCA[J] = -CS+SC*math.cos(W1)
+        
+        if (MCNTL[31] == 3):
+            WD[1,J] = 0.1*(WD[1,J]-500.)
+        else:
+            WD[1,J] = 0.1*WD[1,J]
+        
+        WD[2,J] = 0.1*WD[2,J]
 
-    # ***          3.5. 'EXPS' UPDATE **************************************
+        if (MCNTL[3] == 0):
+            WD[5,J] = 4.88*(0.01*(WD[1,J]+273.16))**4 * (1.-0.062*WD[5,J])*(0.49-2.1*math.sqrt(WD[2,J]/(WD[2,J]+622.0)))
 
-    L = int(M[100])
+        if (MCNTL[4] == 0):
+            WD[3,J] = WD[3,J]/.4186
+            WD[4,J] = WD[4,J]/.4186
+            if (MCNTL[3] == 1):
+                WD[5,J] = WD[5,J]/.4186
+        elif (MCNTL[4] == 2):
+            WD[3,J] = WD[3,J]/4.186  
+            WD[4,J] = WD[4,J]/4.186
+            if (MCNTL[3] == 1):
+                WD[5,J] = WD[5,J]/4.186 
 
-    while L != 0:
+        WD[6,J] = (WD[6,J]-8.)*22.5
+        WD[7,J] = 0.1*WD[7,J]
+        WD8[J] = pl.SATX(WD[1,J])-WD[2,J]   # 飽差（外気飽和絶対湿度－外気絶対湿度)
+
+
+    # ***          3.3. OUTPUT 2 (WEATHER DATA) ****************************
+    # skip
+
+
+    M1 = int((KDY+6)/7)
+
+    if M1 != KWK:   # GOTO 540
+
+        KWK = M1
+
+        # **           3.4. SOLAR POSITION ******************************
+        W  = 0.0171672*(KDY+3)
+        W1 = 0.362213-23.2476*math.cos(W+0.153231)-0.336891*math.cos(2.*W+0.207099)-0.185265*math.cos(3.*W+0.620129)
+        W2 = -0.000279+0.122772*math.cos(W+1.49831)-0.165458*math.cos(2.*W-1.26155)-0.005354*math.cos(3.*W-1.1571)
+        SD = math.sin(W1*DR)
+        CD = math.cos(W1*DR)
+        ET = (W2+X[152]-12.)
+        SS = X[150]*SD
+        SC = X[150]*CD
+        CS = X[151]*SD
+        CC = X[151]*CD
 
         for J in range(1,25):
+            W1 = 15.*(ET+J)*DR
+            SH[J] = SS+CC*math.cos(W1)
+            CHSA[J] = CD*math.sin(W1)
+            CHCA[J] = -CS+SC*math.cos(W1)
 
-            if SH[J] <= 0:
-                X[L+J+27] = 0.
-                X[L+J+51] = 0.
-                L = int(M[L])
-                break   # for文を抜ける
+        # ***          3.5. 'EXPS' UPDATE **************************************
 
-            SS = SH[J] * X[L+6] + CHCA[J] * X[L+9] + CHSA[J] * X[L+7]
+        L = int(M[100])
 
-            if SS <= 0:
-                X[L+J+27] = 0.
-                X[L+J+51] = 0.  
-                L = int(M[L])
-                break   # for文を抜ける
+        while L != 0:
 
-            if (X[L+14]==0) and (X[L+19]==0):
-                X[L+J+27] = SS 
-                X[L+J+51] = pl.GF(SS**2)
-                L = int(M[L])
-                break   # for文を抜ける
+            for J in range(1,25):
 
-            CS = CHSA[J] * X[L+4] - CHCA[J] * X[L+3]
-            CC = -SH[J]  * X[L+5] + CHCA[J] * X[L+10] + CHSA[J] * X[L+8]
-            U  = X[L+19] * abs(CS)/SS
-            V  = X[L+14] * abs(CC)/SS
+                if SH[J] <= 0:
+                    X[L+J+27] = 0.
+                    X[L+J+51] = 0.
+                    L = int(M[L])
+                    break   # for文を抜ける
 
-            if (U >= X[L+23]) or (V >= X[L+18]):
-                X[L+J+27] = 0. 
-                X[L+J+51] = 0. 
-                L = int(M[L])
-                break   # for文を抜ける
+                SS = SH[J] * X[L+6] + CHCA[J] * X[L+9] + CHSA[J] * X[L+7]
 
-            ST = (X[L+23]-U)*(X[L+18]-V)
+                if SS <= 0:
+                    X[L+J+27] = 0.
+                    X[L+J+51] = 0.  
+                    L = int(M[L])
+                    break   # for文を抜ける
 
-            if (X[L+25] == 0):
-                SG = 0
-            else:
+                if (X[L+14]==0) and (X[L+19]==0):
+                    X[L+J+27] = SS 
+                    X[L+J+51] = pl.GF(SS**2)
+                    L = int(M[L])
+                    break   # for文を抜ける
 
-                if (CS < 0):
-                    UG = X[L+22]-U
-                    if (UG > X[L+20]):
-                        UG = X[L+20]
-                    if (UG < 0):
-                        UG=0.
+                CS = CHSA[J] * X[L+4] - CHCA[J] * X[L+3]
+                CC = -SH[J]  * X[L+5] + CHCA[J] * X[L+10] + CHSA[J] * X[L+8]
+                U  = X[L+19] * abs(CS)/SS
+                V  = X[L+14] * abs(CC)/SS
+
+                if (U >= X[L+23]) or (V >= X[L+18]):
+                    X[L+J+27] = 0. 
+                    X[L+J+51] = 0. 
+                    L = int(M[L])
+                    break   # for文を抜ける
+
+                ST = (X[L+23]-U)*(X[L+18]-V)
+
+                if (X[L+25] == 0):
+                    SG = 0
                 else:
-                    UG = X[L+21]-U
-                    if (UG > X[L+20]):
-                        UG = X[L+20]
-                    if (UG < 0.):
-                        UG=0.
 
-                if (CC < 0):
-                    VG=X(L+17)-V
-                    if (VG > X[L+15]):
-                        VG = X[L+15]
-                    if (VG < 0.):
-                        VG = 0.
-                else:
-                    VG = X[L+16]-V
-                    if (VG > X[L+15]):
-                        VG = X[L+15]
-                    if (VG < 0):
-                        VG = 0.
+                    if (CS < 0):
+                        UG = X[L+22]-U
+                        if (UG > X[L+20]):
+                            UG = X[L+20]
+                        if (UG < 0):
+                            UG=0.
+                    else:
+                        UG = X[L+21]-U
+                        if (UG > X[L+20]):
+                            UG = X[L+20]
+                        if (UG < 0.):
+                            UG=0.
 
-                SG = UG*VG
-                X[L+J+51] = pl.GF(SS**2)*SG/X[L+25]     
+                    if (CC < 0):
+                        VG=X(L+17)-V
+                        if (VG > X[L+15]):
+                            VG = X[L+15]
+                        if (VG < 0.):
+                            VG = 0.
+                    else:
+                        VG = X[L+16]-V
+                        if (VG > X[L+15]):
+                            VG = X[L+15]
+                        if (VG < 0):
+                            VG = 0.
 
-            if (X[L+24] == 0):  # 壁面全体面積-窓面積=0                           
-                X[L+J+27] = 0.                                 
-            else:                                                                 
-                X[L+J+27] = SS*(ST-SG)/X[L+24]                                         
+                    SG = UG*VG
+                    X[L+J+51] = pl.GF(SS**2)*SG/X[L+25]     
 
-            L = int(M[L])
+                if (X[L+24] == 0):  # 壁面全体面積-窓面積=0                           
+                    X[L+J+27] = 0.                                 
+                else:                                                                 
+                    X[L+J+27] = SS*(ST-SG)/X[L+24]                                         
+
+                L = int(M[L])
 
 
     # ***          3.5.5 OAHU PRE-PROCESS **********************************
-    
+
     LL = M[98]
 
     while LL != 0:
@@ -2260,33 +2260,115 @@ if M1 != KWK:   # GOTO 540
             for II in [1,2]:
                 X[LL+130+(J-1)*2+I] = 0.0    # 積算風量ゼロクリア
 
-        LL = int(M[LL])
+            LL = int(M[LL])
 
-#       DO 543 J=1,24
-#        DO 544 II=1,2   ! 顕熱・潜熱ループ
-# *       全熱交出口温湿度
-#         IF(M(L1+1).GE.II) THEN
-#          W1=X(LL+2)*X(L1+1+II)+(1.0-X(LL+2))*WD(II,J)
-#         ELSE
-#          W1=WD(II,J)
-#         END IF
-                    
-#         X(LL+30+(II-1)*25+J)=W1
-# *       外調機出口温湿度
-#         IF( (M(L1+4).GE.II).AND.(W1.GT.X(L1+6+(II-1)*2)) ) THEN
-#          W2=X(L1+6+(II-1)*2)
-#         ELSE IF( (M(L1+5).GE.II).AND.(W1.LT.X(L1+7+(II-1)*2)) ) THEN
-#          W2=X(L1+7+(II-1)*2)
-#         ELSE
-#          W2=W1
-#         END IF
-#         X(LL+80+(II-1)*25+J)=W2
-#   544  CONTINUE
-# *      風量
-#        DO 545 I=1,2
-#   545  X(LL+130+(J-1)*2+I)=0.0   ! 積算風量ゼロクリア
-#   543 CONTINUE
-#       LL=M(LL)
+    # ***          3.6. SPACE LOOP START ***********************************
+
+    LC = int(M[106])
+    LCGB = LC
+    KSPAC = 0
+
+    LCO = LC  # 追加（元のfortranにはない）
+
+    if (KSPAC != 0) and (M[LC+101] != M[LCO+101]+1):
+
+        print("aaa")
+
+        # 新しいグループに移ったとき(最初のグループを除く)
+        LC1=LCGB
+        LCGB=LC
+
+        if (M[LCO+55]!=0):  # SOPCデータによってOPCOデータを引用した場合
+            
+            # 前のグループのスペース数をカウントするとともに除去熱量計算ルーチンを呼ぶ
+            NZ=1
+            for II in range(1, NAZ+1):
+                if (LC1 == LCO):
+                    break
+                else:
+                    LC1 = M[LC1]
+                    NZ = NZ+1
+
+            II = math.min(2,ISEAS[1])
+
+        #     pl.EXTRC2(NHR,MCNTL(1),ISEAS(1),NAZ,IOPTG,NZ,IOPVG,SMRT1,
+        #  -   SMRT2,VOAG,LCG,CLDG,NWD,WD,REFWD,P0,M[LOPC+165+II],VFLOW,EXCAP,
+        #  -   SPCAP,RMMX,RMMN,10,NUOT+KSPAC-NZ,IDWK,MDW[1],MODE,MCNTL[2],LSZSPC,IBECS,NUOB)
+
+    # 全スペース終了
+    if LC == 0:
+        print("goto 501")
+
+    KSPAC = KSPAC + 1
+
+    M1 = int(M[LC+34])
+    KSCH[1] = M[int(M1+MDW[1])]
+    L1 = int((KSCH[1]-1)*24)
+    LL = int(M[LC+35]+L1)
+    LH = int(M[LC+47]+L1)
+    LO = int(M[LC+51]+L1)
+
+    if (M[LC+35] == 0):
+        LL=0
+    if (M[LC+47] == 0):
+        LH=0
+    if (M[LC+51] == 0):
+        LO=0
+
+    LOPC = M[LC+55]
+    if (LOPC != 0):
+        KSCH[2] = M[int(M1+MDW[2])]
+
+    # ***          3.7. HOURLY LOOP START **********************************
+
+    for J in range(1,25):
+        
+        ACC1=0.
+        ACC2=0.
+        ACC3=0.
+        ACC4=0.
+        ACC5=0.
+        ACC6=0.
+
+        X[LC+74] = 0.
+        X[LC+75] = 0.
+        L = int(LC+LSZSPC[0])
+
+        if LOPC != 0:
+            print("EXTRC0")
+            # EXTRC0(J,LOPC,LC,ISEAS,KSCH,IOPTWK)   # 空調運転状態(IOPTWK,M(LC+60))
+
+        # if M[L] == 1:
+        #     # ***          3.8. HEAT GAIN THROUGH OUTSIDE WALL **********************
+        # elif M[L] == 2:
+        #     # ***          3.9. HEAT GAIN THROUGH INSIDE WALL **********************
+        # elif M[L] == 3:
+        #     # ***          3.10. HEAT GAIN THROUGH WINDOW **************************
+        # elif M[L] == 4:
+        #     # ***          3.11. INFILTRATION **************************************
+        # elif M[L] == 5:
+        #     # ***          3.12. INTERNAL HEAT *************************************
+
+
+    # ***          3.13 CONVERT HEAT GAIN TO COOLING LOAD ******************
+
+    X[J] = ACC1+X[LC+11] + ACC2*X[LC+8]
+    X[LC+11] = X[LC+11] * X[LC+10] + ACC2*X[LC+9]
+    X[J+24] = ACC4
+    X[J+48] = ACC3
+    X[J+72] = ACC5
+
+    # ***                CALCULATION EXTRACTING LOAD   *********************
+
+    # if (LOPC != 0 ):
+        # pl.EXTRC1(J,NHR,LOPC,LC,NAZ,ISEAS[1],KSCH[1],IOPTWK,IOPTG,IOPVG,SMRT1,SMRT2,LCG,VOAG,CLDG,P0,RMMN,RMMX,SPCAP,EXCAP,VFLOW)
+
+
+    LCO=LC
+    LC=M[LC]
+
+    MODE = 3 # とりあえず強制的に終わらせる
+
 
 # pl.display_XMQ_matrix(X,M,2000,3000)
 
