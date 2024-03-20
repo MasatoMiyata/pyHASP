@@ -2023,42 +2023,59 @@ while (LL != 0):
     
 # ***          3.1. DATING AND JOB CONTROL *****************************
 
-# 気象データをRewindした回数（Rewind後）
+# 気象データをRewindした回数
 ICYCL = 1
 
-mprint("MCNTL[5]")  # データ形式 0:標準年気象データ（周期データ）、1:ピークデータ（周期データ）、2:実データ （2で割ることで、=0:周期データ, =1:実在データ）
-mprint("MCNTL[31]")   # データカラム数
-
-# 気象データを読み込む（１日分）
-ICYCL,WDND,IDND,ISTAT = pl.INWD(NUW, int(MCNTL[5]/2), int(MCNTL[31]), int(ICYCL)) 
-
-
-# # 周期の処理 <あとまわし>
-# if MCNTL[5] != 1:
-#     KDYF = pl.NDATF(IDND[1,1],IDND[1,2],IDND[1,3])   # 1899/12/31を1とした通算日数
-#     if (MCNTL[5] == 0 and ICYCL == 2) or (MCNTL[5] == 2 and KDYF > MCNTL[19]):
-#         raise Exception("エラー")
-#     elif (MCNTL[5] == 0 and KDYF != MCNTL[19]) or (MCNTL[5] == 2 and KDYF < MCNTL[19]):
-#         continue
+mprint("MCNTL[5]")   # データ形式 0:標準年気象データ（周期データ）、1:ピークデータ（周期データ）、2:実データ （2で割ることで、=0:周期データ, =1:実在データ）
+mprint("MCNTL[31]")  # データカラム数
 
 
 
-MODE = 1
-KWK  = 0
+# 気象データを読み込む
+NUW_day = 0  # 気象データを読み込んだ日数
 
-while MODE != 3:  # 行番号 501 あとで戻ってくる
+NUW_flag = True
+while NUW_flag:
+
+    # 気象データの読み込み
+    ICYCL,WDND,IDND,ISTAT,NUW_day = pl.INWD(NUW, int(MCNTL[5]/2), int(MCNTL[31]), int(ICYCL),NUW_day)
+
+    # 周期の処理
+    if MCNTL[5] != 1:     # 気象データ形式 = ピークデータ以外
+
+        # 読み込んだ気象データの日付
+        KDYF = pl.NDATF(IDND[1,1],IDND[1,2],IDND[1,3])   # 1899/12/31を1とした通算日数
+
+        if (MCNTL[5] == 0 and ICYCL == 2) or (MCNTL[5] == 2 and KDYF > MCNTL[19]):
+            # 気象データ形式が「標準年気象データ」で、繰り返し2回目
+            # 気象データ形式が「実データ」で、読み込んだ日付が助走開始日より後
+            raise Exception("エラー")
+        elif (MCNTL[5] == 0 and KDYF != MCNTL[19]) or (MCNTL[5] == 2 and KDYF < MCNTL[19]):
+            # 気象データ形式が「標準年気象データ」で、読み込んだ日付が助走開始日とは異なる
+            # 気象データ形式が「実データ」で、読み込んだ日付が助走開始日より前
+            # print(f"{int(IDND[1,1])}年 {int(IDND[1,2])}月 {int(IDND[1,3])}日")
+            continue
+        else:
+            break
+
+
+MODE = 1   # 1: 助走計算、2:本計算、3:計算終了
+KWK  = 0   # SOLAR POSITION を skip するかどうか
+
+while MODE != 3:  # 行番号 501
 
     for I in range(1,8):
         for J in range(1,25):
+            # 気象データ
             WD[I,J] = WDND[I,J]
         for J in range(1,6):
+            # 日付
             ID[I,J]=IDND[I,J]
 
-    KDY  = pl.NDATE(ID[1,2],ID[1,3])           # 通算日数
-    KDYF = pl.NDATF(ID[1,1],ID[1,2],ID[1,3])   # 1899.12.31を1とした通算日数
-
-    mprint("KDY")
-    mprint("KDYF")
+    # 通算日数
+    KDY  = pl.NDATE(ID[1,2],ID[1,3])
+    # 通算日数 (1899.12.31を1とした日数）           
+    KDYF = pl.NDATF(ID[1,1],ID[1,2],ID[1,3])   
 
     MDW[1]   = pl.MKMDW(ID, M)   # 曜日（スケジュール）
     ISEAS[1] = int(M[980+int(ID[1,2])])  # 季節
@@ -2066,34 +2083,41 @@ while MODE != 3:  # 行番号 501 あとで戻ってくる
     IDWK[2]  = int(ID[1,2])   # 計算日の月
     IDWK[3]  = int(ID[1,3])   # 計算日の日
 
-    print(f"{IDWK[1]}年 {IDWK[2]}月 {IDWK[3]}日")
+    print(f"{int(IDWK[1])}年 {int(IDWK[2])}月 {int(IDWK[3])}日")
     mprint("ISEAS")
 
     # 気象データをRewindした回数（Rewind前）
     ICYCLO = ICYCL
 
     # 気象データを読み込む（１日分）
-    ICYCL,WDND,IDND,ISTAT = pl.INWD(NUW, int(MCNTL[5]/2), int(MCNTL[31]), int(ICYCL)) 
+    # WDND: 気象データ（加工前）
+    # IDND: 日付データ
+    # ISTAT: 1=通常、0=ファイル終了（IOPWE=1、つまり実在データのとき）
+    ICYCL,WDND,IDND,ISTAT,NUW_day = pl.INWD(NUW, int(MCNTL[5]/2), int(MCNTL[31]), int(ICYCL), NUW_day) 
 
     if ISTAT == 0: # 実在気象データの最終日＝計算最終日
-        if (KDYF != MCNTL[21]):
+        if (KDYF != MCNTL[21]): # 計算終了日と一致しない場合
             raise Exception("エラーです")
-        MDW[2] = MDW[1]  # 計算最終日の翌日の季節・曜日 ＝ 最終日
-        ISEAS[2] = ISEAS[1]
+        MDW[2]   = MDW[1]    # 明日の曜日 ＝ 最終日と同じとする
+        ISEAS[2] = ISEAS[1]  # 明日の季節 ＝ 最終日と同じとする
     else:
-        MDW[2] = pl.MKMDW(IDND, M)
-        ISEAS[2] = M[980+int(IDND[1,2])]
+        MDW[2]   = pl.MKMDW(IDND, M)      # 明日の曜日
+        ISEAS[2] = M[980+int(IDND[1,2])]  # 明日の季節
 
-    if MODE == 1:
-        if MCNTL[5] == 1:
-            if ICYCLO == MCNTL[15]:
+    #------------------------
+    # モードの切り替え
+    #------------------------
+    if MODE == 1:  # 助走計算
+
+        if MCNTL[5] == 1:   # 気象データ形式 = ピークデータ
+            if ICYCLO == MCNTL[15]:   # 計算サイクル数が指定のサイクル数の際に「本計算」となる
                 MODE = 2
         else:
-            if KDYF == MCNTL[20]:
+            if KDYF == MCNTL[20]:     # 本計算開始日
                 MODE = 2
 
     if MODE == 2:
-        if MCNTL[5] == 1:
+        if MCNTL[5] == 1:   # 気象データ形式 = ピークデータ
             if ICYCL == MCNTL[15]+1:
                 MODE = 3   # 計算終了
         else:
@@ -2352,8 +2376,8 @@ while MODE != 3:  # 行番号 501 あとで戻ってくる
         X[LC+75] = 0.
         L = int(LC+LSZSPC[0])
 
-        if LOPC != 0:
-            print("EXTRC0")
+        # if LOPC != 0:
+        #     print("EXTRC0")
             # EXTRC0(J,LOPC,LC,ISEAS,KSCH,IOPTWK)   # 空調運転状態(IOPTWK,M(LC+60))
 
         # if M[L] == 1:
@@ -2385,7 +2409,7 @@ while MODE != 3:  # 行番号 501 あとで戻ってくる
     LCO=LC
     LC=M[LC]
 
-    MODE = 3 # とりあえず強制的に終わらせる
+    # MODE = 3 # とりあえず強制的に終わらせる場合
 
 
 # pl.display_XMQ_matrix(X,M,2000,3000)

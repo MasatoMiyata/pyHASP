@@ -708,7 +708,7 @@ def RTVADJ(LSZSPC, L, M):
     return L, JZ, ISTAT
 
 
-def INWD(NUW,IOPWE,NCLM,ICYCL):
+def INWD(NUW,IOPWE,NCLM,ICYCL,NUW_day):
     """
     **************** READ STANDARD WEATHER DATA **************************
     *     LATEST REVISION     - 2004.02.07
@@ -727,7 +727,7 @@ def INWD(NUW,IOPWE,NCLM,ICYCL):
     WD = np.zeros([8,25])
     ID = np.zeros([8,6])
 
-    line = 0
+    line = 7 * NUW_day
     for I in [1,2,3,4,5,6,7]:
 
         for J in range(1,25):
@@ -755,7 +755,13 @@ def INWD(NUW,IOPWE,NCLM,ICYCL):
 
     # 周期データには対応していない
 
-    return ICYCL,WD,ID,ISTAT
+    # 次の行数
+    NUW_day += 1
+    if len(NUW)-1 <= 7*(NUW_day):  # 最終行まで来たら繰り返す
+        NUW_day = 0
+        ICYCL += 1
+
+    return ICYCL,WD,ID,ISTAT,NUW_day
 
 # if __name__ == '__main__':
 
