@@ -4,6 +4,11 @@ import pandas as pd
 import xlrd
 import pyHASP_library as pl
 
+def mprint(_str):
+    """デバッグ用の関数
+    """
+    print('{}: {}'.format(_str, eval(_str)))
+
 #-----------------------------------------------------------------------
 # DYNAMIC HEAT LOAD PROGRAM FOR ENERGY SIMULATION
 # HASP/ACLD/8501       CODED BY Y.MATSUO
@@ -140,13 +145,13 @@ WINCHR = np.zeros((3,2))       # 窓の物性値（第1添字=0:K, 1:SCC, 2:SCR�
 MFLWK = np.zeros(2)              # CFLWデータセット用Work array
 XFLWK = np.zeros(2)              # CFLWデータセット用Work array
 LSZSPC = np.zeros(5)           # XMQ配列のうち、(0):SPAC, (1):OWAL, (2):IWAL,(3):WNDW, (4):INFL の変数の数
-IWFLG = np.zeros(4)              # 気象データヘッダ行のデータ                add 20200403(T.Nagai)
+IWFLG = np.zeros(4+1)              # 気象データヘッダ行のデータ                add 20200403(T.Nagai)
                                 # (1) =0:ヘッダ行がない、=1:ヘッダ行がある
                                 # (2):日射・放射の単位 =0:10kJ/m2h,
                                 #   =1:kcal/m2h, =2:kJ/m2h、
                                 # (3) 雲量モード =0:雲量, =1:夜間放射、
                                 # (4) 気象データのカラム数(3以上9以下)
-RWFLG = np.zeros(3)              # 気象データヘッダ行のデータ                add 20200403(T.Nagai)
+RWFLG = np.zeros(3+1)              # 気象データヘッダ行のデータ                add 20200403(T.Nagai)
                                 # (1) 緯度[deg]（南緯の場合は負値）、
                                 # (2) 経度[deg]（西経の場合は負値）、
                                 # (3) 世界時と地方標準時の時差
@@ -205,13 +210,18 @@ NUW = pl.read_textfile("./input/36300110_SI.hasH")
 # 気象データファイルの1行目の1カラム目が「*」の場合は、ヘッダ行あり、
 # その他の文字の場合はヘッダ行なしと見なされる。
 if NUW[0][0] == "*":
-    IWFLG[0] = 1
+
+    IWFLG[1] = 1   # ヘッダー行がある
+    
+    # 気象データのヘッダー部分の読み込み
     IWFLG, RWFLG = pl.RHEAD(NUW[0], IWFLG, RWFLG)
-    MCNTL[2]  = IWFLG[2]
-    MCNTL[3]  = IWFLG[1]
-    MCNTL[30] = IWFLG[3]
+    
+    MCNTL[3]  = IWFLG[3]  # 雲量
+    MCNTL[4]  = IWFLG[2]  # 日射の単位
+    MCNTL[31] = IWFLG[4]  # データのカラム数（3以上9以下）
+
 else:
-    IWFLG[0] = 0
+    IWFLG[1] = 0   # ヘッダー行がない
 
 # 入力ファイル 3行目 出力先のディレクトリ名称
 QPATH = "./out/"
@@ -398,7 +408,7 @@ for line in range(1,bldg_end):
         if IWFLG[0] == 0:
             MCNTL[3]  = float(NUB[line][17:20]) # 雲量モード  
             MCNTL[4]  = float(NUB[line][20:23]) # SIモード    
-        MCNTL[5]  = float(NUB[line][23:26]) # データ形式 1:標準年気象データ、2:ピークデータ、3:実データ
+        MCNTL[5]  = float(NUB[line][23:26]) # データ形式 0:標準年気象データ、1:ピークデータ、2:実データ
         if NUB[line][26:29] != "   ":
             MCNTL[6]  = float(NUB[line][26:29]) # 助走開始 年  
         MCNTL[7]  = float(NUB[line][29:32]) # 助走開始 月  
@@ -2013,15 +2023,15 @@ while (LL != 0):
     
 # ***          3.1. DATING AND JOB CONTROL *****************************
 
+# 気象データをRewindした回数（Rewind後）
 ICYCL = 1
 
-# print(MCNTL[5])  # データ形式 1:標準年気象データ（周期データ）、2:ピークデータ（周期データ）、3:実データ （2で割ることで、=0:周期データ, =1:実在データ）
-# print(MCNTL[31])   # データカラム数
+mprint("MCNTL[5]")  # データ形式 0:標準年気象データ（周期データ）、1:ピークデータ（周期データ）、2:実データ （2で割ることで、=0:周期データ, =1:実在データ）
+mprint("MCNTL[31]")   # データカラム数
 
+# 気象データを読み込む（１日分）
 ICYCL,WDND,IDND,ISTAT = pl.INWD(NUW, int(MCNTL[5]/2), int(MCNTL[31]), int(ICYCL)) 
 
-# print(f"WDND: {WDND}")
-# print(f"IDND: {IDND}")
 
 # # 周期の処理 <あとまわし>
 # if MCNTL[5] != 1:
@@ -2031,8 +2041,10 @@ ICYCL,WDND,IDND,ISTAT = pl.INWD(NUW, int(MCNTL[5]/2), int(MCNTL[31]), int(ICYCL)
 #     elif (MCNTL[5] == 0 and KDYF != MCNTL[19]) or (MCNTL[5] == 2 and KDYF < MCNTL[19]):
 #         continue
 
-MODE=1
-KWK=0
+
+
+MODE = 1
+KWK  = 0
 
 while MODE != 3:  # 行番号 501 あとで戻ってくる
 
@@ -2042,19 +2054,25 @@ while MODE != 3:  # 行番号 501 あとで戻ってくる
         for J in range(1,6):
             ID[I,J]=IDND[I,J]
 
-    KDY  = pl.NDATE(ID[1,2],ID[1,3])
-    KDYF = pl.NDATF(ID[1,1],ID[1,2],ID[1,3])
+    KDY  = pl.NDATE(ID[1,2],ID[1,3])           # 通算日数
+    KDYF = pl.NDATF(ID[1,1],ID[1,2],ID[1,3])   # 1899.12.31を1とした通算日数
 
-    MDW[1]   = pl.MKMDW(ID, M)
-    ISEAS[1] = int(M[980+int(ID[1,2])])
-    IDWK[1]  = int(ID[1,1])  # 今日の年
-    IDWK[2]  = int(ID[1,2])   # 今日の月
-    IDWK[3]  = int(ID[1,3])   # 今日の日
+    mprint("KDY")
+    mprint("KDYF")
+
+    MDW[1]   = pl.MKMDW(ID, M)   # 曜日（スケジュール）
+    ISEAS[1] = int(M[980+int(ID[1,2])])  # 季節
+    IDWK[1]  = int(ID[1,1])   # 計算日の年
+    IDWK[2]  = int(ID[1,2])   # 計算日の月
+    IDWK[3]  = int(ID[1,3])   # 計算日の日
 
     print(f"{IDWK[1]}年 {IDWK[2]}月 {IDWK[3]}日")
+    mprint("ISEAS")
 
-    ICYCLO=ICYCL
+    # 気象データをRewindした回数（Rewind前）
+    ICYCLO = ICYCL
 
+    # 気象データを読み込む（１日分）
     ICYCL,WDND,IDND,ISTAT = pl.INWD(NUW, int(MCNTL[5]/2), int(MCNTL[31]), int(ICYCL)) 
 
     if ISTAT == 0: # 実在気象データの最終日＝計算最終日
@@ -2077,10 +2095,10 @@ while MODE != 3:  # 行番号 501 あとで戻ってくる
     if MODE == 2:
         if MCNTL[5] == 1:
             if ICYCL == MCNTL[15]+1:
-                MODE = 3
+                MODE = 3   # 計算終了
         else:
             if KDYF == MCNTL[21]:
-                MODE = 3
+                MODE = 3   # 計算終了
 
 
     # ***          3.2 WEATHER DATA ****************************************
