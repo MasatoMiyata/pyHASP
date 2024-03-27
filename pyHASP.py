@@ -2461,6 +2461,42 @@ while flag_day:
                 elif M[L] == 4:
 
                     # ***          3.11. INFILTRATION **************************************
+
+                    LE = int(M[L+1])
+                    W  = abs(X[LE+2] - WD[6,J])
+                    U  = pl.CF( math.cos(W*DR) ) * X[LC+7] * WD[7,J]**2 + (WD[1,J]-X[155])*X[LC+6]
+                
+                    if M[L+4] == 0:  # オリジナル換気量で一定、あるいは空調on・off時%の値を使用
+
+                        if (IOPTWK == 1) or (IOPTWK == 3):    # 稼動中あるいは停止時
+                            W = X[L+6]
+                        else:
+                            W = X[L+7]
+
+                    else:   # DSCH使用
+                        W = X[ int( M[L+5] + (KSCH[1]-1)*24+J) ]
+                    
+                    if (M[L+2] == 0):
+
+                        if (U > 0):
+                            V = W * X[L+3] * U**0.67
+                        else:
+                            V=0
+
+                    else:
+
+                        if (U > 0) or (M[L+2] == 2):
+                            V = W * X[L+3]
+                        else:
+                            V=0.
+                
+                    ACC1 = ACC1 + 0.288 * V *(WD[1,J]-X[155])
+                    ACC3 = ACC3 + 0.720 * V *(WD[2,J]-X[157])
+                    ACC4 = ACC4 + 0.288 * V 
+                    ACC5 = ACC5 + 0.720 * V 
+                    X[LC+74] = X[LC+74] + 0.288*V*(WD[1,J]-X[155])
+                    X[LC+75] = X[LC+75] + 0.288*V
+
                     L = L+LSZSPC[4]
 
             if M[L] == 5:
