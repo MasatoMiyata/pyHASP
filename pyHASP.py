@@ -2579,7 +2579,37 @@ while flag_day:
             if M[L] == 5:
 
                 # ***          3.12. INTERNAL HEAT *************************************
-                print("最後")
+                if (LL != 0):
+                    if X[LC+43] == 0:
+                        ACC6 = 0
+                    if ACC6 > 1:
+                        ACC6 = 1
+
+                    W  = X[LL+J] * MCNTL[ int(21+ISEAS[1]) ] /100*(1-ACC6)   # 季節別発熱割合を掛ける
+                    W1 = X[LC+41] + X[LC+42] + W*X[LC+36]
+                    X[LC+41] = X[LC+41] * X[LC+38] + W*X[LC+37]
+                    X[LC+42] = X[LC+42] * X[LC+40] + W*X[LC+39]
+                    ACC1 = ACC1+W1*FC
+                    ACC2 = ACC2+W1*FR
+            
+                if LH != 0:
+
+                    W1 = X[LH+J] * MCNTL[ int(27+ISEAS[1]) ]/100.   # 季節別発熱割合を掛ける
+                    ACC1 = ACC1 + W1*X[LC+48]
+                    ACC2 = ACC2 + W1*X[LC+49]
+                    ACC3 = ACC3 + W1*X[LC+50]
+                
+                    if abs(X[LC+49]) < 0.001:  # 強制対流式の場合
+                        X[LC+74] = X[LC+74] + W1*X[LC+48]    # 面積を持たない部位からの負荷に算入
+ 
+            
+                if LO != 0:
+
+                    W  = X[LO+J] * MCNTL[ int(24+ISEAS[1]) ]/100.   # 季節別発熱割合を掛ける
+                    W2 = X[LC+53] + X[LC+54] * (X[ int(LC+214+ISEAS[1]) ]-24.)                
+                    ACC1 = ACC1 + W1*W2*FC
+                    ACC2 = ACC2 + W1*W2*FR
+                    ACC3 = ACC3 + (X[LC+52]-W2)*W1
 
 
             # ***          3.13 CONVERT HEAT GAIN TO COOLING LOAD ******************
