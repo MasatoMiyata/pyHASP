@@ -2413,10 +2413,10 @@ while flag_day:
 
                     LE = int(M[L+1])
 
-                    if (CHCA[J]*X[LE+4]+CHSA[J]*X[LE+3] > 0):
+                    if (CHCA[J]*X[LE+4]+CHSA[J]*X[LE+3] < 0):
                         W = WD[3,J]
                     else:
-                        if (X[L+13]*CHSA[J]+X[L+14]*CHCA[J] > SH[J]):
+                        if (X[L+13]*CHSA[J]+X[L+14]*CHCA[J] < SH[J]):
                             W = WD[3,J]
                         else:
                             W = 0
@@ -2456,6 +2456,83 @@ while flag_day:
                 elif M[L] == 3:
 
                     # ***          3.10. HEAT GAIN THROUGH WINDOW **************************
+
+                    LE = int(M[L+1])
+                    if (CHCA[J] * X[LE+4] + CHSA[J] * X[LE+3]) < 0:
+                        W = WD[3,J]
+                    else:
+                        if (X[L+13]*CHSA[J] + X[L+14]*CHCA[J]) < SH[J]:
+                            W = WD[3,J]
+                        else:
+                            W = 0
+                
+                    EXC1 = WD[1,J] - X[155] - WD[5,J]*X[L+12]
+                    V1 = W * X[LE+J+51]
+                    V2 = W * SH[J] * X[L+9]
+                    V3 = WD[4,J] * X[L+11]
+                    V4 = WD[4,J] * X[L+9]
+                    EXC2 = V1+V2+V3+V4
+                
+                    for II in [0,1]:        # ブラインド開閉ループ
+                        for I in [0,1,2]:   # K,SCC,SCRループ
+
+                            L1 = int(L+20+II*9+I*3)  # XMQ配列の添字（スケジュールオプション）
+                            W  = X[int(L+2+II*3+I)]  # オリジナルの物性値
+                        
+                            if M[L1] == 0:   #オリジナルのまま
+                                WINCHR[I,II] = W
+                            elif M[L1] == 1: # on時%の値を使用
+                                if (IOPTWK == 1) or (IOPTWK == 3): # 稼動中あるいは停止時
+                                    WINCHR[I,II] = X[L1+2]*W
+                                else:
+                                    WINCHR[I,II]=W
+                            else:   # DSCHを使用
+                                WINCHR[I,II] = X[ int(M[L1+1]+(KSCH[1]-1)*24+J) ] * W
+
+                    if (M[L+38] >= 1) and ( (IOPTWK==1)or(IOPTWK==3) ):  # 稼動中あるいは停止時
+                        for II in [0,1]:        # ブラインド開閉ループ
+                            for I in [0,1,2]:   # K,SCC,SCRループ
+                                WINCHR[I,II] = WINCHR[I,II] + X[int(L+39+II*3+I)]
+                
+
+                    if (X[LO+J] == 0):
+
+                        # 641の処理
+                        W1   = EXC1 * WINCHR[0,1]
+                        ACC1 = ACC1 + W1 * (1.0-X[L+46]) + EXC2*WINCHR[1,1]
+                        ACC2 = ACC2 + W1 * X[L+46] + EXC2*WINCHR[2,1]
+                        if X[LC+43] != 0:
+                            W = X[L+18] * (V1+V2+V3+V4) * WINCHR[2,1]
+                            if W > X[LC+43]:
+                                ACC6 = ACC6 + X[L+19]
+
+                    else:
+
+                        W = EXC2 *WINCHR[2,0]
+
+                        if  W > X[L+8]:
+
+                            # 641の処理
+                            W1   = EXC1 * WINCHR[0,1]
+                            ACC1 = ACC1 + W1 * (1.0-X[L+46]) + EXC2*WINCHR[1,1]
+                            ACC2 = ACC2 + W1 * X[L+46] + EXC2*WINCHR[2,1]
+                            if X[LC+43] != 0:
+                                W = X[L+18] * (V1+V2+V3+V4) * WINCHR[2,1]
+                                if W > X[LC+43]:
+                                    ACC6 = ACC6 + X[L+19]
+
+                        else:
+
+                            W1   = EXC1 * WINCHR[0,0]
+                            ACC1 = ACC1 + W1*(1.0-X[L+45]) + EXC2*WINCHR[1,0]
+                            ACC2 = ACC2 + W1*X[L+45]+W
+                            ACC4 = ACC4 + WINCHR[0,0]-X[L+5]
+                    
+                            if (X[LC+43] != 0):                        
+                                W = (X[L+15]*V3+X[L+16]*(V1+V3)+X[L+17]*(V2+V4)) * WINCHR[2,0]
+                                if W > X[LC+43]:
+                                    ACC6 = ACC6 + X[L+19]
+
                     L = L+LSZSPC[3]                    
 
                 elif M[L] == 4:
