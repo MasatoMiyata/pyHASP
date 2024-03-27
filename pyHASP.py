@@ -2435,6 +2435,22 @@ while flag_day:
                 elif M[L] == 2:
 
                     # ***          3.9. HEAT GAIN THROUGH INSIDE WALL **********************
+
+                    if M[L+1] != 3:
+
+                        if M[L+1] == 0:
+                            EXC = (WD[1,J] - X[155]) * X[L+15]
+                        elif M[L+1] == 1:
+                            EXC = WD[1,J] + X[L+15] - X[155]
+                        else:
+                            EXC = X[L+15] - X[155]
+
+                        W = X[L+11] + X[L+12] + EXC*X[L+3]
+                        ACC1 = ACC1 + W*FC
+                        ACC2 = ACC2 + W*FR
+                        X[L+11] = X[L+11]*X[L+7] + EXC*X[L+5]
+                        X[L+12] = X[L+12]*X[L+10] + EXC*X[L+8]
+    
                     L = L+LSZSPC[2]
 
                 elif M[L] == 3:
