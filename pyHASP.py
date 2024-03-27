@@ -2062,7 +2062,9 @@ while NUW_flag:
 MODE = 1   # 1: 助走計算、2:本計算、3:計算終了
 KWK  = 0   # SOLAR POSITION を skip するかどうか
 
-while MODE != 3:  # 行番号 501
+flag_day = True
+
+while flag_day:
 
     for I in range(1,8):
         for J in range(1,25):
@@ -2084,7 +2086,6 @@ while MODE != 3:  # 行番号 501
     IDWK[3]  = int(ID[1,3])   # 計算日の日
 
     print(f"{int(IDWK[1])}年 {int(IDWK[2])}月 {int(IDWK[3])}日")
-    mprint("ISEAS")
 
     # 気象データをRewindした回数（Rewind前）
     ICYCLO = ICYCL
@@ -2165,9 +2166,10 @@ while MODE != 3:  # 行番号 501
     # ***          3.3. OUTPUT 2 (WEATHER DATA) ****************************
     # skip
 
-
+    # M1：週番号, KDY (1/1からの通算日数)  
     M1 = int((KDY+6)/7)
 
+    # KWK: 週番号保存・処理したらM1を更新 = 週に1回だけ処理を行う。
     if M1 != KWK:   # GOTO 540
 
         KWK = M1
@@ -2192,6 +2194,7 @@ while MODE != 3:  # 行番号 501
 
         # ***          3.5. 'EXPS' UPDATE **************************************
 
+        # M[100]はEXPSのポインタ
         L = int(M[100])
 
         while L != 0:
@@ -2269,6 +2272,7 @@ while MODE != 3:  # 行番号 501
                 else:                                                                 
                     X[L+J+27] = SS*(ST-SG)/X[L+24]                                         
 
+                # 次のEXPSへ
                 L = int(M[L])
 
 
@@ -2313,110 +2317,113 @@ while MODE != 3:  # 行番号 501
 
     # ***          3.6. SPACE LOOP START ***********************************
 
+    # SPACのポインタ
     LC = int(M[106])
     LCGB = LC
     KSPAC = 0
-
     LCO = LC  # 追加（元のfortranにはない）
+    flag_space = True
 
-    if (KSPAC != 0) and (M[LC+101] != M[LCO+101]+1):
+    while flag_space:
 
-        print("aaa")
-
-        # 新しいグループに移ったとき(最初のグループを除く)
-        LC1=LCGB
-        LCGB=LC
-
-        if (M[LCO+55]!=0):  # SOPCデータによってOPCOデータを引用した場合
+        if (KSPAC != 0) and (M[LC+101] != M[LCO+101]+1):
             
-            # 前のグループのスペース数をカウントするとともに除去熱量計算ルーチンを呼ぶ
-            NZ=1
-            for II in range(1, NAZ+1):
-                if (LC1 == LCO):
-                    break
-                else:
-                    LC1 = M[LC1]
-                    NZ = NZ+1
+            # 新しいグループに移ったとき(最初のグループを除く)
+            LC1=LCGB
+            LCGB=LC
 
-            II = math.min(2,ISEAS[1])
+            if (M[LCO+55]!=0):  # SOPCデータによってOPCOデータを引用した場合
+                
+                # 前のグループのスペース数をカウントするとともに除去熱量計算ルーチンを呼ぶ
+                NZ=1
+                for II in range(1, NAZ+1):
+                    if (LC1 == LCO):
+                        break
+                    else:
+                        LC1 = M[LC1]
+                        NZ = NZ+1
 
-        #     pl.EXTRC2(NHR,MCNTL(1),ISEAS(1),NAZ,IOPTG,NZ,IOPVG,SMRT1,
-        #  -   SMRT2,VOAG,LCG,CLDG,NWD,WD,REFWD,P0,M[LOPC+165+II],VFLOW,EXCAP,
-        #  -   SPCAP,RMMX,RMMN,10,NUOT+KSPAC-NZ,IDWK,MDW[1],MODE,MCNTL[2],LSZSPC,IBECS,NUOB)
+                II = min(2,ISEAS[1])
 
-    # 全スペース終了
-    if LC == 0:
-        print("goto 501")
+            #     pl.EXTRC2(NHR,MCNTL(1),ISEAS(1),NAZ,IOPTG,NZ,IOPVG,SMRT1,
+            #  -   SMRT2,VOAG,LCG,CLDG,NWD,WD,REFWD,P0,M[LOPC+165+II],VFLOW,EXCAP,
+            #  -   SPCAP,RMMX,RMMN,10,NUOT+KSPAC-NZ,IDWK,MDW[1],MODE,MCNTL[2],LSZSPC,IBECS,NUOB)
 
-    KSPAC = KSPAC + 1
+        # 全スペース終了
+        if LC == 0:
+            flag_space = False
 
-    M1 = int(M[LC+34])
-    KSCH[1] = M[int(M1+MDW[1])]
-    L1 = int((KSCH[1]-1)*24)
-    LL = int(M[LC+35]+L1)
-    LH = int(M[LC+47]+L1)
-    LO = int(M[LC+51]+L1)
+        KSPAC = KSPAC + 1
 
-    if (M[LC+35] == 0):
-        LL=0
-    if (M[LC+47] == 0):
-        LH=0
-    if (M[LC+51] == 0):
-        LO=0
+        M1 = int(M[LC+34])
+        KSCH[1] = M[int(M1+MDW[1])]
+        L1 = int((KSCH[1]-1)*24)
+        LL = int(M[LC+35]+L1)
+        LH = int(M[LC+47]+L1)
+        LO = int(M[LC+51]+L1)
 
-    LOPC = M[LC+55]
-    if (LOPC != 0):
-        KSCH[2] = M[int(M1+MDW[2])]
+        if (M[LC+35] == 0):
+            LL=0
+        if (M[LC+47] == 0):
+            LH=0
+        if (M[LC+51] == 0):
+            LO=0
 
-    # ***          3.7. HOURLY LOOP START **********************************
+        LOPC = M[LC+55]
+        if (LOPC != 0):
+            KSCH[2] = M[int(M1+MDW[2])]
 
-    for J in range(1,25):
-        
-        ACC1=0.
-        ACC2=0.
-        ACC3=0.
-        ACC4=0.
-        ACC5=0.
-        ACC6=0.
+        # ***          3.7. HOURLY LOOP START **********************************
 
-        X[LC+74] = 0.
-        X[LC+75] = 0.
-        L = int(LC+LSZSPC[0])
+        for J in range(1,25):
+            
+            ACC1=0.
+            ACC2=0.
+            ACC3=0.
+            ACC4=0.
+            ACC5=0.
+            ACC6=0.
 
-        # if LOPC != 0:
-        #     print("EXTRC0")
-            # EXTRC0(J,LOPC,LC,ISEAS,KSCH,IOPTWK)   # 空調運転状態(IOPTWK,M(LC+60))
+            X[LC+74] = 0.
+            X[LC+75] = 0.
+            L = int(LC+LSZSPC[0])
 
-        # if M[L] == 1:
-        #     # ***          3.8. HEAT GAIN THROUGH OUTSIDE WALL **********************
-        # elif M[L] == 2:
-        #     # ***          3.9. HEAT GAIN THROUGH INSIDE WALL **********************
-        # elif M[L] == 3:
-        #     # ***          3.10. HEAT GAIN THROUGH WINDOW **************************
-        # elif M[L] == 4:
-        #     # ***          3.11. INFILTRATION **************************************
-        # elif M[L] == 5:
-        #     # ***          3.12. INTERNAL HEAT *************************************
+            # if LOPC != 0:
+            #     print("EXTRC0")
+                # EXTRC0(J,LOPC,LC,ISEAS,KSCH,IOPTWK)   # 空調運転状態(IOPTWK,M(LC+60))
 
-
-    # ***          3.13 CONVERT HEAT GAIN TO COOLING LOAD ******************
-
-    X[J] = ACC1+X[LC+11] + ACC2*X[LC+8]
-    X[LC+11] = X[LC+11] * X[LC+10] + ACC2*X[LC+9]
-    X[J+24] = ACC4
-    X[J+48] = ACC3
-    X[J+72] = ACC5
-
-    # ***                CALCULATION EXTRACTING LOAD   *********************
-
-    # if (LOPC != 0 ):
-        # pl.EXTRC1(J,NHR,LOPC,LC,NAZ,ISEAS[1],KSCH[1],IOPTWK,IOPTG,IOPVG,SMRT1,SMRT2,LCG,VOAG,CLDG,P0,RMMN,RMMX,SPCAP,EXCAP,VFLOW)
+            # if M[L] == 1:
+            #     # ***          3.8. HEAT GAIN THROUGH OUTSIDE WALL **********************
+            # elif M[L] == 2:
+            #     # ***          3.9. HEAT GAIN THROUGH INSIDE WALL **********************
+            # elif M[L] == 3:
+            #     # ***          3.10. HEAT GAIN THROUGH WINDOW **************************
+            # elif M[L] == 4:
+            #     # ***          3.11. INFILTRATION **************************************
+            # elif M[L] == 5:
+            #     # ***          3.12. INTERNAL HEAT *************************************
 
 
-    LCO=LC
-    LC=M[LC]
+        # ***          3.13 CONVERT HEAT GAIN TO COOLING LOAD ******************
 
-    # MODE = 3 # とりあえず強制的に終わらせる場合
+        X[J] = ACC1+X[LC+11] + ACC2*X[LC+8]
+        X[LC+11] = X[LC+11] * X[LC+10] + ACC2*X[LC+9]
+        X[J+24] = ACC4
+        X[J+48] = ACC3
+        X[J+72] = ACC5
+
+        # ***                CALCULATION EXTRACTING LOAD   *********************
+
+        # if (LOPC != 0 ):
+            # pl.EXTRC1(J,NHR,LOPC,LC,NAZ,ISEAS[1],KSCH[1],IOPTWK,IOPTG,IOPVG,SMRT1,SMRT2,LCG,VOAG,CLDG,P0,RMMN,RMMX,SPCAP,EXCAP,VFLOW)
+
+
+        LCO = int(LC)
+        LC = int(M[LC])
+
+        if MODE == 3:
+            flag_day = False
+
 
 
 # pl.display_XMQ_matrix(X,M,2000,3000)
