@@ -2353,6 +2353,7 @@ while flag_day:
         # 全スペース終了
         if LC == 0:
             flag_space = False
+            break
 
         KSPAC = KSPAC + 1
 
@@ -2377,6 +2378,8 @@ while flag_day:
         # ***          3.7. HOURLY LOOP START **********************************
 
         for J in range(1,25):
+
+            print(f"計算日時： {int(IDWK[1])}年 {int(IDWK[2])}月 {int(IDWK[3])}日 {J}時")
             
             ACC1=0.
             ACC2=0.
@@ -2387,30 +2390,67 @@ while flag_day:
 
             X[LC+74] = 0.
             X[LC+75] = 0.
-            L = int(LC+LSZSPC[0])
 
-            if LOPC != 0:
+            L = int(LC + LSZSPC[0])
+
+            if LOPC != 0:  # LOPC: OPCOデータへのポインタ(L)
+
+                # IOPTWK 空調運転状態フラグ =0:停止中、=1:運転中、=2:起動、=3:停止
+                IOPTWK,M = pl.EXTRC0(J,LOPC,LC,ISEAS,KSCH,X,M)   # 空調運転状態(IOPTWK,M(LC+60))
+
                 # mprint("J")
                 # mprint("LOPC")
                 # mprint("LC")
                 # mprint("ISEAS")
                 # mprint("KSCH")
-
-                # IOPTWK 空調運転状態フラグ =0:停止中、=1:運転中、=2:起動、=3:停止
-                IOPTWK,M = pl.EXTRC0(J,LOPC,LC,ISEAS,KSCH,X,M)   # 空調運転状態(IOPTWK,M(LC+60))
-
                 # mprint("IOPTWK")
 
-            # if M[L] == 1:
-            #     # ***          3.8. HEAT GAIN THROUGH OUTSIDE WALL **********************
-            # elif M[L] == 2:
-            #     # ***          3.9. HEAT GAIN THROUGH INSIDE WALL **********************
-            # elif M[L] == 3:
-            #     # ***          3.10. HEAT GAIN THROUGH WINDOW **************************
-            # elif M[L] == 4:
-            #     # ***          3.11. INFILTRATION **************************************
-            # elif M[L] == 5:
-            #     # ***          3.12. INTERNAL HEAT *************************************
+            while M[L] != 5:
+
+                if M[L] == 1:
+
+                    # ***          3.8. HEAT GAIN THROUGH OUTSIDE WALL **********************
+
+                    LE = int(M[L+1])
+
+                    if (CHCA[J]*X[LE+4]+CHSA[J]*X[LE+3] > 0):
+                        W = WD[3,J]
+                    else:
+                        if (X[L+13]*CHSA[J]+X[L+14]*CHCA[J] > SH[J]):
+                            W = WD[3,J]
+                        else:
+                            W = 0
+
+                    EXC = WD[1,J] - X[155] + W * (X[int(LE+J+27)]*X[L+9]+SH[J]*X[L+10]) \
+                        + WD[4,J] * X[L+11] - WD[5,J]*X[L+12] - WD8[J]*X[L+15]
+
+                    W = X[L+7] + X[L+8] + EXC*X[L+2]
+                    ACC1 = ACC1+W*FC
+                    ACC2 = ACC2+W*FR
+                    X[L+7] = X[L+7]*X[L+4] + EXC*X[L+3]
+                    X[L+8] = X[L+8]*X[L+6] + EXC*X[L+5]
+
+                    L = L+LSZSPC[1]
+
+                elif M[L] == 2:
+
+                    # ***          3.9. HEAT GAIN THROUGH INSIDE WALL **********************
+                    L = L+LSZSPC[2]
+
+                elif M[L] == 3:
+
+                    # ***          3.10. HEAT GAIN THROUGH WINDOW **************************
+                    L = L+LSZSPC[3]                    
+
+                elif M[L] == 4:
+
+                    # ***          3.11. INFILTRATION **************************************
+                    L = L+LSZSPC[4]
+
+            if M[L] == 5:
+
+                # ***          3.12. INTERNAL HEAT *************************************
+                print("最後")
 
 
             # ***          3.13 CONVERT HEAT GAIN TO COOLING LOAD ******************
@@ -2428,10 +2468,11 @@ while flag_day:
 
 
         LCO = int(LC)
-        LC = int(M[LC])
+        LC  = int(M[LC])
 
         if MODE == 3:
             flag_day = False
+            break
 
 
 
