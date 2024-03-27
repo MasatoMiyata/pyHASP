@@ -2601,7 +2601,7 @@ while flag_day:
                 
                     if abs(X[LC+49]) < 0.001:  # 強制対流式の場合
                         X[LC+74] = X[LC+74] + W1*X[LC+48]    # 面積を持たない部位からの負荷に算入
- 
+
             
                 if LO != 0:
 
@@ -2622,8 +2622,9 @@ while flag_day:
 
             # ***                CALCULATION EXTRACTING LOAD   *********************
 
-            # if (LOPC != 0 ):
-                # pl.EXTRC1(J,NHR,LOPC,LC,NAZ,ISEAS[1],KSCH[1],IOPTWK,IOPTG,IOPVG,SMRT1,SMRT2,LCG,VOAG,CLDG,P0,RMMN,RMMX,SPCAP,EXCAP,VFLOW)
+            if (LOPC != 0 ):
+                (IOPTG,IOPVG,SMRT1,SMRT2,LCG,VOAG,CLDG,P0,RMMN,RMMX,SPCAP,EXCAP,VFLOW) = \
+                    pl.EXTRC1(J,NHR,LOPC,LC,NAZ,ISEAS[1],KSCH[1],IOPTWK,X,M)
 
 
         LCO = int(LC)
