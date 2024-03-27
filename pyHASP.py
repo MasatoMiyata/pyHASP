@@ -2026,9 +2026,8 @@ while (LL != 0):
 # 気象データをRewindした回数
 ICYCL = 1
 
-mprint("MCNTL[5]")   # データ形式 0:標準年気象データ（周期データ）、1:ピークデータ（周期データ）、2:実データ （2で割ることで、=0:周期データ, =1:実在データ）
-mprint("MCNTL[31]")  # データカラム数
-
+# mprint("MCNTL[5]")   # データ形式 0:標準年気象データ（周期データ）、1:ピークデータ（周期データ）、2:実データ （2で割ることで、=0:周期データ, =1:実在データ）
+# mprint("MCNTL[31]")  # データカラム数
 
 
 # 気象データを読み込む
@@ -2322,6 +2321,8 @@ while flag_day:
     LCGB = LC
     KSPAC = 0
     LCO = LC  # 追加（元のfortranにはない）
+
+    # スペースループのフラグ
     flag_space = True
 
     while flag_space:
@@ -2388,9 +2389,17 @@ while flag_day:
             X[LC+75] = 0.
             L = int(LC+LSZSPC[0])
 
-            # if LOPC != 0:
-            #     print("EXTRC0")
-                # EXTRC0(J,LOPC,LC,ISEAS,KSCH,IOPTWK)   # 空調運転状態(IOPTWK,M(LC+60))
+            if LOPC != 0:
+                # mprint("J")
+                # mprint("LOPC")
+                # mprint("LC")
+                # mprint("ISEAS")
+                # mprint("KSCH")
+
+                # IOPTWK 空調運転状態フラグ =0:停止中、=1:運転中、=2:起動、=3:停止
+                IOPTWK,M = pl.EXTRC0(J,LOPC,LC,ISEAS,KSCH,X,M)   # 空調運転状態(IOPTWK,M(LC+60))
+
+                # mprint("IOPTWK")
 
             # if M[L] == 1:
             #     # ***          3.8. HEAT GAIN THROUGH OUTSIDE WALL **********************
@@ -2404,18 +2413,18 @@ while flag_day:
             #     # ***          3.12. INTERNAL HEAT *************************************
 
 
-        # ***          3.13 CONVERT HEAT GAIN TO COOLING LOAD ******************
+            # ***          3.13 CONVERT HEAT GAIN TO COOLING LOAD ******************
 
-        X[J] = ACC1+X[LC+11] + ACC2*X[LC+8]
-        X[LC+11] = X[LC+11] * X[LC+10] + ACC2*X[LC+9]
-        X[J+24] = ACC4
-        X[J+48] = ACC3
-        X[J+72] = ACC5
+            X[J] = ACC1+X[LC+11] + ACC2*X[LC+8]
+            X[LC+11] = X[LC+11] * X[LC+10] + ACC2*X[LC+9]
+            X[J+24] = ACC4
+            X[J+48] = ACC3
+            X[J+72] = ACC5
 
-        # ***                CALCULATION EXTRACTING LOAD   *********************
+            # ***                CALCULATION EXTRACTING LOAD   *********************
 
-        # if (LOPC != 0 ):
-            # pl.EXTRC1(J,NHR,LOPC,LC,NAZ,ISEAS[1],KSCH[1],IOPTWK,IOPTG,IOPVG,SMRT1,SMRT2,LCG,VOAG,CLDG,P0,RMMN,RMMX,SPCAP,EXCAP,VFLOW)
+            # if (LOPC != 0 ):
+                # pl.EXTRC1(J,NHR,LOPC,LC,NAZ,ISEAS[1],KSCH[1],IOPTWK,IOPTG,IOPVG,SMRT1,SMRT2,LCG,VOAG,CLDG,P0,RMMN,RMMX,SPCAP,EXCAP,VFLOW)
 
 
         LCO = int(LC)
