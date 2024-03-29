@@ -1701,12 +1701,11 @@ def SLVSM(NZ,IOPT,EXCAP,SPCAP,NAZ,VFLOW,P0,CRHO,VOA,
         ICONV = 1
 
         for IZ in range(1, NZ+1):   # ゾーン loop
-            pass
 
             # 係数行列の該当部分に値をセットする
-        #     CALL COEFFS(LMODE(IZ),NZ,IZ,RMMX(IZ)-REFWD,RMMN(IZ)-REFWD,
-        # -      GRADL(IZ),CRHO,VFLOW(1,IZ),FIXEDL(IZ),EXCAP1(IZ),SPCAP1(IZ),
-        # -      ISL,IREP,LCG(IZ)+LSZSPC(0),LSZSPC,NA,AA,BB(IZ))
+                AA,BB[IZ],X,M = COEFFS(LMODE[IZ],NZ,IZ,RMMX[IZ]-REFWD,RMMN[IZ]-REFWD,
+                    GRADL[IZ],CRHO,VFLOW[1,IZ],FIXEDL[IZ],EXCAP1[IZ],SPCAP1[IZ],
+                    ISL,IREP,LCG[IZ]+LSZSPC[0],LSZSPC,NA,X,M)
 
         # 方程式を解く
         (BB) = DGESV(AA, BB)
