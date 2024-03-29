@@ -1,3 +1,9 @@
+#-----------------------------------------------------------------------
+# DYNAMIC HEAT LOAD PROGRAM FOR ENERGY SIMULATION
+# HASP/ACLD/8501       CODED BY Y.MATSUO
+# NewHASP/ACLD         REVISED BY T.NAGAI 
+# pyHASP/ACLD          CODED BY M.MIYATA
+#-----------------------------------------------------------------------
 import math
 import numpy as np
 import pandas as pd
@@ -9,14 +15,7 @@ def mprint(_str):
     """
     print('{}: {}'.format(_str, eval(_str)))
 
-#-----------------------------------------------------------------------
-# DYNAMIC HEAT LOAD PROGRAM FOR ENERGY SIMULATION
-# HASP/ACLD/8501       CODED BY Y.MATSUO
-# NewHASP/ACLD         REVISED BY T.NAGAI  
-#-----------------------------------------------------------------------
-
 # XMQ配列 X：実数, M：整数、Q：文字列（整数に変換）
-
 
 # 1. JOB START
 
@@ -2346,9 +2345,38 @@ while flag_day:
 
                 II = min(2,ISEAS[1])
 
-            #     pl.EXTRC2(NHR,MCNTL(1),ISEAS(1),NAZ,IOPTG,NZ,IOPVG,SMRT1,
-            #  -   SMRT2,VOAG,LCG,CLDG,NWD,WD,REFWD,P0,M[LOPC+165+II],VFLOW,EXCAP,
-            #  -   SPCAP,RMMX,RMMN,10,NUOT+KSPAC-NZ,IDWK,MDW[1],MODE,MCNTL[2],LSZSPC,IBECS,NUOB)
+                mprint("NHR")
+                mprint("MCNTL[1]")
+                mprint("ISEAS[1]")
+                mprint("NAZ")
+                mprint("IOPTG")
+                mprint("NZ")
+                mprint("IOPVG")
+                mprint("SMRT1")
+                mprint("SMRT2")
+                mprint("VOAG")
+                mprint("LCG")
+                mprint("CLDG")
+                mprint("NWD")
+                mprint("WD")
+                mprint("REFWD")
+                mprint("P0")
+                mprint("M[ int(LOPC+165+II) ]")
+                mprint("VFLOW")
+                mprint("EXCAP")
+                mprint("SPCAP")
+                mprint("RMMX")
+                mprint("RMMN")
+                mprint("NUOT+KSPAC-NZ")
+                mprint("IDWK")
+                mprint("MDW[1]")
+                mprint("MODE")
+                mprint("MCNTL[2]")
+                mprint("LSZSPC")
+
+                (X,M) = pl.EXTRC2(NHR,MCNTL[1],ISEAS[1],NAZ,IOPTG,NZ,IOPVG,SMRT1,SMRT2,VOAG,LCG,CLDG,NWD,WD,REFWD,
+                        P0,M[int(LOPC+165+II)],VFLOW,EXCAP,SPCAP,RMMX,RMMN,10,
+                        NUOT+KSPAC-NZ,IDWK,MDW[1],MODE,MCNTL[2],LSZSPC,X,M)
 
         # 全スペース終了
         if LC == 0:
