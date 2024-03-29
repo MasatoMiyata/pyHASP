@@ -1196,6 +1196,36 @@ def COEFFP(IZ,KSTP,NZ,IREP,NSTP,IDLT,VFLOW,PV,PR,CRHO,VOA,FIXEDL,RMSET,REFWD,ISL
     return II,AA,BB,IPS,X,M
 
 
+def DGESV(A,B):
+    # A * X = B を解く関数
+    # ただし、AとBは 1始まりの行列とする
+    # Bは一次元とする。
+    # a0_lis = [0, 0, 0, 0]
+    # a1_lis = [0, 1, 0, 0]
+    # a2_lis = [0, 0, 2, 0]
+    # a3_lis = [0, 0, 0, 4] 
+    # A_matrix = np.array([a0_lis, a1_lis, a2_lis, a3_lis])
+    # b = np.array([0,4,5,6])
+    # X = DGESV(A_matrix, b)
+
+    # 行列をずらす
+    AA = np.zeros([A.shape[0]-1, A.shape[1]-1])
+    for i in range(1, A.shape[0]):
+        for j in range(1, A.shape[1]):
+            AA[i-1][j-1] = A[i][j]
+
+    BB = np.zeros(B.shape[0]-1)
+    for i in range(1, B.shape[0]):
+        BB[i-1] = B[i]
+
+    XX = np.linalg.solve(AA, BB)
+
+    X = np.zeros(XX.shape[0]+1)
+    for i in range(0, XX.shape[0]):
+        X[i+1] = XX[i]
+
+    return X
+
 
 def EXTRC2(NHR,IPEAK,ISEAS,NAZ,IOPTG,NZ,IOPVG,SMRT1,SMRT2,
         VOAG,LCG,CLDG,NWD,WD,REFWD,P0,NSTP,VFLOW,EXCAP,SPCAP,RMMX,RMMN,
@@ -1569,54 +1599,45 @@ def EXTRC2(NHR,IPEAK,ISEAS,NAZ,IOPTG,NZ,IOPVG,SMRT1,SMRT2,
                                         RMSET,REFWD[ISL],ISL,LCG[IZ]+LSZSPC[0],LSZSPC,NA,NSIZE,AA,BB,IPS,X,M)
 
 
-    # C                 予熱開始直前までの室温湿度変動による蓄熱負荷を更新する
-    #                   IF ( IREP.EQ.1 ) THEN
-    #                      DO IZ = 1, NZ
-    #                         DO J = 1, NTRM(ISL)
-    #                            LSTPWK = LCG(IZ) + LSTP(J,ISL)
-    #                            LSTQWK = LCG(IZ) + LSTQ(J,ISL)
-    #                            IF ( KSTP.EQ.0 ) THEN
-    #                               X(LSTQWK) = X(LSTPWK+2)*X(LSTQWK)
-    #      -                        - ( X(LSTPWK) - X(LSTPWK+1) )
-    #      -                           *RM(IZ,0,JHR,ISL)
-    #                            ELSE
-    #                               X(LSTQWK) = X(LSTPWK+2)*X(LSTQWK)
-    #                            END IF
-    #                         END DO
+                        # 予熱開始直前までの室温湿度変動による蓄熱負荷を更新する
+                        if ( IREP == 1 ):
+                            for IZ in range(1, NZ+1):
+                                for J in range(1, NTRM[ISL]+1):
+                                    LSTPWK = LCG[IZ] + LSTP[J,ISL]
+                                    LSTQWK = LCG[IZ] + LSTQ[J,ISL]
+                                    if ( KSTP == 0 ):
+                                        X[LSTQWK] = X[LSTPWK+2]*X[LSTQWK] - ( X[LSTPWK] - X[LSTPWK+1] )*RM[IZ,0,JHR,ISL]
+                                    else:
+                                        X[LSTQWK] = X[LSTPWK+2]*X[LSTQWK]
 
-    #                         IF ( ISL.EQ.1 ) THEN
-    #                            L = LCG(IZ) + LSZSPC(0)
-    #                            DO IWL = 1, 9999
-    #                               CALL RTVADJ(LSZSPC,L,JZ,ISTAT)
-    #                               IF ( ISTAT.NE.1 ) THEN
-    #                                  GO TO 400
-    #                               ELSE
-    #                                  IF ( KSTP.EQ.0 ) THEN
-    #                                     X(L+11) = X(L+7)*X(L+11)
-    #      -                                + (X(L+5)-X(L+6))*RM(JZ,0,JHR,ISL)
-    #                                     X(L+12) = X(L+10)*X(L+12)
-    #      -                                + (X(L+8)-X(L+9))*RM(JZ,0,JHR,ISL)
-    #                                  ELSE
-    #                                     X(L+11) = X(L+7)*X(L+11)
-    #                                     X(L+12) = X(L+10)*X(L+12)
-    #                                  END IF
-    #                                  L = L + LSZSPC(M(L))
-    #                               END IF
-    #                            END DO
-    #                         END IF
-    #   400                   CONTINUE
+                                if ( ISL == 1 ):
+                                    L = LCG[IZ] + LSZSPC[0]
 
-    #                      END DO
-    #                   END IF
+                                    flag_RTVADJ = True
+                                    while flag_RTVADJ:
+                                        (L,JZ,ISTAT) = RTVADJ(LSZSPC,L,M)
+                                        if ISTAT != 1:
+                                            flag_RTVADJ = False
+                                        else:
 
-    # C                 予熱終了段であり方程式を解く
-    #                   IF ( (KSTP.EQ.NSTP1).AND.
-    #      -               ( (IDLT(KSTP).EQ.0).OR.(IREP.EQ.1) ) ) THEN
-    #                      IF(NSIZE.GT.NA) CALL ERROR2(124,1)
+                                            if ( KSTP == 0 ):
+                                                X[L+11] = X[L+ 7]*X[L+11] + (X[L+5]-X[L+6])*RM[JZ,0,JHR,ISL]
+                                                X[L+12] = X[L+10]*X[L+12] + (X[L+8]-X[L+9])*RM[JZ,0,JHR,ISL]
+                                            else:
+                                                X[L+11] = X[L+ 7]*X[L+11]
+                                                X[L+12] = X[L+10]*X[L+12]
 
-    # C                    方程式を解く
-    #                      CALL DGESV(NSIZE,1,AA,NA,IP,BB,NA,INFO)
-    #                      IF(INFO.NE.0) CALL ERROR2(132,2)
+                                            L = L + int(LSZSPC[int(M[L])])
+    
+
+                        # 予熱終了段であり方程式を解く
+                        if (KSTP == NSTP1) and ( (IDLT[KSTP] == 0) or (IREP == 1) ):
+                            if (NSIZE > NA): 
+                                raise Exception("例外が発生しました")
+
+                        # 方程式を解く
+                        (BB) = DGESV(AA, BB)
+
 
     # C                    予熱終了時の後処理（負荷等の抽出と蓄熱負荷の更新）
     #                      CALL POSTP(MZ,NZ,LCG,NSTP1,IDLT,JHR0,NHR,NSIZE,BB,
@@ -1716,4 +1737,6 @@ def EXTRC2(NHR,IPEAK,ISEAS,NAZ,IOPTG,NZ,IOPVG,SMRT1,SMRT2,
     return X,M
 
 # if __name__ == '__main__':
+
     #     print(NAME("15010101"))   
+    
