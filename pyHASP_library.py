@@ -3,8 +3,6 @@ import numpy as np
 import pandas as pd
 import xlrd
 
-
-
 def read_textfile(filename:str, split_method=None):
     """
     テキストファイルを読み込む関数
@@ -979,7 +977,7 @@ def EXTRC1(JHR,NHR,LOPC,LC,NAZ,ISEAS,KSCH,IOPTWK,X,M):
         elif ( M[L1+2] == 1 ):  # DSCH使用
             RFLW = X[ int( M[L1+3]+(KSCH-1)*24+JHR ) ]
         
-        if (M[L1+2] >= 1) and (I != Z):   # M(L1+2)=0は未定義の場合
+        if (M[L1+2] >= 1) and (I != IZ):   # M(L1+2)=0は未定義の場合
             VFLOW[I,IZ,JHR] = RFLW*X[L1+1]
         else:
             VFLOW[I,IZ,JHR] = 0.0
@@ -1753,9 +1751,6 @@ def SLVSM(NZ,IOPT,EXCAP,SPCAP,NAZ,VFLOW,P0,CRHO,VOA,
 
     return LMODE,AN,RM,AA,BB,IP,X,M
 
-
-
-
 def EXTRC2(NHR,IPEAK,ISEAS,NAZ,IOPTG,NZ,IOPVG,SMRT1,SMRT2,
         VOAG,LCG,CLDG,NWD,WD,REFWD,P0,NSTP,VFLOW,EXCAP,SPCAP,RMMX,RMMN,
         NITER,NUOT1,ID,MDW,MODE,IOUT,LSZSPC,X,M):
@@ -2309,7 +2304,8 @@ def EXTRC2(NHR,IPEAK,ISEAS,NAZ,IOPTG,NZ,IOPVG,SMRT1,SMRT2,
 
     return X,M
 
+
 # if __name__ == '__main__':
 
-    #     print(NAME("15010101"))   
+#         print(NAME("15010101"))   
     
