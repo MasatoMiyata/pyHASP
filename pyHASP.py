@@ -6,18 +6,45 @@
 #-----------------------------------------------------------------------
 import math
 import numpy as np
-import pandas as pd
 import xlrd
-import pyHASP_library as pl
 
-def mprint(_str):
-    """デバッグ用の関数
-    """
-    print('{}: {}'.format(_str, eval(_str)))
+from RHEAD import RHEAD
+from NDATE import NDATE
+from NDATF import NDATF
+from MKMDW import MKMDW
+from RETRIV import RETRIV
+from NAME import NAME
+from GVECTR import GVECTR
+from CPARAM import CPARAM
+from RTVADJ import RTVADJ
+from INWD import INWD
+from EXTRC0 import EXTRC0
+from EXTRC1 import EXTRC1
+from EXTRC2 import EXTRC2
 
-# XMQ配列 X：実数, M：整数、Q：文字列（整数に変換）
+from read_textfile import read_textfile
+from mprint import mprint
+from display_XMQ_matrix import display_XMQ_matrix
 
+# SATURATION HUMIDITY
+def SATX(T):
+    y = 1000.*math.exp(-5.58001+T*(0.0780136+T*(-2.87894E-04+T*(1.36152E-06+T*3.49024E-09)))-4.87306E-03*abs(T))
+    return y
+
+# SOLAR GAIN FACTOR
+def GF(Z):
+    y = Z*(2.392+Z*(-3.8636+Z*(3.7568-Z*1.3952)))
+    return y
+
+# WIND PRESSURE COEFFICIENT
+def CF(Z):
+    y=-0.01107+Z*(0.03675+Z*0.02332)
+    return y
+
+
+#-----------------------------------------------------------------------
 # 1. JOB START
+#-----------------------------------------------------------------------
 
 QVER='20200403'                                               
 
@@ -43,12 +70,9 @@ DR=0.0174533  # 度からラジアンに変換するための係数
 
 GAS = np.zeros(10)   # FURN(顕熱)による冷房負荷 GAS(0:9)
 
+# XMQ配列 X：実数, M：整数、Q：文字列（整数に変換）
 X = np.zeros(MX)
 M = np.zeros(MX)
-
-
-# EQUIVALENCE (X,M)    ! XとMの記憶領域は共有される
-# COMMON /XMQ/X
 
 MT = np.zeros(21)
 TH = np.zeros(21)
@@ -97,7 +121,7 @@ FL = np.zeros((5,3))
 AM = np.zeros((3,9))
 MCNTL = np.zeros(32+1)   # 「CNTL」カードのデータ内容(XMQ配列に相当)           rev 20200403(T.Nagai)
 
-#       COMMON /ETC/MCNTL
+#  COMMON /ETC/MCNTL
 
 MDW = np.zeros(2+1)    # MDW(1)  :本日の曜日(=1:月,2:火,..,7:日,8:祝,9:特), MDW(2)  :明日の曜日
 WDND = np.zeros((7,24))    # WDND    :明日の気象データ
@@ -111,28 +135,29 @@ NHR=24   # NHR     :1日のステップ数(24以外不可)
 NSL=2    # NSL     :顕熱と潜熱(2以外不可)
 NWD=7    # NWD     :気象データの種類(7以外不可)
 
-IOPTG = np.zeros((NAZ,NHR))        # 空調運転状態フラグ、=0:停止中,=1:運転中,=2:起動,=3:停止
-IOPVG = np.zeros((NAZ,NHR))        # 外気導入状態フラグ、=0:カット中,=1:導入中,=2:導入開始,=3:導入停止
-SMRT1 = np.zeros((NAZ,NHR))        # 面積を持たない部位からの冷房負荷
-SMRT2 = np.zeros((NAZ,NHR))        # INFLの吸熱応答係数（瞬時）
-VOAG = np.zeros(NAZ)             # 導入時の外気量
-LCG = np.zeros(NAZ)              # XMQ配列のSPACデータへのポインタ（L）
-CLDG = np.zeros((NAZ,NHR,NSL))     # 冷房負荷
-REFWD = np.zeros(NSL)            # 基準温湿度
-P0 = np.zeros((NAZ,2,NHR,NSL))   # 瞬時蓄熱応答係数（吸熱される側が正）
-                                #     第2添字=0:二等辺三角
-                                #     第2添字=1:右側直角二等辺三角
-EXCAP = np.zeros((NAZ,NSL))        # 各スペースの装置容量（冷却、0以上）
-SPCAP = np.zeros((NAZ,NSL))        # 各スペースの装置容量（加熱、0以上）
-RMMX  = np.zeros((NAZ,NSL))         # 各スペースの設定温湿度上限
-RMMN  = np.zeros((NAZ,NSL))         # 各スペースの設定温湿度下限
-                        # （RMMX,RMMNは基準温湿度からの偏差ではない）
+# EXTRC1 関連
+IOPTG = np.zeros([NAZ+1,NHR+1])       # 空調運転状態フラグ、=0:停止中,=1:運転中,=2:起動,=3:停止
+IOPVG = np.zeros([NAZ+1,NHR+1])       # 外気導入状態フラグ、=0:カット中,=1:導入中,=2:導入開始,=3:導入停止
+SMRT1 = np.zeros([NAZ+1,NHR+1])       # 面積を持たない部位からの冷房負荷
+SMRT2 = np.zeros([NAZ+1,NHR+1])       # INFLの吸熱応答係数（瞬時）
+VOAG  = np.zeros([NAZ+1])             # 導入時の外気量
+LCG   = np.zeros([NAZ+1])             # XMQ配列のSPACデータへのポインタ（L）
+CLDG  = np.zeros([NAZ+1,NHR+1,NSL+1])    # 冷房負荷
+REFWD = np.zeros(NSL)                    # 基準温湿度
+P0    = np.zeros([NAZ+1,2,NHR+1,NSL+1])  # 瞬時蓄熱応答係数（吸熱される側が正）第2添字=0:二等辺三角、=1:右側直角二等辺三角
+EXCAP = np.zeros([NAZ+1,NSL+1])       # 各スペースの装置容量（冷却、0以上）
+SPCAP = np.zeros([NAZ+1,NSL+1])       # 各スペースの装置容量（加熱、0以上）
+RMMX  = np.zeros([NAZ+1,NSL+1])       # 各スペースの設定温湿度上限（RMMX,RMMNは基準温湿度からの偏差ではない）
+RMMN  = np.zeros([NAZ+1,NSL+1])       # 各スペースの設定温湿度下限（RMMX,RMMNは基準温湿度からの偏差ではない）
+VFLOW = np.zeros([NAZ+1,NAZ+1,NHR+1]) # 第1添字目のスペースから第2添字目のスペースへの流入
+
 # LOPC                  # OPCOデータへのポインタ(L)
 # IZ                    # 当該スペースは現在のグループの何スペース目か
 
 IDWK = np.zeros(3+1)               # 年・月・日
+
 # NZ                    # 現在のグループのスペース数
-VFLOW = np.zeros((NAZ,NAZ,NHR))    # 第1添字目のスペースから第2添字目のスペースへの流入
+
                         #     風量（体積流量、0以上、対角項は0とする）
 # ICYCL                 # 気象データをRewindした回数（Rewind後）
 # ICYCLO                # 気象データをRewindした回数（Rewind前）
@@ -140,11 +165,11 @@ VFLOW = np.zeros((NAZ,NAZ,NHR))    # 第1添字目のスペースから第2添�
 # ISTAT2                # SUBROUTINE RTVADJからの返り値
 # IOPTWK                # 空調運転状態フラグ、=0:停止中、=1:運転中、=2:起動、=3:停止
 
-WINCHR = np.zeros((3,2))       # 窓の物性値（第1添字=0:K, 1:SCC, 2:SCR、第2添字=0:ブラインド開時、1:閉時）
-MFLWK = np.zeros(2)              # CFLWデータセット用Work array
-XFLWK = np.zeros(2)              # CFLWデータセット用Work array
-LSZSPC = np.zeros(5)           # XMQ配列のうち、(0):SPAC, (1):OWAL, (2):IWAL,(3):WNDW, (4):INFL の変数の数
-IWFLG = np.zeros(4+1)              # 気象データヘッダ行のデータ                add 20200403(T.Nagai)
+WINCHR = np.zeros((3,2))        # 窓の物性値（第1添字=0:K, 1:SCC, 2:SCR、第2添字=0:ブラインド開時、1:閉時）
+MFLWK = np.zeros(2)             # CFLWデータセット用Work array
+XFLWK = np.zeros(2)             # CFLWデータセット用Work array
+LSZSPC = np.zeros(5)            # XMQ配列のうち、(0):SPAC, (1):OWAL, (2):IWAL,(3):WNDW, (4):INFL の変数の数
+IWFLG = np.zeros(4+1)           # 気象データヘッダ行のデータ                add 20200403(T.Nagai)
                                 # (1) =0:ヘッダ行がない、=1:ヘッダ行がある
                                 # (2):日射・放射の単位 =0:10kJ/m2h,
                                 #   =1:kcal/m2h, =2:kJ/m2h、
@@ -155,15 +180,7 @@ RWFLG = np.zeros(3+1)              # 気象データヘッダ行のデータ    
                                 # (2) 経度[deg]（西経の場合は負値）、
                                 # (3) 世界時と地方標準時の時差
                                 #  （日本の場合は9.0）
-# QKY*4,
-# QD*80,
-# QJB*80,
-# QSP*4,
-# QERR*1
-# QWK*200
-# QPATH*200   # 出力データパス(".....\"まで)
 
-# rev 20200403(T.Nagai)
 LSZSPC = [218,16,26,47,8]                                               
 
 # INSIDE SURFACE REFLECTANCE
@@ -198,13 +215,15 @@ AM = [  [79.,50.,-3.0],
         [329.,118.,-5.4] 
     ]
 
-#**********************************************************************************************************
+#-----------------------------------------------------------------------
+# ファイルの読み込み
+#-----------------------------------------------------------------------
 
 # 入力ファイル 1行目 建物データファイル名称
-NUB = pl.read_textfile("./input/Sample_Input_NewHASP1.txt")
+NUB = read_textfile("./input/Sample_Input_NewHASP1.txt")
 
 # 入力ファイル 2行目 気象データファイル名称
-NUW = pl.read_textfile("./input/36300110_SI.hasH")
+NUW = read_textfile("./input/36300110_SI.hasH")
 
 # 気象データファイルの1行目の1カラム目が「*」の場合は、ヘッダ行あり、
 # その他の文字の場合はヘッダ行なしと見なされる。
@@ -213,7 +232,7 @@ if NUW[0][0] == "*":
     IWFLG[1] = 1   # ヘッダー行がある
     
     # 気象データのヘッダー部分の読み込み
-    IWFLG, RWFLG = pl.RHEAD(NUW[0], IWFLG, RWFLG)
+    IWFLG, RWFLG = RHEAD(NUW[0], IWFLG, RWFLG)
     
     MCNTL[3]  = IWFLG[3]  # 雲量
     MCNTL[4]  = IWFLG[2]  # 日射の単位
@@ -322,8 +341,11 @@ NUBW = xlrd.open_workbook("./input/wcontabl.xlsx")
 # 入力ファイル 7行目 BECSへの連携のためのファイル ＜省略＞
 
 
-#*****       2. PRELIMINARY PROCESS ***********************************
-#***          2.1. BUILDING COMMON DATA *******************************
+#-----------------------------------------------------------------------
+# 2. PRELIMINARY PROCESS
+#-----------------------------------------------------------------------
+
+#  2.1. BUILDING COMMON DATA
 
 L = 1500
 
@@ -391,7 +413,7 @@ for line in range(1,bldg_end):
 
 
         X[154] = 0.01 * X[154]                    # 反射率を % から 比率 に。
-        X[157] = pl.SATX(X[155]) * X[156] / 100   # 基準湿度（絶対湿度）
+        X[157] = SATX(X[155]) * X[156] / 100   # 基準湿度（絶対湿度）
         X[158] = 0.860 * X[158]                   # W/m2 を kcal/m2h に変換
 
         REFWD[0] = X[155]   # 基準温度
@@ -446,9 +468,9 @@ for line in range(1,bldg_end):
         # 本計算開始日の通算日数 MCNTL(20)
         # 計算終了日の通算日数 MCNTL(21)
 
-        MCNTL[19] = pl.NDATF(MCNTL[6],MCNTL[7],MCNTL[8])
-        MCNTL[20] = pl.NDATF(MCNTL[9],MCNTL[10],MCNTL[11])
-        MCNTL[21] = pl.NDATF(MCNTL[12],MCNTL[13],MCNTL[14])
+        MCNTL[19] = NDATF(MCNTL[6],MCNTL[7],MCNTL[8])
+        MCNTL[20] = NDATF(MCNTL[9],MCNTL[10],MCNTL[11])
+        MCNTL[21] = NDATF(MCNTL[12],MCNTL[13],MCNTL[14])
 
     elif KEY == "HRAT":
 
@@ -467,7 +489,7 @@ for line in range(1,bldg_end):
         # 名称の数値化と起点（初期値100）の検索
         # NNAMは数値化された EXPS名称 QD(6:9) 
         # 例えば、 N___ であれば 15010101、 E___  であれば 6010101
-        (NNAM,LC,LD) = pl.RETRIV(100,NUB[line][5:9],M)
+        (NNAM,LC,LD) = RETRIV(100,NUB[line][5:9],M)
 
         if LD != 0:
             print(f"EXPS: " + {NUB[line][5:9]})
@@ -550,7 +572,7 @@ for line in range(1,bldg_end):
         # DCHECK(QD,615,NERR)
     
         # 名称の数値化と起点（初期値102）の検索
-        (NNAM,LC,LD) = pl.RETRIV(102,NUB[line][5:9],M)
+        (NNAM,LC,LD) = RETRIV(102,NUB[line][5:9],M)
 
         if LD != 0:
             print(f"WCON: " + {NUB[line][5:9]})
@@ -598,7 +620,7 @@ for line in range(1,bldg_end):
         # CALL DCHECK(QD,661,NERR)        
 
         # WSCH名称の数値化と起点の検索
-        (NNAM,LC,LD) = pl.RETRIV(108,NUB[line][5:9],M)
+        (NNAM,LC,LD) = RETRIV(108,NUB[line][5:9],M)
         
         if LD != 0:
             print(f"WSCH: " + {NUB[line][5:9]})
@@ -625,7 +647,7 @@ for line in range(1,bldg_end):
     elif KEY == "DSCH":
 
         # DSCH名称の数値化と起点の検索
-        (NNAM,LC,LD) = pl.RETRIV(104,NUB[line][5:9],M)
+        (NNAM,LC,LD) = RETRIV(104,NUB[line][5:9],M)
 
         if LD != 0:
             print(f"DSCH: " + {NUB[line][5:9]})
@@ -697,7 +719,7 @@ for line in range(1,bldg_end):
                     N = N + 1
 
                     # 通し日の算出 M2
-                    M2 = pl.NDATE(M[M1],M[M1+1]) 
+                    M2 = NDATE(M[M1],M[M1+1]) 
                     
                     # M(193)=1/1、M(558)=12/31 特別日なら 1
                     M[192+M2] = 1   
@@ -718,7 +740,7 @@ for line in range(1,bldg_end):
         # CALL DCHECK(QD,1131,NERR)
 
         # 名称の数値化と起点（初期値145）の検索
-        (NNAM,LC,LD) = pl.RETRIV(145,NUB[line][5:9],M)
+        (NNAM,LC,LD) = RETRIV(145,NUB[line][5:9],M)
 
         if LD != 0:
             print(f"OPCO: " + {NUB[line][5:9]})
@@ -834,8 +856,8 @@ for line in range(1,bldg_end):
                 raise Exception("湿度の下限値が上限値を超えています")
 
             # 最大気温、最大相対湿度から最大絶対湿度を求める
-            X[L1+3] = pl.SATX( X[L1+1]) * X[L1+3] /100
-            X[L1+4] = pl.SATX( X[L1+2]) * X[L1+4] /100
+            X[L1+3] = SATX( X[L1+1]) * X[L1+3] /100
+            X[L1+4] = SATX( X[L1+2]) * X[L1+4] /100
             
             # 予熱時間を読み込む    ：newHASPのコメントが間違っている？
             if II <= 2:
@@ -844,7 +866,7 @@ for line in range(1,bldg_end):
 
             # 運転開始時刻
             IWK=23+(II-1)*18
-            (NNAM,LC,LD) = pl.RETRIV(147,NUB[line][IWK:IWK+3]+" ",M)
+            (NNAM,LC,LD) = RETRIV(147,NUB[line][IWK:IWK+3]+" ",M)
 
             I=L+14+(II-1)*50    # スケジュール2種類（24時間×2=48）
             print(f"OPCO I: {I}")
@@ -880,7 +902,7 @@ for line in range(1,bldg_end):
     elif KEY == "OSCH":
     
         # OSCH名称の数値化と起点の検索 （3文字であるため空白を入れて4文字に）
-        (NNAM,LC,LD) = pl.RETRIV(147,NUB[line][5:8]+" ",M)
+        (NNAM,LC,LD) = RETRIV(147,NUB[line][5:8]+" ",M)
 
         if LD != 0:
             print(f"OSCH: " + {NUB[line][5:8]})
@@ -915,7 +937,7 @@ for line in range(1,bldg_end):
         # CALL DCHECK(QD,1370,NERR)
 
         # 名称の数値化と起点（初期値98）の検索
-        (NNAM,LC,LD) = pl.RETRIV(98,NUB[line][5:9],M)
+        (NNAM,LC,LD) = RETRIV(98,NUB[line][5:9],M)
 
         if LD != 0:
             print(f"OAHU: " + {NUB[line][5:9]})
@@ -952,7 +974,7 @@ for line in range(1,bldg_end):
                 else:
                     M[L1+1] = 2   # 温度と湿度の指定
                     X[L1+3] = float(NUB[line][IWK+3:IWK+6])
-                    X[L1+3] = pl.SATX(X[L1+2])*X[L1+3]*0.01
+                    X[L1+3] = SATX(X[L1+2])*X[L1+3]*0.01
 
             # 外調機 （DB上限、下限、RH上限、下限）
             if I in [1,2]:  # 上下限ループ
@@ -972,7 +994,7 @@ for line in range(1,bldg_end):
                         M[L1+3+I]=2
                         # 下限の読み込み
                         X[L1+7+I] = NUB[line][I1+6:I1+9]
-                        X[L1+7+I] = pl.SATX(X[L1+5+I])*X(L1+7+I)*0.01
+                        X[L1+7+I] = SATX(X[L1+5+I])*X(L1+7+I)*0.01
 
         # Lの更新 （183個 間隔）
         L=L+183
@@ -982,7 +1004,7 @@ print("---建物データの読み込み終了---")
 NRM = 0
 IZ = 1
 LCGB = L   # 現在のグループの先頭スペースのSPACデータポインタ(L)
-TCM = pl.GVECTR("INIT",NL,MT,TH,HT,NUBW)
+TCM = GVECTR("INIT",NL,MT,TH,HT,NUBW)
 
 for line in range(bldg_end+1,len(NUB)):
 
@@ -997,7 +1019,7 @@ for line in range(bldg_end+1,len(NUB)):
 
         # SPAC名
         QSP=NUB[line][5:9]
-        (NNAM,LC,LD) = pl.RETRIV(106,QSP,M)
+        (NNAM,LC,LD) = RETRIV(106,QSP,M)
 
         print(f"SPAC: 室名{QSP}")
 
@@ -1012,7 +1034,7 @@ for line in range(bldg_end+1,len(NUB)):
         M[L+1] = NNAM
 
         # WSCH 名
-        (NNAM,LC,LD) = pl.RETRIV(108,NUB[line][9:13],M)
+        (NNAM,LC,LD) = RETRIV(108,NUB[line][9:13],M)
         if LD != LC:
             print(f"SPAC: " + {NUB[line][9:13]})
             raise Exception("LDがLCと異なります")
@@ -1094,7 +1116,7 @@ for line in range(bldg_end+1,len(NUB)):
                 ARM=ARM+A
 
                 # WCONを検索
-                (NNAM,LC,LD) = pl.RETRIV(102,NUB[line_ex][5:9],M)
+                (NNAM,LC,LD) = RETRIV(102,NUB[line_ex][5:9],M)
                 if LD != LC:
                     raise Exception("LDがLCと異なります")
                 
@@ -1138,7 +1160,7 @@ for line in range(bldg_end+1,len(NUB)):
                 # print("---TCM---")
                 # print(TCM)
 
-                GTR,GAD = pl.GVECTR('OWAL',NL,MT,TH,HT,HOX,TCM)
+                GTR,GAD = GVECTR('OWAL',NL,MT,TH,HT,HOX,TCM)
 
                 # print("---NL---")
                 # print(NL)
@@ -1159,7 +1181,7 @@ for line in range(bldg_end+1,len(NUB)):
                 for J in range(0,9+1):
                     GRM[J]=GRM[J]+A*GAD[J]
 
-                P = pl.CPARAM(2,GTR)
+                P = CPARAM(2,GTR)
 
                 X[L+2]=A*P[1]
                 X[L+3]=A*P[3]
@@ -1168,7 +1190,7 @@ for line in range(bldg_end+1,len(NUB)):
                 X[L+6]=P[8]
 
                 # EXPSを検索
-                (NNAM,LC,LD) = pl.RETRIV(100,NUB[line_ex][9:13],M)
+                (NNAM,LC,LD) = RETRIV(100,NUB[line_ex][9:13],M)
                 if LD != LC:
                     raise Exception("LDがLCと異なります")
 
@@ -1232,7 +1254,7 @@ for line in range(bldg_end+1,len(NUB)):
                 ARM=ARM+A
 
                 # WCONを検索
-                (NNAM,LC,LD) = pl.RETRIV(102,NUB[line_ex][5:9],M)
+                (NNAM,LC,LD) = RETRIV(102,NUB[line_ex][5:9],M)
                 if LD != LC:
                     raise Exception("LDがLCと異なります")
 
@@ -1254,7 +1276,7 @@ for line in range(bldg_end+1,len(NUB)):
                 # print("---TH---")
                 # print(TH)
                 
-                GTR,GAD = pl.GVECTR('IWAL',NL,MT,TH,HT,HT,TCM)
+                GTR,GAD = GVECTR('IWAL',NL,MT,TH,HT,HT,TCM)
 
                 if NUB[line_ex][11:14] != "   ":
                     I = int(NUB[line_ex][11:14])  # 隣室モード
@@ -1284,14 +1306,14 @@ for line in range(bldg_end+1,len(NUB)):
                     if M[L+1] == 3:
 
                         # 隣室SPAC名
-                        (NNAM,LC,LD) = pl.RETRIV(102,NUB[line_ex][20:24],M) # NNAMへの変換機能のみ利用
+                        (NNAM,LC,LD) = RETRIV(102,NUB[line_ex][20:24],M) # NNAMへの変換機能のみ利用
                         M[L+2] = NNAM
 
                         for J in range(0,10):
                             X[L+16+J] = A*GTR[J]
 
                     else:
-                        P = pl.CPARAM(2,GTR)
+                        P = CPARAM(2,GTR)
                         X[L+3] = A*P[1]
                         X[L+4] = A*P[2]
                         X[L+5] = A*P[3]
@@ -1316,7 +1338,7 @@ for line in range(bldg_end+1,len(NUB)):
                 ARM=ARM+A
             
                 # WCONを検索
-                (NNAM,LC,LD) = pl.RETRIV(102,NUB[line_ex][5:9],M)
+                (NNAM,LC,LD) = RETRIV(102,NUB[line_ex][5:9],M)
                 if LD != LC:
                     raise Exception("LDがLCと異なります")
 
@@ -1343,7 +1365,7 @@ for line in range(bldg_end+1,len(NUB)):
                 # print("---TH---")
                 # print(TH)
                 
-                GTR,GAD = pl.GVECTR('GWAL',NL,MT,TH,HT,0,TCM)
+                GTR,GAD = GVECTR('GWAL',NL,MT,TH,HT,0,TCM)
 
                 for J in range(0,10):
                     GRM[J] = GRM[J] + A*(GAD[J]-GTR[J])
@@ -1354,7 +1376,7 @@ for line in range(bldg_end+1,len(NUB)):
                 A = float(NUB[line_ex][41:])
                 
                 # WCONを検索
-                (NNAM,LC,LD) = pl.RETRIV(102,NUB[line_ex][5:9],M)
+                (NNAM,LC,LD) = RETRIV(102,NUB[line_ex][5:9],M)
                 if LD != LC:
                     raise Exception("LDがLCと異なります")
 
@@ -1381,7 +1403,7 @@ for line in range(bldg_end+1,len(NUB)):
                 MT[NL] = M(int(M[int(LC+2)])-1)
                 TH[NL] = U1*U2/U0
 
-                GTR,GAD = pl.GVECTR('BECO',2*NL-1,MT,TH,HT,HT,TCM)
+                GTR,GAD = GVECTR('BECO',2*NL-1,MT,TH,HT,HT,TCM)
 
                 for J in range(0,10):
                     GRM[J] = GRM[J] + A*(GAD[J]-GTR[J])
@@ -1534,7 +1556,7 @@ for line in range(bldg_end+1,len(NUB)):
                     GRM[J] = GRM[J] + X[L+5]
 
                 # EXPSを検索
-                (NNAM,LC,LD) = pl.RETRIV(100,NUB[line_ex][9:13],M)
+                (NNAM,LC,LD) = RETRIV(100,NUB[line_ex][9:13],M)
                 if LD != LC:
                     raise Exception("LDがLCと異なります")
             
@@ -1614,7 +1636,7 @@ for line in range(bldg_end+1,len(NUB)):
                 M[L] = 4
 
                 # EXPSを検索
-                (NNAM,LC,LD) = pl.RETRIV(100,NUB[line_ex][9:13],M)
+                (NNAM,LC,LD) = RETRIV(100,NUB[line_ex][9:13],M)
                 if LD != LC:
                     raise Exception("LDがLCと異なります")
                 else:
@@ -1655,7 +1677,7 @@ for line in range(bldg_end+1,len(NUB)):
                     M[L+4] = 1   # DSCH使用
 
                     # DSCHを検索
-                    (NNAM,LC,LD) = pl.RETRIV(104,NUB[line_ex][27:31],M)
+                    (NNAM,LC,LD) = RETRIV(104,NUB[line_ex][27:31],M)
                     if LD != LC:
                         raise Exception("LDがLCと異なります")
                     else:
@@ -1666,7 +1688,7 @@ for line in range(bldg_end+1,len(NUB)):
             elif KEY_SPAC == "LIGH":
 
                 # DSCHを検索
-                (NNAM,LC,LD) = pl.RETRIV(104,NUB[line_ex][5:9],M)
+                (NNAM,LC,LD) = RETRIV(104,NUB[line_ex][5:9],M)
                 if LD != LC:
                     raise Exception("LDがLCと異なります")
                 else:
@@ -1717,7 +1739,7 @@ for line in range(bldg_end+1,len(NUB)):
             elif KEY_SPAC == "OCUP":
 
                 # DSCHを検索
-                (NNAM,LC,LD) = pl.RETRIV(104,NUB[line_ex][5:9],M)
+                (NNAM,LC,LD) = RETRIV(104,NUB[line_ex][5:9],M)
                 if LD != LC:
                     raise Exception("LDがLCと異なります")
                 else:
@@ -1752,7 +1774,7 @@ for line in range(bldg_end+1,len(NUB)):
             elif KEY_SPAC == "HEAT":
 
                 # DSCHを検索
-                (NNAM,LC,LD) = pl.RETRIV(104,NUB[line_ex][5:9],M)
+                (NNAM,LC,LD) = RETRIV(104,NUB[line_ex][5:9],M)
                 if LD != LC:
                     raise Exception("LDがLCと異なります")
                 else:
@@ -1810,11 +1832,11 @@ for line in range(bldg_end+1,len(NUB)):
                 if (abs(W1)>0.1):
                     IFURS=1
 
-                GTR,GAD = pl.GVECTR('FURS',0,MT,TH,HT,W1,TCM)
+                GTR,GAD = GVECTR('FURS',0,MT,TH,HT,W1,TCM)
                 for J in range(0,10):
                     GAS[J] = GAS[J] + GAD[J]
 
-                GTR,GAD = pl.GVECTR('FURN',0,MT,TH,HT,W2,TCM)
+                GTR,GAD = GVECTR('FURN',0,MT,TH,HT,W2,TCM)
                 for J in range(0,10):
                     GRL[J] = GRL[J] + GAD[J]
 
@@ -1822,7 +1844,7 @@ for line in range(bldg_end+1,len(NUB)):
             elif KEY_SPAC == "SOPC":
 
                 # OPCOを検索
-                (NNAM,LC,LD) = pl.RETRIV(145,NUB[line_ex][5:9],M)
+                (NNAM,LC,LD) = RETRIV(145,NUB[line_ex][5:9],M)
                 if LD != LC:
                     raise Exception("LDがLCと異なります")
                 else:
@@ -1839,7 +1861,7 @@ for line in range(bldg_end+1,len(NUB)):
                 # OAHUの検索
                 if NUB[line_ex][37:41] != "    ":
                     # OPCOを検索
-                    (NNAM,LC,LD) = pl.RETRIV(98,NUB[line_ex][37:41],M)
+                    (NNAM,LC,LD) = RETRIV(98,NUB[line_ex][37:41],M)
                     if LD != LC:
                         raise Exception("LDがLCと異なります")
                     else:
@@ -1886,7 +1908,7 @@ for line in range(bldg_end+1,len(NUB)):
                 for J in range(0,10):
                     G[J] = (HC*ARM-FC*GRM[J])/(HC*ARM+FR*GRM[J])
 
-                P = pl.CPARAM(1,G)
+                P = CPARAM(1,G)
                 X[LL+8]  = P[1]
                 X[LL+9]  = P[3]
                 X[LL+10] = P[5]
@@ -1894,11 +1916,11 @@ for line in range(bldg_end+1,len(NUB)):
                 for J in range(0,10):
                     G[J] = HC*ARM*GRM[J]/(HC*ARM+FR*GRM[J])+GAS[J]
                 
-                P = pl.CPARAM(2,G)
+                P = CPARAM(2,G)
                 for I in range(1,9):
                     X[LL+I+14] = P[I]
 
-                P = pl.CPARAM(1,GRL)
+                P = CPARAM(1,GRL)
                 for I in range(1,6):
                     X[LL+I+24] = P[I]
 
@@ -1907,12 +1929,12 @@ for line in range(bldg_end+1,len(NUB)):
                 flag_RTVADJ = True
                 while flag_RTVADJ:
 
-                    (L2, JZ, ISTAT2) = pl.RTVADJ(LSZSPC, L2, M)
+                    (L2, JZ, ISTAT2) = RTVADJ(LSZSPC, L2, M)
 
                     if (ISTAT2 == 1) or (ISTAT2 == -2):
                         for J in range(0,10):
                             G[J] = HC*ARM/(HC*ARM+FR*GRM[J])*X[int(L2)+16+J]
-                        P = pl.CPARAM(2,G)
+                        P = CPARAM(2,G)
                         for J in range(1,9):
                             X[int(L2)+I+2]=P[I]
                         L2 = L2 + LSZSPC(M[int(L2)])
@@ -1922,13 +1944,13 @@ for line in range(bldg_end+1,len(NUB)):
                     if (ISTAT2 == 1) or (ISTAT2 == -2):
                         for J in range(0,10):
                             G[J] = HC*ARM/(HC*ARM+FR*GRM[J])*X(L2+16+J)
-                        P = pl.CPARAM(2,G)
+                        P = CPARAM(2,G)
                         for I in range(0,9):
                             X[int(L2)+I+2] = P[I]
                         L2=L2+LSZSPC[int(M[L2])]
 
                 if IFURS >= 1:
-                    P = pl.CPARAM(2,GAS)   # 家具の蓄熱応答係数のみ計算（簡易MRT計算用）
+                    P = CPARAM(2,GAS)   # 家具の蓄熱応答係数のみ計算（簡易MRT計算用）
                     for I in range(0,9):
                         X[LL+I+63] = P[I]
                         
@@ -1950,7 +1972,7 @@ for line in range(bldg_end+1,len(NUB)):
 
                             flag_RTVADJ_2 = True
                             while flag_RTVADJ_2:
-                                (L2, JZ, ISTAT2) = pl.RTVADJ(LSZSPC, L2, M)
+                                (L2, JZ, ISTAT2) = RTVADJ(LSZSPC, L2, M)
                                 if ISTAT2 == -2:
                                     raise Exception("隣室条件が不正です")
                                 elif ISTAT2 == -1:
@@ -2013,14 +2035,16 @@ while (LL != 0):
     WF[9,3] = X[LL+29]
     WF[9,4] = X[LL+29]
     
-    QSP = pl.NAME(M[LL + 1])
+    QSP = NAME(M[LL + 1])
 
     LL = int(M[LL])
 
 
-# *****       3. MAIN PROCESS ******************************************
-    
-# ***          3.1. DATING AND JOB CONTROL *****************************
+#-----------------------------------------------------------------------
+# 3. MAIN PROCESS
+#-----------------------------------------------------------------------
+        
+# 3.1. DATING AND JOB CONTROL
 
 # 気象データをRewindした回数
 ICYCL = 1
@@ -2036,13 +2060,13 @@ NUW_flag = True
 while NUW_flag:
 
     # 気象データの読み込み
-    ICYCL,WDND,IDND,ISTAT,NUW_day = pl.INWD(NUW, int(MCNTL[5]/2), int(MCNTL[31]), int(ICYCL),NUW_day)
+    ICYCL,WDND,IDND,ISTAT,NUW_day = INWD(NUW, int(MCNTL[5]/2), int(MCNTL[31]), int(ICYCL),NUW_day)
 
     # 周期の処理
     if MCNTL[5] != 1:     # 気象データ形式 = ピークデータ以外
 
         # 読み込んだ気象データの日付
-        KDYF = pl.NDATF(IDND[1,1],IDND[1,2],IDND[1,3])   # 1899/12/31を1とした通算日数
+        KDYF = NDATF(IDND[1,1],IDND[1,2],IDND[1,3])   # 1899/12/31を1とした通算日数
 
         if (MCNTL[5] == 0 and ICYCL == 2) or (MCNTL[5] == 2 and KDYF > MCNTL[19]):
             # 気象データ形式が「標準年気象データ」で、繰り返し2回目
@@ -2073,11 +2097,11 @@ while flag_day:
             ID[I,J]=IDND[I,J]
 
     # 通算日数
-    KDY  = pl.NDATE(ID[1,2],ID[1,3])
+    KDY  = NDATE(ID[1,2],ID[1,3])
     # 通算日数 (1899.12.31を1とした日数）           
-    KDYF = pl.NDATF(ID[1,1],ID[1,2],ID[1,3])   
+    KDYF = NDATF(ID[1,1],ID[1,2],ID[1,3])   
 
-    MDW[1]   = pl.MKMDW(ID, M)   # 曜日（スケジュール）
+    MDW[1]   = MKMDW(ID, M)   # 曜日（スケジュール）
     ISEAS[1] = int(M[980+int(ID[1,2])])  # 季節
     IDWK[1]  = int(ID[1,1])   # 計算日の年
     IDWK[2]  = int(ID[1,2])   # 計算日の月
@@ -2092,7 +2116,7 @@ while flag_day:
     # WDND: 気象データ（加工前）
     # IDND: 日付データ
     # ISTAT: 1=通常、0=ファイル終了（IOPWE=1、つまり実在データのとき）
-    ICYCL,WDND,IDND,ISTAT,NUW_day = pl.INWD(NUW, int(MCNTL[5]/2), int(MCNTL[31]), int(ICYCL), NUW_day) 
+    ICYCL,WDND,IDND,ISTAT,NUW_day = INWD(NUW, int(MCNTL[5]/2), int(MCNTL[31]), int(ICYCL), NUW_day) 
 
     if ISTAT == 0: # 実在気象データの最終日＝計算最終日
         if (KDYF != MCNTL[21]): # 計算終了日と一致しない場合
@@ -2100,7 +2124,7 @@ while flag_day:
         MDW[2]   = MDW[1]    # 明日の曜日 ＝ 最終日と同じとする
         ISEAS[2] = ISEAS[1]  # 明日の季節 ＝ 最終日と同じとする
     else:
-        MDW[2]   = pl.MKMDW(IDND, M)      # 明日の曜日
+        MDW[2]   = MKMDW(IDND, M)      # 明日の曜日
         ISEAS[2] = M[980+int(IDND[1,2])]  # 明日の季節
 
     #------------------------
@@ -2151,7 +2175,7 @@ while flag_day:
 
         WD[6,J] = (WD[6,J]-8.)*22.5
         WD[7,J] = 0.1*WD[7,J]
-        WD8[J] = pl.SATX(WD[1,J])-WD[2,J]   # 飽差（外気飽和絶対湿度－外気絶対湿度)
+        WD8[J] = SATX(WD[1,J])-WD[2,J]   # 飽差（外気飽和絶対湿度－外気絶対湿度)
 
     # print("気象データ")
     # print(WD[:,1])
@@ -2215,7 +2239,7 @@ while flag_day:
 
                 if (X[L+14]==0) and (X[L+19]==0):
                     X[L+J+27] = SS 
-                    X[L+J+51] = pl.GF(SS**2)
+                    X[L+J+51] = GF(SS**2)
                     L = int(M[L])
                     break   # for文を抜ける
 
@@ -2263,7 +2287,7 @@ while flag_day:
                             VG = 0.
 
                     SG = UG*VG
-                    X[L+J+51] = pl.GF(SS**2)*SG/X[L+25]     
+                    X[L+J+51] = GF(SS**2)*SG/X[L+25]     
 
                 if (X[L+24] == 0):  # 壁面全体面積-窓面積=0                           
                     X[L+J+27] = 0.                                 
@@ -2317,25 +2341,35 @@ while flag_day:
 
     # SPACのポインタ
     LC = int(M[106])
-    LCGB = LC
-    KSPAC = 0
-    LCO = LC  # 追加（元のfortranにはない）
 
+    LCGB = LC
+    LCO  = LC  # 追加（元のfortranにはない）
+
+    KSPAC = 0
+    
     # スペースループのフラグ
     flag_space = True
 
     while flag_space:
 
+        # KSPAC：既に処理したSPACの数
+        # LC：次に処理するSPACポインタ（終了時は0となる）、LCO：既に処理したSPACポインタ
+        # LC+101 は「グループ内の連番」
+        # print(f'LC: {LC}, LCO: {LCO}')
+        # print(f'M[LC+101]: {M[LC+101]}, M[LCO+101]+1: {M[LCO+101]+1}')
+
         if (KSPAC != 0) and (M[LC+101] != M[LCO+101]+1):
             
-            # 新しいグループに移ったとき(最初のグループを除く)
-            LC1=LCGB
-            LCGB=LC
+            # 新しいグループに移ったとき(最初のグループを除く) = 同一グループの処理が終わったとき
+            LC1  = LCGB    # 同一グループで最初に処理したSPACポインタ
+            LCGB = LC      # 次に処理するSPACポインタ
 
             if (M[LCO+55]!=0):  # SOPCデータによってOPCOデータを引用した場合
                 
-                # 前のグループのスペース数をカウントするとともに除去熱量計算ルーチンを呼ぶ
-                NZ=1
+                # グループに属するスペース数をカウント
+                # NAZ : 1グループあたりの最大スペース数（20）
+                # NZ  : グループに属するスペース数
+                NZ = 1
                 for II in range(1, NAZ+1):
                     if (LC1 == LCO):
                         break
@@ -2343,38 +2377,39 @@ while flag_day:
                         LC1 = M[LC1]
                         NZ = NZ+1
 
+                # #  ISEAS[1]:本日の季節(=1:夏期,2:冬期,3:中間期), ISEAS[2]:明日の季節
                 II = min(2,ISEAS[1])
 
-                mprint("NHR")
-                mprint("MCNTL[1]")
-                mprint("ISEAS[1]")
-                mprint("NAZ")
-                mprint("IOPTG")
-                mprint("NZ")
-                mprint("IOPVG")
-                mprint("SMRT1")
-                mprint("SMRT2")
-                mprint("VOAG")
-                mprint("LCG")
-                mprint("CLDG")
-                mprint("NWD")
-                mprint("WD")
-                mprint("REFWD")
-                mprint("P0")
-                mprint("M[ int(LOPC+165+II) ]")
-                mprint("VFLOW")
-                mprint("EXCAP")
-                mprint("SPCAP")
-                mprint("RMMX")
-                mprint("RMMN")
-                mprint("NUOT+KSPAC-NZ")
-                mprint("IDWK")
-                mprint("MDW[1]")
-                mprint("MODE")
-                mprint("MCNTL[2]")
-                mprint("LSZSPC")
+                # mprint("NHR")             # 1日のステップ数 (24で固定)
+                # mprint("MCNTL[1]")        # 計算モード =1:ピーク計算モード、=0:シミュレーションモード
+                # mprint("ISEAS[1]")        # 本日の季節 =1:夏期、=2:冬期、=3:中間期
+                # mprint("NAZ")             # 1グループあたりの最大スペース数（20で固定）
+                # mprint("IOPTG")           # 空調運転状態フラグ= 0:停止中、=1:運転中、=2:起動、=3:停止 <EXTRC1>
+                # mprint("NZ")              # グループに属するスペース数
+                # mprint("IOPVG")           # 外気導入状態フラグ、=0:カット中、=1:導入中、=2:導入開始、=3:導入停止 <EXTRC1>
+                # mprint("SMRT1")           # 面積を持たない部位からの冷房負荷 <EXTRC1>
+                # mprint("SMRT2")           # INFLの吸熱応答係数 <EXTRC1>
+                # mprint("VOAG")            # 導入時の外気量 <EXTRC1>
+                # mprint("LCG")             # XMQ配列のSPACデータへのポインタ（L）<EXTRC1>
+                # mprint("CLDG")            # 冷房負荷 <EXTRC1>
+                # mprint("NWD")             # WDの整合寸法（=7）
+                # mprint("WD")              # 外界気象（基準温湿度からの偏差ではない）
+                # mprint("REFWD")           # 基準温湿度
+                # mprint("P0")              # 瞬時蓄熱応答係数（吸熱される側が正）第2添字 =0:二等辺三角、=1:右側直角二等辺三角 <EXTRC1>
+                # mprint("M[ int(LOPC+165+II) ]")   # 予熱時間（ステップ）
+                # mprint("VFLOW")           # 第1添字目のスペースから第2添字目のスペースへの流入、風量（体積流量、0以上、対角項は0とする）
+                # mprint("EXCAP")           # 各スペースの装置容量（冷却、0以上） <EXTRC1>
+                # mprint("SPCAP")           # 各スペースの装置容量（加熱、0以上） <EXTRC1>
+                # mprint("RMMX")            # 各スペースの設定温湿度上限 <EXTRC1>
+                # mprint("RMMN")            # 各スペースの設定温湿度下限 <EXTRC1>
+                # mprint("NUOT+KSPAC-NZ")   # テキスト出力ファイルの装置番号（最初の装置番号）
+                # mprint("IDWK")            # 年・月・日
+                # mprint("MDW[1]")          # # MDW(1)  :本日の曜日(=1:月,2:火,..,7:日,8:祝,9:特)
+                # mprint("MODE")            # =1:助走、=2:本計算、=3:最終日
+                # mprint("MCNTL[2]")        # 出力モード =0:簡易出力(1h1行)、=1:詳細出力(1h2行)
+                # mprint("LSZSPC")          # XMQ配列のうち、(0):SPAC, (1):OWAL, (2):IWAL, (3):WNDW, (4):INFL の変数の数
 
-                (X,M) = pl.EXTRC2(NHR,MCNTL[1],ISEAS[1],NAZ,IOPTG,NZ,IOPVG,SMRT1,SMRT2,VOAG,LCG,CLDG,NWD,WD,REFWD,
+                (X,M) = EXTRC2(NHR,MCNTL[1],ISEAS[1],NAZ,IOPTG,NZ,IOPVG,SMRT1,SMRT2,VOAG,LCG,CLDG,NWD,WD,REFWD,
                         P0,M[int(LOPC+165+II)],VFLOW,EXCAP,SPCAP,RMMX,RMMN,10,
                         NUOT+KSPAC-NZ,IDWK,MDW[1],MODE,MCNTL[2],LSZSPC,X,M)
 
@@ -2383,12 +2418,16 @@ while flag_day:
             flag_space = False
             break
 
-        KSPAC = KSPAC + 1
+        # スペース数をカウント
+        KSPAC += 1
 
-        M1 = int(M[LC+34])
-        KSCH[1] = M[int(M1+MDW[1])]
+        M1 = int(M[LC+34])   # WSCHポインタ
+
+        # KSCH(1) :本日のスケジュール(=1:全日,2:半日,3:1日中0%), KSCH(2) :明日のスケジュール
+        KSCH[1] = M[int(M1+MDW[1])]   # スケジュールパターン
+
         L1 = int((KSCH[1]-1)*24)
-        LL = int(M[LC+35]+L1)
+        LL = int(M[LC+35]+L1)   # DSCHポインタ
         LH = int(M[LC+47]+L1)
         LO = int(M[LC+51]+L1)
 
@@ -2399,8 +2438,11 @@ while flag_day:
         if (M[LC+51] == 0):
             LO=0
 
+        # OPCOデータのポインタ
         LOPC = M[LC+55]
-        if (LOPC != 0):
+        if (LOPC != 0):  # SOPCデータによってOPCOデータを引用した場合
+            # KSCH(2) :明日のスケジュール
+            # MDW(2)  :明日の曜日(=1:月,2:火,..,7:日,8:祝,9:特)
             KSCH[2] = M[int(M1+MDW[2])]
 
         # ***          3.7. HOURLY LOOP START **********************************
@@ -2424,7 +2466,7 @@ while flag_day:
             if LOPC != 0:  # LOPC: OPCOデータへのポインタ(L)
 
                 # IOPTWK 空調運転状態フラグ =0:停止中、=1:運転中、=2:起動、=3:停止
-                IOPTWK,M = pl.EXTRC0(J,LOPC,LC,ISEAS,KSCH,X,M)   # 空調運転状態(IOPTWK,M(LC+60))
+                IOPTWK,M = EXTRC0(J,LOPC,LC,ISEAS,KSCH,X,M)   # 空調運転状態(IOPTWK,M(LC+60))
 
                 # mprint("J")
                 # mprint("LOPC")
@@ -2569,7 +2611,7 @@ while flag_day:
 
                     LE = int(M[L+1])
                     W  = abs(X[LE+2] - WD[6,J])
-                    U  = pl.CF( math.cos(W*DR) ) * X[LC+7] * WD[7,J]**2 + (WD[1,J]-X[155])*X[LC+6]
+                    U  = CF( math.cos(W*DR) ) * X[LC+7] * WD[7,J]**2 + (WD[1,J]-X[155])*X[LC+6]
                 
                     if M[L+4] == 0:  # オリジナル換気量で一定、あるいは空調on・off時%の値を使用
 
@@ -2651,12 +2693,29 @@ while flag_day:
             # ***                CALCULATION EXTRACTING LOAD   *********************
 
             if (LOPC != 0 ):
-                (IOPTG,IOPVG,SMRT1,SMRT2,LCG,VOAG,CLDG,P0,RMMN,RMMX,SPCAP,EXCAP,VFLOW) = \
-                    pl.EXTRC1(J,NHR,LOPC,LC,NAZ,ISEAS[1],KSCH[1],IOPTWK,X,M)
+
+                # 装置容量を季節別に設定する
+                # INTEGER     IOPTG(NAZ,NHR)      ! O   空調運転状態フラグ、=0:停止中、=1:運転中、=2:起動、=3:停止
+                # INTEGER     IOPVG(NAZ,NHR)      ! O   外気導入状態フラグ、=0:カット中、=1:導入中、=2:導入開始、=3:導入停止
+                # REAL        SMRT1(NAZ,NHR)      ! O   面積を持たない部位からの冷房負荷
+                # REAL        SMRT2(NAZ,NHR)      ! O   INFLの吸熱応答係数
+                # INTEGER     LCG(NAZ)            ! O   XMQ配列のSPACデータへのポインタ（L）添字は現在のゾーンのグループ内における順番(=IZ)
+                # REAL        VOAG(NAZ)           ! O   導入時の外気量(添字はグループ内の順番=IZ)
+                # REAL        CLDG(NAZ,NHR,NSL)   ! O   冷房負荷
+                # REAL        P0(NAZ,0:1,NHR,NSL) ! O   瞬時蓄熱応答係数（吸熱される側が正）第2添字 =0:二等辺三角 =1:右側直角二等辺三角
+                # REAL        RMMN(NAZ,NSL)       ! O   各スペースの設定温湿度下限
+                # REAL        RMMX(NAZ,NSL)       ! O   各スペースの設定温湿度上限
+                # REAL        SPCAP(NAZ,NSL)      ! O   各スペースの装置容量（加熱、0以上）
+                # REAL        EXCAP(NAZ,NSL)      ! O   各スペースの装置容量（冷却、0以上）
+
+                (IOPTG,IOPVG,SMRT1,SMRT2,LCG,VOAG,CLDG,P0,RMMN,RMMX,SPCAP,EXCAP,VFLOW,X,M) = \
+                    EXTRC1(J,NHR,LOPC,LC,NAZ,ISEAS[1],KSCH[1],IOPTWK,
+                            IOPTG,IOPVG,SMRT1,SMRT2,LCG,VOAG,CLDG,P0,RMMN,RMMX,SPCAP,EXCAP,VFLOW,
+                            X,M)
 
 
-        LCO = int(LC)
-        LC  = int(M[LC])
+        LCO = int(LC)     # 処理をしたSPACのポインタ
+        LC  = int(M[LC])  # 次に処理するSPACのポインタ
 
         if MODE == 3:
             flag_day = False
@@ -2664,5 +2723,5 @@ while flag_day:
 
 
 
-# pl.display_XMQ_matrix(X,M,2000,3000)
+# display_XMQ_matrix(X,M,2000,3000)
 
