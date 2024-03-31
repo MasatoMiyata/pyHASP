@@ -1,16 +1,10 @@
 import numpy as np
 
 def DGESV(A,B):
+
     # A * X = B を解く関数
     # ただし、AとBは 1始まりの行列とする
     # Bは一次元とする。
-    # a0_lis = [0, 0, 0, 0]
-    # a1_lis = [0, 1, 0, 0]
-    # a2_lis = [0, 0, 2, 0]
-    # a3_lis = [0, 0, 0, 4] 
-    # A_matrix = np.array([a0_lis, a1_lis, a2_lis, a3_lis])
-    # b = np.array([0,4,5,6])
-    # X = DGESV(A_matrix, b)
 
     print(f"A: {A}")
     print(f"B: {B}")
@@ -32,3 +26,24 @@ def DGESV(A,B):
         X[i+1] = XX[i]
 
     return X
+
+
+if __name__ == '__main__':
+
+    # 例題① 答えは X = [0 50]
+    A = np.array(
+        [   [0, 0,],
+            [0, 2,]    ] )
+    b = np.array([0,100])
+    X = DGESV(A, b)
+    print(f"X: {X}")
+
+    # 例題② 答えは X = [0.0 4.0 2.5 1.5]
+    # A = np.array(
+    #     [   [0, 0, 0, 0],
+    #         [0, 1, 0, 0], 
+    #         [0, 0, 2, 0], 
+    #         [0, 0, 0, 4]    ] )
+    # b = np.array([0,4,5,6])
+    # X = DGESV(A, b)
+    # print(f"X: {X}")
