@@ -98,8 +98,11 @@ def EXTRC1(JHR,NHR,LOPC,LC,NAZ,ISEAS,KSCH,IOPTWK,IOPTG,IOPVG,SMRT1,SMRT2,LCG,VOA
     SMRT1[IZ,JHR] = X[LC+74]
     SMRT2[IZ,JHR] = X[LC+75]
 
+    # X[LC+2] は 床面積
     if ( JHR == 1 ):   # 1日に1回代入すれば十分
+        # XMQ配列のSPACデータへのポインタ
         LCG[IZ]  = LC
+        # 導入時の外気量 VOAG
         VOAG[IZ] = X[LOPC+165]*X[LC+2]
 
     # 顕熱

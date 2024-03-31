@@ -627,7 +627,11 @@ for line in range(1,bldg_end):
             raise Exception("LDが0以外になります")
 
         M[int(LC)] = int(L)
-        M[int(L)] = int(LD)
+        M[int(L)]  = int(LD)
+
+        mprint("WSCH L", L)
+        mprint("WSCH LC", LC)
+        mprint("WSCH LD", LD)
 
         # WSCH名称 M(起点＋1)
         M[int(L+1)] = NNAM
@@ -757,10 +761,9 @@ for line in range(1,bldg_end):
         
         # 外気導入開始時刻（デフォルト値は0=終日導入しない）  M(L+164)  
         if NUB[line][11:14] == "   ":
-            X[L+165] = 0
+            X[L+164] = 0
         else:
-            X[L+165] = int(NUB[line][11:14])
-
+            X[L+164] = float(NUB[line][11:14])
 
         # 運転終了時間（スケジュール1） M1
         if NUB[line][14:17] == "   ":
@@ -776,9 +779,9 @@ for line in range(1,bldg_end):
 
         # ! 外気導入量（デフォルト値は 0）  X(L+165)
         if NUB[line][74:80] == "   ":
-            X[L+166] = 0
+            X[L+165] = 0
         else:
-            X[L+166] = float(NUB[line][74:80])  
+            X[L+165] = float(NUB[line][74:80])  
     
         # ! DB上限、下限、RH上限、下限、予熱時間 （夏期） のデフォルト値
         if NUB[line][26:29] == "   ":
@@ -1663,12 +1666,12 @@ for line in range(bldg_end+1,len(NUB)):
 
                     M[L+4]=0   # オリジナル換気量で一定、あるいは空調on・off時%の値を使用
                     if len(NUB[line_ex]) <= 27 or NUB[line_ex][32:35] == "   ":
-                        X[L+6] = 100
+                        X[L+6] = 1.0
                     else:
                         X[L+6] = float(NUB[line_ex][32:35])
 
                     if len(NUB[line_ex]) <= 27 or NUB[line_ex][35:38] == "   ":
-                        X[L+7] = 100
+                        X[L+7] = 1.0
                     else:
                         X[L+7] = float(NUB[line_ex][35:38])
 
@@ -1856,7 +1859,7 @@ for line in range(bldg_end+1,len(NUB)):
                 X[int(LL+56+3)] = float(NUB[line_ex][29:35])  # 供給熱量（潜熱）
 
                 for I in [0,1,2,3]:
-                    X[int(LL)+56+I] = 0.860*X[int(LL)+56+I]
+                    X[int(LL)+56+I] = 0.860 * X[int(LL)+56+I]
 
                 # OAHUの検索
                 if NUB[line_ex][37:41] != "    ":
@@ -1876,15 +1879,15 @@ for line in range(bldg_end+1,len(NUB)):
 
                         J=41+4*II+I+1
 
-                    if (NUB[line_ex][J-1] == ' ') or (NUB[line_ex][J-1] == QWK[I]):
-                        X[ LL+203+4*II+I ] = X[ LL+56+I ]            
-                    elif (NUB[line_ex][J-1] == '-'): 
+                        if (NUB[line_ex][J-1] == ' ') or (NUB[line_ex][J-1] == QWK[I]):
+                            X[ LL+203+4*II+I ] = X[ LL+56+I ]            
+                        elif (NUB[line_ex][J-1] == '-'): 
 
-                        s = list(QWK)
-                        s[I] = "-"
-                        QWK = "".join(s)
+                            s = list(QWK)
+                            s[I] = "-"
+                            QWK = "".join(s)
 
-                        X[ LL+203+4*II+I]  = 0.0                                             
+                            X[ LL+203+4*II+I]  = 0.0                                             
 
                     # 人体発熱顕熱比率算出用温度                                            
                     if (MCNTL[32] == 0):                                                
@@ -2409,9 +2412,9 @@ while flag_day:
                 # mprint("MCNTL[2]")        # 出力モード =0:簡易出力(1h1行)、=1:詳細出力(1h2行)
                 # mprint("LSZSPC")          # XMQ配列のうち、(0):SPAC, (1):OWAL, (2):IWAL, (3):WNDW, (4):INFL の変数の数
 
-                (X,M) = EXTRC2(NHR,MCNTL[1],ISEAS[1],NAZ,IOPTG,NZ,IOPVG,SMRT1,SMRT2,VOAG,LCG,CLDG,NWD,WD,REFWD,
-                        P0,M[int(LOPC+165+II)],VFLOW,EXCAP,SPCAP,RMMX,RMMN,10,
-                        NUOT+KSPAC-NZ,IDWK,MDW[1],MODE,MCNTL[2],LSZSPC,X,M)
+                # (X,M) = EXTRC2(NHR,MCNTL[1],ISEAS[1],NAZ,IOPTG,NZ,IOPVG,SMRT1,SMRT2,VOAG,LCG,CLDG,NWD,WD,REFWD,
+                #         P0,M[int(LOPC+165+II)],VFLOW,EXCAP,SPCAP,RMMX,RMMN,10,
+                #         NUOT+KSPAC-NZ,IDWK,MDW[1],MODE,MCNTL[2],LSZSPC,X,M)
 
         # 全スペース終了
         if LC == 0:
@@ -2644,6 +2647,10 @@ while flag_day:
                     X[LC+74] = X[LC+74] + 0.288*V*(WD[1,J]-X[155])
                     X[LC+75] = X[LC+75] + 0.288*V
 
+                    # mprint("W", W)
+                    # mprint("L", L)
+                    # mprint("X[L+3]", X[L+3])
+
                     L = L+LSZSPC[4]
 
             if M[L] == 5:
@@ -2707,12 +2714,38 @@ while flag_day:
                 # REAL        RMMX(NAZ,NSL)       ! O   各スペースの設定温湿度上限
                 # REAL        SPCAP(NAZ,NSL)      ! O   各スペースの装置容量（加熱、0以上）
                 # REAL        EXCAP(NAZ,NSL)      ! O   各スペースの装置容量（冷却、0以上）
+                # REAL        VFLOW(NAZ,NAZ,NHR)  ! O   第1添字目のスペースから第2添字目のスペースへの流入
+                #                                 !     風量（体積流量、0以上、対角項は0とする）
 
                 (IOPTG,IOPVG,SMRT1,SMRT2,LCG,VOAG,CLDG,P0,RMMN,RMMX,SPCAP,EXCAP,VFLOW,X,M) = \
                     EXTRC1(J,NHR,LOPC,LC,NAZ,ISEAS[1],KSCH[1],IOPTWK,
                             IOPTG,IOPVG,SMRT1,SMRT2,LCG,VOAG,CLDG,P0,RMMN,RMMX,SPCAP,EXCAP,VFLOW,
                             X,M)
 
+                mprint("EXTRC1: J", J)
+                mprint("EXTRC1: NHR", NHR)
+                mprint("EXTRC1: LOPC", LOPC)
+                mprint("EXTRC1: LC", LC)
+                mprint("EXTRC1: NAZ", NAZ)
+                mprint("EXTRC1: NHR", NHR)
+                mprint("EXTRC1: ISEAS[1]", ISEAS[1])
+                mprint("EXTRC1: KSCH[1]", KSCH[1])
+                mprint("EXTRC1: IOPTWK", IOPTWK)
+
+                mprint("EXTRC1: IOPTG", IOPTG[1])
+                mprint("EXTRC1: IOPVG", IOPVG[1])
+                mprint("EXTRC1: SMRT1", SMRT1[1])
+                mprint("EXTRC1: SMRT2", SMRT2[1])
+                mprint("EXTRC1: LCG", LCG[1])
+                mprint("EXTRC1: VOAG", VOAG[1])
+                mprint("EXTRC1: CLDG", CLDG[1])
+                mprint("EXTRC1: P0-0", P0[1,0])
+                mprint("EXTRC1: P0-1", P0[1,1])
+                mprint("EXTRC1: RMMN", RMMN[1])
+                mprint("EXTRC1: RMMX", RMMX[1])
+                mprint("EXTRC1: SPCAP", SPCAP[1])
+                mprint("EXTRC1: EXCAP", EXCAP[1])
+                mprint("EXTRC1: VFLOW", VFLOW[1,1,:])
 
         LCO = int(LC)     # 処理をしたSPACのポインタ
         LC  = int(M[LC])  # 次に処理するSPACのポインタ
@@ -2723,5 +2756,5 @@ while flag_day:
 
 
 
-# display_XMQ_matrix(X,M,2000,3000)
+display_XMQ_matrix(X,M,2000,3000)
 

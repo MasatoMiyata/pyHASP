@@ -486,67 +486,67 @@ def EXTRC2(NHR,IPEAK,ISEAS,NAZ,IOPTG,NZ,IOPVG,SMRT1,SMRT2,
                                             L = L + int(LSZSPC[int(M[L])])
                 
 
-    # 計算結果の出力
-    for IZ in range(1, NZ+1):   # ゾーンループ
-        LC = LCG[IZ]
-        FF = 1.163/X[int(LC+2)]   # Kcal/h から W/m2 への換算係数
-        for JHR in range(1, NHR+1):   # 時刻ループ
-            for IREP in [0, 1]:   # 直前・直後ループ
-                if ( IOUT == 1 ):
-                    if ( MODE >= 2 ):
+    # # 計算結果の出力
+    # for IZ in range(1, NZ+1):   # ゾーンループ
+    #     LC = LCG[IZ]
+    #     FF = 1.163/X[int(LC+2)]   # Kcal/h から W/m2 への換算係数
+    #     for JHR in range(1, NHR+1):   # 時刻ループ
+    #         for IREP in [0, 1]:   # 直前・直後ループ
+    #             if ( IOUT == 1 ):
+    #                 if ( MODE >= 2 ):
                             
-                        for J in range(1,3+1):
-                            print(ID[J])
-                        print(MDW), 
-                        print(JHR), 
-                        print(IREP), 
-                        for ISL in range(1,NSL+1):
-                            print(RM[IZ,IREP,JHR,ISL]+REFWD[ISL])
-                            print(CLDG[IZ,JHR,ISL]*FF)
-                            print(RN[IZ,IREP,JHR,ISL]*FF)
-                            print(AN[IZ,IREP,JHR,ISL]*FF)
-                            print(LMODE[IZ,IREP,JHR,ISL])
-                        print(AMRT[IZ,IREP,JHR]+REFWD[1])
+    #                     for J in range(1,3+1):
+    #                         print(ID[J])
+    #                     print(MDW), 
+    #                     print(JHR), 
+    #                     print(IREP), 
+    #                     for ISL in range(1,NSL+1):
+    #                         print(RM[IZ,IREP,JHR,ISL]+REFWD[ISL])
+    #                         print(CLDG[IZ,JHR,ISL]*FF)
+    #                         print(RN[IZ,IREP,JHR,ISL]*FF)
+    #                         print(AN[IZ,IREP,JHR,ISL]*FF)
+    #                         print(LMODE[IZ,IREP,JHR,ISL])
+    #                     print(AMRT[IZ,IREP,JHR]+REFWD[1])
     
-                else:   # 簡易出力（1時間分の平均の出力）
+    #             else:   # 簡易出力（1時間分の平均の出力）
 
-                    for ISL in range(1, NSL+1):
-                        EOUT[1,ISL] = RM[IZ,IREP,JHR,ISL] + REFWD[ISL]
-                        EOUT[2,ISL] = CLDG[IZ,JHR,ISL]*FF
-                        EOUT[3,ISL] = RN[IZ,IREP,JHR,ISL]*FF
-                        EOUT[4,ISL] = AN[IZ,IREP,JHR,ISL]*FF
-                        LMODEB[ISL] = LMODE[IZ,IREP,JHR,ISL]
+    #                 for ISL in range(1, NSL+1):
+    #                     EOUT[1,ISL] = RM[IZ,IREP,JHR,ISL] + REFWD[ISL]
+    #                     EOUT[2,ISL] = CLDG[IZ,JHR,ISL]*FF
+    #                     EOUT[3,ISL] = RN[IZ,IREP,JHR,ISL]*FF
+    #                     EOUT[4,ISL] = AN[IZ,IREP,JHR,ISL]*FF
+    #                     LMODEB[ISL] = LMODE[IZ,IREP,JHR,ISL]
 
-                    EMRT = AMRT[IZ,IREP,JHR] + REFWD[1]
+    #                 EMRT = AMRT[IZ,IREP,JHR] + REFWD[1]
 
-                    if (IREP == 0) and (MODE >= 2):  # 平均を取って出力
+    #                 if (IREP == 0) and (MODE >= 2):  # 平均を取って出力
 
-                        for ISL in range(1, NSL+1):
-                            for I in range(1, 4+1):
-                                EOUT[I,ISL] = 0.5*( X[ int(LC+86+(ISL-1)*7+I) ] + EOUT[I,ISL] )
+    #                     for ISL in range(1, NSL+1):
+    #                         for I in range(1, 4+1):
+    #                             EOUT[I,ISL] = 0.5*( X[ int(LC+86+(ISL-1)*7+I) ] + EOUT[I,ISL] )
 
-                            if (M[ int(LC+93+(ISL-1)*7) ] == 9) and (LMODEB[ISL] == 9):
-                                LMODEB[ISL] = 9
-                            elif (M[ int(LC+93+(ISL-1)*7) ] != 9) and (LMODEB[ISL] != 9):
-                                LMODEB[ISL] = 10
-                            else:
-                                raise Exception("例外が発生しました")
+    #                         if (M[ int(LC+93+(ISL-1)*7) ] == 9) and (LMODEB[ISL] == 9):
+    #                             LMODEB[ISL] = 9
+    #                         elif (M[ int(LC+93+(ISL-1)*7) ] != 9) and (LMODEB[ISL] != 9):
+    #                             LMODEB[ISL] = 10
+    #                         else:
+    #                             raise Exception("例外が発生しました")
 
-                        print("--------------------------------")
-                        print(f'月日： {int(ID[2]):d} 月 {int(ID[3]):d} 日 {int(MDW):d} 曜日 {int(JHR):d} 時')
-                        print(f'直前・直後 IREP {IREP}'),
-                        for ISL in range(1,NSL+1):
-                            for I in range(1,4+1):
-                                print(EOUT[I,ISL])
-                            LMODEB[ISL]
-                        print(0.5*(X[int(LC+92)]+EMRT))
+    #                     print("--------------------------------")
+    #                     print(f'月日： {int(ID[2]):d} 月 {int(ID[3]):d} 日 {int(MDW):d} 曜日 {int(JHR):d} 時')
+    #                     print(f'直前・直後 IREP {IREP}'),
+    #                     for ISL in range(1,NSL+1):
+    #                         for I in range(1,4+1):
+    #                             print(EOUT[I,ISL])
+    #                         LMODEB[ISL]
+    #                     print(0.5*(X[int(LC+92)]+EMRT))
     
-                    elif ( IREP == 1 ):  # 次ステップのために記憶
-                        for ISL in range(1, NSL+1):
-                            for I in range(1, 4+1):
-                                X[ int(LC+86+(ISL-1)*7+I) ] = EOUT[I,ISL]
-                            M[ int(LC+93+(ISL-1)*7) ] = LMODEB[ISL]
-                        X[int(LC+92)] = EMRT
+    #                 elif ( IREP == 1 ):  # 次ステップのために記憶
+    #                     for ISL in range(1, NSL+1):
+    #                         for I in range(1, 4+1):
+    #                             X[ int(LC+86+(ISL-1)*7+I) ] = EOUT[I,ISL]
+    #                         M[ int(LC+93+(ISL-1)*7) ] = LMODEB[ISL]
+    #                     X[int(LC+92)] = EMRT
 
     # 導入外気量の外調機別加算
     for IZ in range(1, NZ+1):    # ゾーンループ
