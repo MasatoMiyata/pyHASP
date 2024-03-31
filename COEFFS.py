@@ -76,8 +76,9 @@ def COEFFS(LMODE,NZ,IZ,RMMX,RMMN,GRADL,CRHO,VFLOW,FIXEDL,EXCAP1,SPCAP1,ISL,IREP,
                 AA[IZ,J] = -CRHO*VFLOW[J]
 
         if ( ISL == 1 ):
+            
             L = int(LSTRT)
-            print(f"COEFFS L: {L}")
+            # print(f"COEFFS L: {L}")
 
             flag_RTVADJ = True
             while flag_RTVADJ:

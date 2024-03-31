@@ -127,32 +127,32 @@ def EXTRC2(NHR,IPEAK,ISEAS,NAZ,IOPTG,NZ,IOPVG,SMRT1,SMRT2,
     # 蓄熱応答係数の項数
     MTRM=2
 
-    CRHO = [0.288, 0.720]    # 単位依存
-    NTRM = [2, 1]
-    LSTP = [[17, 20], [27, 0]]   # 潜熱の2項目はダミー（XMQ配列変更時注意）
-    LSTQ = [[23, 24], [30, 0]]   # 潜熱の2項目はダミー（XMQ配列変更時注意）
+    CRHO   = np.array([0, 0.288, 0.720])    # 単位依存（ISLと対応。最初の0はダミー）
+    NTRM   = np.array([0, 2, 1])            # ISLと対応。最初の0はダミー
+    LSTP   = np.array([[0,0,0],[0,17,20],[0,27,0]])   # 潜熱の2項目はダミー（XMQ配列変更時注意）
+    LSTQ   = np.array([[0,0,0],[0,23,24],[0,30, 0]])   # 潜熱の2項目はダミー（XMQ配列変更時注意）
 
-    IDLT = np.zeros(MSTP+1)
-    RMSET = np.zeros(MZ+1)
-    VOAWK = np.zeros([MZ+1,2+1,MHR+1])
-    OATX  = np.zeros([MZ+1,MHR+1])
+    IDLT   = np.zeros(MSTP+1)
+    RMSET  = np.zeros(MZ+1)
+    VOAWK  = np.zeros([MZ+1,2+1,MHR+1])
+    OATX   = np.zeros([MZ+1,MHR+1])
     IOPTWK = np.zeros(MZ+1)
     FIXEDL = np.zeros(MZ+1)
-    PV = np.zeros([MSTP,MZ+1])
-    PR = np.zeros([MSTP,MZ+1])
-    IPS = np.zeros(MSTP)
-    LMODE = np.zeros([MZ+1,2,MHR+1,NSL+1])
-    AN = np.zeros([MZ+1,2,MHR+1,NSL+1])
-    RM = np.zeros([MZ+1,2,MHR+1,NSL+1])
-    RN = np.zeros([MZ+1,2,MHR+1,NSL+1])
-    AMRT = np.zeros([MZ+1,2,MHR+1])
+    PV     = np.zeros([MSTP,MZ+1])
+    PR     = np.zeros([MSTP,MZ+1])
+    IPS    = np.zeros(MSTP)
+    LMODE  = np.zeros([MZ+1,2,MHR+1,NSL+1])
+    AN     = np.zeros([MZ+1,2,MHR+1,NSL+1])
+    RM     = np.zeros([MZ+1,2,MHR+1,NSL+1])
+    RN     = np.zeros([MZ+1,2,MHR+1,NSL+1])
+    AMRT   = np.zeros([MZ+1,2,MHR+1])
 
-    AA = np.zeros([NA+1, NA+1])
-    BB = np.zeros(NA+1)
-    IP = np.zeros(NA+1)
+    AA     = np.zeros([NA+1, NA+1])
+    BB     = np.zeros(NA+1)
+    IP     = np.zeros(NA+1)
 
-    WK = np.zeros(MTRM+1)
-    EOUT = np.zeros([4+1, NSL+1])
+    WK     = np.zeros(MTRM+1)
+    EOUT   = np.zeros([4+1, NSL+1])
     LMODEB = np.zeros(NSL+1)
     
 
@@ -373,8 +373,8 @@ def EXTRC2(NHR,IPEAK,ISEAS,NAZ,IOPTG,NZ,IOPVG,SMRT1,SMRT2,
                             for IZ in range(1, NZ+1):
                                 PR[0,IZ] = P0[IZ,1,JHR,ISL]
                                 PV[0,IZ] = P0[IZ,0,JHR,ISL]
-                                (NSIZE,AA,BB,IPS,X,M) = COEFFP(IZ,KSTP,NZ,IREP,NSTP1,IDLT,VFLOW[1,IZ,JHR],
-                                        PV[0,IZ],PR[0,IZ],CRHO[ISL],VOAWK[IZ,IREP,JHR],FIXEDL[IZ],
+                                (NSIZE,AA,BB,IPS,X,M) = COEFFP(IZ,KSTP,NZ,IREP,NSTP1,IDLT,VFLOW[:,IZ,JHR],
+                                        PV[:,IZ],PR[:,IZ],CRHO[ISL],VOAWK[IZ,IREP,JHR],FIXEDL[IZ],
                                         RMSET,REFWD[ISL],ISL,LCG[IZ]+LSZSPC[0],LSZSPC,NA,NSIZE,AA,BB,IPS,X,M)
 
 
@@ -418,11 +418,11 @@ def EXTRC2(NHR,IPEAK,ISEAS,NAZ,IOPTG,NZ,IOPVG,SMRT1,SMRT2,
                         (BB) = DGESV(AA, BB)
 
                         # 予熱終了時の後処理（負荷等の抽出と蓄熱負荷の更新）
-                        (LMODE[1,0,1,ISL],AN[1,0,1,ISL],RM[1,0,1,ISL],RN[1,0,1,ISL],AMRT,WK,X,M) = \
+                        (LMODE[:,:,:,ISL],AN[:,:,:,ISL],RM[:,:,:,ISL],RN[:,:,:,ISL],AMRT,WK,X,M) = \
                             POSTP(MZ,NZ,LCG,NSTP1,IDLT,JHR0,NHR,NSIZE,BB,IPS,CRHO[ISL],
-                                    VOAWK,OATX,REFWD[ISL],ISL,RMSET,NTRM[ISL],LSTP[1,ISL],
-                                    LSTQ[1,ISL],NAZ,VFLOW,SMRT1,SMRT2,LSZSPC,
-                                    RM[1,0,1,ISL],WK)
+                                    VOAWK,OATX,REFWD[ISL],ISL,RMSET,NTRM[ISL],LSTP[:,ISL],
+                                    LSTQ[:,ISL],NAZ,VFLOW,SMRT1,SMRT2,LSZSPC,
+                                    RM[:,:,:,ISL],WK)
 
 
                     else:  # シミュレーションを行う段である
@@ -440,10 +440,10 @@ def EXTRC2(NHR,IPEAK,ISEAS,NAZ,IOPTG,NZ,IOPVG,SMRT1,SMRT2,
                         else:
 
                             # 熱平衡式を解く
-                            (LMODE[1,IREP,JHR,ISL],AN[1,IREP,JHR,ISL],RM[1,IREP,JHR,ISL],AA,BB,IP,X,M) = \
-                                SLVSM(NZ,IOPTWK,EXCAP[1,ISL],SPCAP[1,ISL],NAZ,
-                                    VFLOW[1,1,JHR],P0[1,IREP,JHR,ISL],CRHO[ISL],
-                                    VOAWK[1,IREP,JHR],RMMX[1,ISL],RMMN[1,ISL],
+                            (LMODE[:,IREP,JHR,ISL],AN[:,IREP,JHR,ISL],RM[:,IREP,JHR,ISL],AA,BB,IP,X,M) = \
+                                SLVSM(NZ,IOPTWK,EXCAP[:,ISL],SPCAP[:,ISL],NAZ,
+                                    VFLOW[:,:,JHR],P0[:,IREP,JHR,ISL],CRHO[ISL],
+                                    VOAWK[:,IREP,JHR],RMMX[:,ISL],RMMN[:,ISL],
                                     REFWD[ISL],IPEAK,ISEAS,NITER,FIXEDL,ISL,IREP,LCG,LSZSPC,NA,X,M)
                 
                             # 外気負荷・室負荷を求める
@@ -454,9 +454,10 @@ def EXTRC2(NHR,IPEAK,ISEAS,NAZ,IOPTG,NZ,IOPVG,SMRT1,SMRT2,
 
                         # MRTの計算
                         if ( ISL == 1 ):
+
                             for IZ in range(1, NZ+1):
                                 (AMRT[IZ,IREP,JHR], X, M) = CLCMRT(
-                                    NZ,VFLOW[1,IZ,JHR],MZ,RM[1,0,JHR,ISL],
+                                    NZ,VFLOW[:,IZ,JHR],MZ,RM[:,:,JHR,ISL],
                                     IZ,IREP,CRHO[ISL],SMRT1[IZ,JHR],SMRT2[IZ,JHR],
                                     LCG[IZ],RN[IZ,IREP,JHR,ISL],X,M)
                     
@@ -466,8 +467,8 @@ def EXTRC2(NHR,IPEAK,ISEAS,NAZ,IOPTG,NZ,IOPVG,SMRT1,SMRT2,
                             for IZ in range(1, NZ+1):
 
                                 for J in range(1, NTRM[ISL]+1):
-                                    LSTPWK = LCG[IZ] + LSTP[J,ISL]
-                                    LSTQWK = LCG[IZ] + LSTQ[J,ISL]
+                                    LSTPWK = int( LCG[IZ] + LSTP[J,ISL] )
+                                    LSTQWK = int( LCG[IZ] + LSTQ[J,ISL] )
                                     X[LSTQWK] = X[LSTPWK+2] * X[LSTQWK] \
                                         - ( X[LSTPWK] - X[LSTPWK+1] ) *RM[IZ,0,JHR,ISL] - X[LSTPWK+1]*RM[IZ,1,JHR,ISL]
 
@@ -488,7 +489,7 @@ def EXTRC2(NHR,IPEAK,ISEAS,NAZ,IOPTG,NZ,IOPVG,SMRT1,SMRT2,
     # 計算結果の出力
     for IZ in range(1, NZ+1):   # ゾーンループ
         LC = LCG[IZ]
-        FF = 1.163/X[LC+2]   # Kcal/h から W/m2 への換算係数
+        FF = 1.163/X[int(LC+2)]   # Kcal/h から W/m2 への換算係数
         for JHR in range(1, NHR+1):   # 時刻ループ
             for IREP in [0, 1]:   # 直前・直後ループ
                 if ( IOUT == 1 ):
@@ -508,7 +509,7 @@ def EXTRC2(NHR,IPEAK,ISEAS,NAZ,IOPTG,NZ,IOPVG,SMRT1,SMRT2,
                         print(AMRT[IZ,IREP,JHR]+REFWD[1])
     
                 else:   # 簡易出力（1時間分の平均の出力）
-    
+
                     for ISL in range(1, NSL+1):
                         EOUT[1,ISL] = RM[IZ,IREP,JHR,ISL] + REFWD[ISL]
                         EOUT[2,ISL] = CLDG[IZ,JHR,ISL]*FF
@@ -531,27 +532,25 @@ def EXTRC2(NHR,IPEAK,ISEAS,NAZ,IOPTG,NZ,IOPVG,SMRT1,SMRT2,
                             else:
                                 raise Exception("例外が発生しました")
 
-                        for J in range(1,3+1):
-                            print(ID[J])
-                            print(MDW), 
-                            print(JHR), 
-                            print(IREP),
-                            for ISL in range(1,NSL+1):
-                                for I in range(1,4+1):
-                                    print(EOUT[I,ISL])
-                                LMODEB[ISL]
-                            print(0.5*(X[LC+92]+EMRT))
+                        print("--------------------------------")
+                        print(f'月日： {int(ID[2]):d} 月 {int(ID[3]):d} 日 {int(MDW):d} 曜日 {int(JHR):d} 時')
+                        print(f'直前・直後 IREP {IREP}'),
+                        for ISL in range(1,NSL+1):
+                            for I in range(1,4+1):
+                                print(EOUT[I,ISL])
+                            LMODEB[ISL]
+                        print(0.5*(X[int(LC+92)]+EMRT))
     
                     elif ( IREP == 1 ):  # 次ステップのために記憶
                         for ISL in range(1, NSL+1):
                             for I in range(1, 4+1):
                                 X[ int(LC+86+(ISL-1)*7+I) ] = EOUT[I,ISL]
                             M[ int(LC+93+(ISL-1)*7) ] = LMODEB[ISL]
-                        X[LC+92] = EMRT
+                        X[int(LC+92)] = EMRT
 
     # 導入外気量の外調機別加算
     for IZ in range(1, NZ+1):    # ゾーンループ
-        L = M[LCG[IZ]+202]   # OAHUデータへのポインタ(L)
+        L = M[int(LCG[IZ]+202)]   # OAHUデータへのポインタ(L)
         if ( L != 0 ):  # OAHUデータが指定されている場合
             for JHR in range(1, NHR+1):   # 時刻ループ
                 for IREP in [0, 1]:   #直前・直後ループ

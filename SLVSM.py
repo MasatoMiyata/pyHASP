@@ -67,17 +67,7 @@ def SLVSM(NZ,IOPT,EXCAP,SPCAP,NAZ,VFLOW,P0,CRHO,VOA,
     """
 
     # print(f"NZ: {NZ}")
-    print(f"P0: {P0}")
-
-    VOA  = np.append(0, VOA)
-    RMMN = np.append(0, RMMN)
-    RMMX = np.append(0, RMMX)
-    EXCAP = np.append(0, EXCAP)
-    SPCAP = np.append(0, SPCAP)
-    P0    = np.append(0, P0)
-    VFLOW_sub = np.zeros([NAZ+1,NZ+1])
-    VFLOW_sub[1,1] = VFLOW
-    VFLOW = VFLOW_sub
+    # print(f" {P0}")
     
     MZ=20
 
@@ -90,9 +80,9 @@ def SLVSM(NZ,IOPT,EXCAP,SPCAP,NAZ,VFLOW,P0,CRHO,VOA,
 
     EXCAP1 = np.zeros(MZ+1)
     SPCAP1 = np.zeros(MZ+1)
-    GRADL = np.zeros(MZ+1)
-    CNST = np.zeros([4+1,MZ+1])
-    EPS2=0.01
+    GRADL  = np.zeros(MZ+1)
+    CNST   = np.zeros([4+1,MZ+1])
+    EPS2   = 0.01
 
     if (NZ > MZ): 
         raise Exception("想定外エラー")
@@ -155,12 +145,14 @@ def SLVSM(NZ,IOPT,EXCAP,SPCAP,NAZ,VFLOW,P0,CRHO,VOA,
 
         for IZ in range(1, NZ+1):   # ゾーン loop
 
-            print(f"GRADL[IZ]: {GRADL[IZ]}")
+            # print(f"GRADL[IZ]: {GRADL[IZ]}")
 
             # 係数行列の該当部分に値をセットする
             AA,BB[IZ],X,M = COEFFS(LMODE[IZ],NZ,IZ,RMMX[IZ]-REFWD,RMMN[IZ]-REFWD,
                 GRADL[IZ],CRHO,VFLOW[1,IZ],FIXEDL[IZ],EXCAP1[IZ],SPCAP1[IZ],
                 ISL,IREP,LCG[IZ]+LSZSPC[0],LSZSPC,NA,X,M)
+
+        # print(f"BB: {BB}")
 
         # 方程式を解く
         (BB) = DGESV(AA, BB)
@@ -188,10 +180,10 @@ def SLVSM(NZ,IOPT,EXCAP,SPCAP,NAZ,VFLOW,P0,CRHO,VOA,
 
             # 負荷状態モードが変化したかどうかをチェックする
             if ( LMODE[IZ] != 9 ):   # 空調稼動状態で、
-                if (LMODE[IZ] >= -1) and (WK < CNST[LMODE[IZ]+2,IZ]-EPS2):
+                if (LMODE[IZ] >= -1) and (WK < CNST[int(LMODE[IZ]+2),IZ]-EPS2):
                     LMODE[IZ] = LMODE[IZ] - 1      # 負荷状態モードが暖房側へシフトした
                     ICONV = 0
-                elif (LMODE[IZ] <= 1) and (WK > CNST[LMODE[IZ]+3,IZ]+EPS2):
+                elif (LMODE[IZ] <= 1) and (WK > CNST[int(LMODE[IZ]+3),IZ]+EPS2):
                     LMODE[IZ] = LMODE[IZ] + 1      # 負荷状態モードが冷房側へシフトした
                     ICONV = 0
 
@@ -202,7 +194,7 @@ def SLVSM(NZ,IOPT,EXCAP,SPCAP,NAZ,VFLOW,P0,CRHO,VOA,
             for IZ in range(1, NZ+1):
                 RM[IZ] = BB[IZ]
 
-            return LMODE,AN,RM,AA,BB,IP,X,M
+            return LMODE[1],AN[1],RM[1],AA,BB,IP,X,M
 
     raise Exception("収束していません")
 

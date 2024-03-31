@@ -143,7 +143,7 @@ SMRT2 = np.zeros([NAZ+1,NHR+1])       # INFLの吸熱応答係数（瞬時）
 VOAG  = np.zeros([NAZ+1])             # 導入時の外気量
 LCG   = np.zeros([NAZ+1])             # XMQ配列のSPACデータへのポインタ（L）
 CLDG  = np.zeros([NAZ+1,NHR+1,NSL+1])    # 冷房負荷
-REFWD = np.zeros(NSL)                    # 基準温湿度
+REFWD = np.zeros(NSL+1)                  # 基準温湿度
 P0    = np.zeros([NAZ+1,2,NHR+1,NSL+1])  # 瞬時蓄熱応答係数（吸熱される側が正）第2添字=0:二等辺三角、=1:右側直角二等辺三角
 EXCAP = np.zeros([NAZ+1,NSL+1])       # 各スペースの装置容量（冷却、0以上）
 SPCAP = np.zeros([NAZ+1,NSL+1])       # 各スペースの装置容量（加熱、0以上）

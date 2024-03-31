@@ -158,7 +158,7 @@ def COEFFP(IZ,KSTP,NZ,IREP,NSTP,IDLT,VFLOW,PV,PR,CRHO,VOA,FIXEDL,RMSET,REFWD,ISL
                         AA[II, int(IPS(MSTP)+J) ] = COEF[J]
                     else:
                         AA[II, int(IPS(MSTP)+IREP*NZ+J) ] = COEF[J]
- 
+
         # 予熱開始1時刻後から、1ステップ前までの室温湿度に対する係数（KSTP>=2の場合のみ）
         elif ( MSTP >= 1 ):
 
