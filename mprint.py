@@ -1,4 +1,4 @@
-def mprint(_str):
+def mprint(_str, x):
     """デバッグ用の関数
     """
-    print('{}: {}'.format(_str, eval(_str)))
+    print('{}: {}'.format(_str, x))
