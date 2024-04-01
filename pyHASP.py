@@ -506,24 +506,26 @@ for line in range(1,bldg_end):
         # 隣棟距離 X(L+12)
         # 隣棟高さ X(L+13)
 
-        W2 = NUB[line][11:17]    # 傾斜角
-        W1 = NUB[line][17:23]    # 方位角
+        W2 = float(NUB[line][11:17])    # 傾斜角
+        W1 = float(NUB[line][17:23])    # 方位角
 
         if len(NUB[line]) > 24:
 
             X[L+12] = float(NUB[line][23:26])   # 隣棟距離[m]
             X[L+13] = float(NUB[line][26:29])   # 隣棟高さ[m]
 
-            X[L+2] = W1				      # 傾斜角 X(起点+2)
-            X[L+3] = math.sin(DR*W1)	  # 傾斜角のsin X(起点+3)
-            X[L+4] = math.cos(DR*W1)	  # 傾斜角のcos X(起点+4)
-            X[L+5] = math.sin(DR*W2)	  # 方位角のsin X(起点+5)
-            X[L+6] = math.cos(DR*W2)	  # 方位角のcos X(起点+6)
-            X[L+7] = X(L+3)*X(L+5)        # 傾斜角のsinと方位角のsinの積
-            X[L+8] = X(L+3)*X(L+6)        # 傾斜角のsinと方位角のcosの積
-            X[L+9] = X(L+4)*X(L+5)        # 傾斜角のcosと方位角のsinの積
-            X[L+10] = X(L+4)*X(L+6)       # 傾斜角のcosと方位角のcosの積
-            X[L+11] = (1.0-X(L+6))/2.0    # (1-cos(方位角))/2
+        X[L+2]  = W1				  # 傾斜角 X(起点+2)
+        X[L+3]  = math.sin(DR*W1)	  # 傾斜角のsin X(起点+3)
+        X[L+4]  = math.cos(DR*W1)	  # 傾斜角のcos X(起点+4)
+        X[L+5]  = math.sin(DR*W2)	  # 方位角のsin X(起点+5)
+        X[L+6]  = math.cos(DR*W2)	  # 方位角のcos X(起点+6)
+        X[L+7]  = X[L+3] * X[L+5]     # 傾斜角のsinと方位角のsinの積
+        X[L+8]  = X[L+3] * X[L+6]     # 傾斜角のsinと方位角のcosの積
+        X[L+9]  = X[L+4] * X[L+5]     # 傾斜角のcosと方位角のsinの積
+        X[L+10] = X[L+4] * X[L+6]     # 傾斜角のcosと方位角のcosの積
+        X[L+11] = (1.0-X[L+6])/2.0    # (1-cos(方位角))/2
+
+        if len(NUB[line]) > 30:
 
             X[1] = float(NUB[line][29:35])  # 庇の出[ZH] X(1)
             X[2] = float(NUB[line][35:41])  # 窓下[y1] X(2)
@@ -1557,27 +1559,38 @@ for line in range(bldg_end+1,len(NUB)):
                     #       END IF
                         
 
-                X[L+8] = A*X[158]
+                # 限界日射取得[kcal/h]
+                # X[158] BUIL 限界日射量 [kcal/m2h]
+                X[L+8] = A * X[158]
 
+                # X[L+5] ブラインド閉時の Kw×Aw [kcal/h℃]
                 for J in range(0,10):
-                    GRM[J] = GRM[J] + X[L+5]
+                    GRM[J] += X[L+5]
 
                 # EXPSを検索
                 (NNAM,LC,LD) = RETRIV(100,NUB[line_ex][9:13],M)
                 if LD != LC:
                     raise Exception("LDがLCと異なります")
             
+                # EXPSへのポインタ
                 M[L+1] = int(LC)
+
+                # ψ1 （外面から上庇を見る形態係数）
                 V1 = X[int(LC)+26]
+                # (1-cosβ)/2 （外面から地平以下を見る形態係数）
                 V2 = X[int(LC)+11]
+                # ψ2 （外面から上庇を見る形態係数）
                 V4 = X[int(LC)+27]
 
+                # X[int(LC)+12]  Da（隣棟距離[m]）
+                # X[int(LC)+13]  Ha（隣棟高さ[m]）
+                # X[int(LC)+ 5]  方位角のsin
                 if (X[int(LC)+12] == 0):
                     V3=0.0
                 else:
-                    W=math.sqrt(X[int(LC)+12]**2+(X[int(LC)+13]-X[int(LL)+5])**2)
-                    W=(X[int(LC)+6]*X[int(LC)+12]-X[int(LC)+5]*(X[int(LC)+13]-X[int(LL)+5]))/W
-                    V3=(1.-W)/2.
+                    W  = math.sqrt(X[int(LC)+12]**2+(X[int(LC)+13]-X[int(LL)+5])**2)
+                    W  = (X[int(LC)+6]*X[int(LC)+12]-X[int(LC)+5]*(X[int(LC)+13]-X[int(LL)+5]))/W
+                    V3 = (1.-W)/2.
 
                 if V2 > V3:
                     if V1+V2 > 1:
@@ -1593,12 +1606,22 @@ for line in range(bldg_end+1,len(NUB)):
                     else:
                         U1=(1.-V1-V3)*(1.-V4)
                         U2=0.
-
+                
+                # X[154]  BUIL 地物反射率[%]  
+                # ρGψG・g (gは散乱日射に対する標準ガラスの日射取得率=0.808）[-]
                 X[L+9]  =0.808*X[154]*U2
+
+                # ψs・g [-]
                 X[L+11] =0.808*U1
+
+                # (ψs＋ρGψG)・g [-]
                 X[L+10] =X[L+9]+X[L+11]
+
+                # ψsεl ／αo [℃／(kcal/m2h)]
                 X[L+12] =0.9*U1/HO
 
+                # X[L+13] (Ha-Hf)sinα／Da [-]
+                # X[L+14] (Ha-Hf)cosα／Da [-]
                 if X[int(LC)+12] == 0:
                     X[L+13] = 0.
                     X[L+14] = 0.
@@ -1607,31 +1630,42 @@ for line in range(bldg_end+1,len(NUB)):
                     X[L+13] = W*X[int(LC)+3]
                     X[L+14] = W*X[int(LC)+4]
                 
+                # X[int(LL)+43] 昼光利用の有無
+                # X[L+15]  1/2×(1-x0/(x02+y2)**(1/2))×109 [lx/(kcal/m2h)]
+                # X[L+16]  Awρ1ρ2／(Af・(1-ρ1ρ2))×109 [lx/(kcal/m2h)]
+                # X[L+17]  Awρ2／(Af・(1-ρ1ρ2))×109 [lx/(kcal/m2h)]
+                # X[L+18]  X(L+15)+0.5*X(L+16)+0.5*X(L+17) [lx/(kcal/m2h)]
+                # X[L+19]  消灯面積率 x0W／Af　[-]
                 if X[int(LL)+43] == 0:
+
                     for I in [15,16,17,18,19]:
-                        X[L+I]=0.0
+                        X[L+I] = 0.0
+
                 else:
+
                     U = NUB[line_ex][29:35]
                     W = NUB[line_ex][35:41]
-                    V=A/W
+                    V = A / W
 
                     if (U < 0.75): 
-                        V=V+U-0.75
+                        V = V + U - 0.75
 
-                    V1=109.*0.5*(1.-X[int(LL)+44]/math.sqrt(X[int(LL)+44]**2+V**2))
-                    V2=109.*A*X[int(LL)+45]
-                    V3=109.*A*X[int(LL)+46]
+                    V1 = 109.*0.5*(1.-X[int(LL)+44]/math.sqrt(X[int(LL)+44]**2+V**2))
+                    V2 = 109.*A*X[int(LL)+45]
+                    V3 = 109.*A*X[int(LL)+46]
 
-                    X[L+15]=V1
-                    X[L+16]=V2
-                    X[L+17]=V3
-                    X[L+18]=V1+(V2+V3)/2.
-                    X[L+19]=X[int(LL)+44]*W/X[int(LL)+2]
-                    
+                    X[L+15] = V1
+                    X[L+16] = V2
+                    X[L+17] = V3
+                    X[L+18] = V1+(V2+V3)/2.
+                    X[L+19] = X[int(LL)+44]*W/X[int(LL)+2]
+                
+                # スケジュールオプション(0:品種番号の物性値どおり,1:on時%指定,2:DSCH使用）
+                # DSCHポインタ(L+1),
+                # 空調on時割合 [-],
                 for I in [0,1,2,3,4,5]:
                     M[L+20+I*3] = 0   # デフォルトで物性値は品種番号の物性値のとおり
             
-
                 # 継続行の処理は省略
                 if NUB[line_ex+1][0:4] == "+   ":
                     raise Exception("継続行の処理は省略")
