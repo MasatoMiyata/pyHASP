@@ -98,12 +98,11 @@ NTBL=4     # NTBL    :窓特性値表の数
 MXVS=10    # MXVS    :通気量の最大サンプリング数
 MXGT=100   # MXGT    :最大ガラス種別数
 
-GLK = np.zeros((MXGL,NBLD+1,NTBL))   # K[kcal/m2hdeg]    (MXGL,0:NBLD,NTBL)
-GLR = np.zeros((MXGL,NBLD+1,NTBL))   # SCR   (MXGL,0:NBLD,NTBL)
-GLC = np.zeros((MXGL,NBLD+1,NTBL))   # SCC   (MXGL,0:NBLD,NTBL)
-
-MGT = np.zeros((MXGL,NTBL))          # ガラス種別
-
+# 第2引数が0のときはブラインドなし
+GLK = np.zeros((MXGL,NBLD+1,NTBL+1))   # K[kcal/m2hdeg]    (MXGL,0:NBLD,NTBL)
+GLR = np.zeros((MXGL,NBLD+1,NTBL+1))   # SCR   (MXGL,0:NBLD,NTBL)
+GLC = np.zeros((MXGL,NBLD+1,NTBL+1))   # SCC   (MXGL,0:NBLD,NTBL)
+MGT = np.zeros((MXGL,NTBL+1))            # ガラス種別
 
 GLD = np.zeros((MXVS+1,NBLD+1,int(MXGT/10)+1,6+1))   
         # 第4添字
@@ -239,40 +238,43 @@ else:
 # 入力ファイル 3行目 出力先のディレクトリ名称
 QPATH = "./out/"
 
-# 入力ファイル 4行目 窓のファイル WINDOW GLASS DATA (Read from file)
-# NUWN = read_textfile("./newHASP/wndwtabl.dat", ",")
-
 # K,SCC,SCRの読み込み
 wb = xlrd.open_workbook("./input/wndwtabl.xlsx")
 
-for II in range(0, NTBL):
+# NTBL    :窓特性値表の数
+for II in range(1, NTBL+1):
 
-    if II == 0:
+    if II == 1:
         sheets = wb.sheet_by_name("単板")
-    elif II == 1:
-        sheets = wb.sheet_by_name("複層A6mm")
     elif II == 2:
-        sheets = wb.sheet_by_name("複層A12mm")
+        sheets = wb.sheet_by_name("複層A6mm")
     elif II == 3:
+        sheets = wb.sheet_by_name("複層A12mm")
+    elif II == 4:
         sheets = wb.sheet_by_name("複層ブラインド内蔵")
     else:
         raise Exception("シート名が不正です")
 
     for I in range(0, sheets.nrows-1):
+
+        # データ読み込み（2行目から）
         row_data = sheets.row_values(I+1)
 
-        I1 = float(row_data[0])
-        MGT[I][II] = float(row_data[1])
+        # ガラス品種番号（1～200）
+        I1 = int(row_data[0])
+        # ガラス種別番号（長波長放射成分係数を区別するため等に使用）
+        MGT[I1][II] = float(row_data[1])
 
+        # NBLD    :ブラインド色種別数(=4)
         for j in range(0,NBLD):
 
             if abs(float(row_data[3*j+2]) - 9.999) > 0.001:
-                GLK[I][j][II] = float(row_data[3*j+2])*0.86  # [W/m2K]から[kcal/m2hdeg]へ変換
+                GLK[I1][j][II] = float(row_data[3*j+2])*0.86  # [W/m2K]から[kcal/m2hdeg]へ変換
             else:
-                GLK[I][j][II] = float(row_data[3*j+2])           
+                GLK[I1][j][II] = float(row_data[3*j+2])           
 
-            GLC[I][j][II] = float(row_data[3*j+3])
-            GLR[I][j][II] = float(row_data[3*j+4])
+            GLC[I1][j][II] = float(row_data[3*j+3])
+            GLR[I1][j][II] = float(row_data[3*j+4])
 
 # AFW, PPW関連データの読み込み
 for II in [1,2,3,4,5,6]:
@@ -1407,9 +1409,12 @@ for line in range(bldg_end+1,len(NUB)):
 
             elif KEY_SPAC == "WNDW":
 
+                # WNDWデータを示すID
                 M[L] = 3
+
+                # 窓面積
                 A = float(NUB[line_ex][41:])
-                ARM=ARM+A
+                ARM += A
 
                 if (NUB[line_ex][5:9] == "    ") or (NUB[line_ex][5:9] == "SNGL"):                    
                     ITB=1   # テーブル番号
@@ -1454,11 +1459,17 @@ for line in range(bldg_end+1,len(NUB)):
                 if abs(GLR[int(M1),int(M2),int(ITB)]-9.999) < 0.001:
                     raise Exception("WNDWの設定が不正です")       
 
+                # ブラインド開時の Kw×Aw kcal/h℃]
                 X[L+2] = A * GLK[int(M1),0,int(ITB)]
+                # ブラインド開時の SCC× Aw [m2]
                 X[L+3] = A * GLC[int(M1),0,int(ITB)]
+                # ブラインド開時の SCR ×Aw [m2]
                 X[L+4] = A * GLR[int(M1),0,int(ITB)]
+                # ブラインド閉時の Kw×Aw [kcal/h℃]
                 X[L+5] = A * GLK[int(M1),int(M2),int(ITB)]
+                # ブラインド閉時のSCC× Aw [m2]
                 X[L+6] = A * GLC[int(M1),int(M2),int(ITB)]
+                # ブラインド閉時のSCR Aw [m2]
                 X[L+7] = A * GLR[int(M1),int(M2),int(ITB)]
 
                 X[L+38] = IAP
@@ -2179,10 +2190,10 @@ while flag_day:
             WD[5,J] = 4.88*(0.01*(WD[1,J]+273.16))**4 * (1.-0.062*WD[5,J])*(0.49-2.1*math.sqrt(WD[2,J]/(WD[2,J]+622.0)))
 
         if (MCNTL[4] == 0):
-            WD[3,J] = WD[3,J]/.4186
-            WD[4,J] = WD[4,J]/.4186
+            WD[3,J] = WD[3,J]/0.4186
+            WD[4,J] = WD[4,J]/0.4186
             if (MCNTL[3] == 1):
-                WD[5,J] = WD[5,J]/.4186
+                WD[5,J] = WD[5,J]/0.4186
         elif (MCNTL[4] == 2):
             WD[3,J] = WD[3,J]/4.186  
             WD[4,J] = WD[4,J]/4.186
@@ -2478,6 +2489,8 @@ while flag_day:
             X[LC+75] = 0.0  # INFLの吸熱応答係数（瞬時） Σ0.288V
 
             L = int(LC + LSZSPC[0])
+            
+            print(f"---- L = {L}-----")
 
             if LOPC != 0:  # LOPC: OPCOデータへのポインタ(L)
 
@@ -2516,6 +2529,8 @@ while flag_day:
                     X[L+7] = X[L+7]*X[L+4] + EXC*X[L+3]
                     X[L+8] = X[L+8]*X[L+6] + EXC*X[L+5]
 
+                    mprint("(1) 3.8. HEAT GAIN THROUGH OUTSIDE WALL: ACC1", ACC1)
+
                     L = L+LSZSPC[1]
 
                 elif M[L] == 2:
@@ -2537,22 +2552,36 @@ while flag_day:
                         X[L+11] = X[L+11]*X[L+7] + EXC*X[L+5]
                         X[L+12] = X[L+12]*X[L+10] + EXC*X[L+8]
     
+                    mprint("(2) 3.9. HEAT GAIN THROUGH INSIDE WALL: ACC1", ACC1)
+
                     L = L+LSZSPC[2]
 
                 elif M[L] == 3:
 
                     # ***          3.10. HEAT GAIN THROUGH WINDOW **************************
 
-                    LE = int(M[L+1])
+                    LE = int(M[L+1])  # EXPSへのポインタ
+
+                    # X[LE+3]  傾斜角のsin
+                    # X[LE+4]  傾斜角のcos
                     if (CHCA[J] * X[LE+4] + CHSA[J] * X[LE+3]) < 0:
+                        # WD[3,J] 法線面直達日射量
                         W = WD[3,J]
                     else:
+                        # X[LE+13]  Ha （隣棟高さ[m]）
+                        # X[LE+14]  Zh （庇の出[-]）
                         if (X[L+13]*CHSA[J] + X[L+14]*CHCA[J]) < SH[J]:
                             W = WD[3,J]
                         else:
                             W = 0
                 
-                    EXC1 = WD[1,J] - X[155] - WD[5,J]*X[L+12]
+                    # WD[1,J] 外気温
+                    # X[155] 基準温度
+                    # WD[5,J] 夜間放射量
+                    # X[L+12] 
+                            
+                    EXC1 = (WD[1,J] - X[155]) - WD[5,J]*X[L+12]
+
                     V1 = W * X[LE+J+51]
                     V2 = W * SH[J] * X[L+9]
                     V3 = WD[4,J] * X[L+11]
@@ -2619,12 +2648,12 @@ while flag_day:
                                 if W > X[LC+43]:
                                     ACC6 += X[L+19]
 
+                    mprint("(3) 3.10. HEAT GAIN THROUGH WINDOW: ACC1", ACC1)
+
                     L = L+LSZSPC[3]                    
 
                 elif M[L] == 4:
 
-
-                    print(f"----{L}-----")
                     # ***          3.11. INFILTRATION **************************************
 
                     # EXPSへのポインタ
@@ -2669,6 +2698,8 @@ while flag_day:
                     # mprint("L", L)
                     # mprint("X[L+3]", X[L+3])
 
+                    mprint("(4) 3.11. INFILTRATION: ACC1", ACC1)
+                
                     L = L+LSZSPC[4]
 
             if M[L] == 5:
@@ -2742,6 +2773,7 @@ while flag_day:
                     # X[LC+52]  AM1×人数（全熱）[kcal/h]
                     ACC3 += W1 * (X[LC+52] - W2)
 
+                mprint("(5) 3.12. INTERNAL HEAT: ACC1", ACC1)
 
             # ***          3.13 CONVERT HEAT GAIN TO COOLING LOAD ******************
             
@@ -2756,11 +2788,11 @@ while flag_day:
             X[J+48]  = ACC3
             X[J+72]  = ACC5
 
-            # mprint("3.13: J", J)
-            # mprint("3.13: ACC1", ACC1)
-            # mprint("3.13: ACC2", ACC2)
-            # mprint("3.13: X[LC+11]", X[LC+11])
-            # mprint("3.13: X[LC+8]", X[LC+8])
+            mprint("3.13: J", J)
+            mprint("3.13: ACC1", ACC1)
+            mprint("3.13: ACC2", ACC2)
+            mprint("3.13: X[LC+11]", X[LC+11])
+            mprint("3.13: X[LC+8]", X[LC+8])
 
 
             # ***                CALCULATION EXTRACTING LOAD   *********************
