@@ -117,7 +117,6 @@ GLKR = np.zeros(MXGT)     # 長波放射成分係数kLR（内側ブラインド�
 NVS = np.zeros(6+1)         # 通気量のサンプリング数（添字は「GLD」第4添字と同）
 GLWK = np.zeros((2,2))      # Work array(第2添字=1:ΔSC, =2:ΔU,  第1添字=1:ブラインド開, =2:閉)
 
-FL = np.zeros((5,3))
 AM = np.zeros((3,9))
 MCNTL = np.zeros(32+1)   # 「CNTL」カードのデータ内容(XMQ配列に相当)           rev 20200403(T.Nagai)
 
@@ -197,11 +196,10 @@ ROL = [0.3, 0.2, 0.1]
 # GLKRBO = 102*9.999
 
 # WF FOR LIGHTING FIXTURE
-FL = [  [0.4438,0.0534,0.8972],
-        [0.0362,0.0000,0.7321],
-        [0.0254,0.8926,0.0309],
-        [0.0000,1.0000,0.0000],
-        [0.0000,0.0000,0.0000]   ]
+FL = [  [0.4438,0.0534,0.8972,0.0362,0.0000],
+        [0.7321,0.0254,0.8926,0.0309,0.0000],
+        [1.0000,0.0000,0.0000,0.0000,0.0000]  ]
+
 
 # OCCUPANCY HEAT DISCHARGE
 AM = [  [79.,50.,-3.0],
@@ -628,10 +626,6 @@ for line in range(1,bldg_end):
 
         M[int(LC)] = int(L)
         M[int(L)]  = int(LD)
-
-        mprint("WSCH L", L)
-        mprint("WSCH LC", LC)
-        mprint("WSCH LD", LD)
 
         # WSCH名称 M(起点＋1)
         M[int(L+1)] = NNAM
@@ -1253,6 +1247,7 @@ for line in range(bldg_end+1,len(NUB)):
 
             elif KEY_SPAC == "IWAL":
 
+                # A：面積[m2]
                 A = float(NUB[line_ex][41:])
                 ARM=ARM+A
 
@@ -1695,42 +1690,53 @@ for line in range(bldg_end+1,len(NUB)):
                 if LD != LC:
                     raise Exception("LDがLCと異なります")
                 else:
-                    M[LL+35] = LC+1
+                    # LL は SPACのポインタ
+                    M[LL+35] = LC+1    # LIGHへのポインタを保存（+1しているのはDSCH名称を参照するため）
 
-                # 器具形式
+                # M1: 器具形式
+                # 1 蛍光灯 埋め込み器具 <デフォルト>
+                # 2 蛍光灯 直付け器具
+                # 3 蛍光灯 吊り下げ器具
+                # 4 白熱灯 埋め込み器具
+                # 5 白熱灯 直付け器具
+                # 6 白熱灯 吊り下げ器具
                 if NUB[line_ex][14:17] == '   ':
                     M1 = 1       
                 else:
                     M1 = int(NUB[line_ex][14:17])
 
-                # 電気容量
+                # W: 電気容量
                 if NUB[line_ex][17:23] == '      ':
                     W = 20      
                 else:
                     W = float(NUB[line_ex][17:23])
 
-                # 電気容量の単位(1: W/m2、2: kW)
+                # 電気容量の単位(=1: W/m2、=2: kW)
                 if len(NUB[line_ex]) <= 25 or NUB[line_ex][23:26] == '   ':
                     M2 = 1       
                 else:
                     M2 = int(NUB[line_ex][23:26])
 
+                # 単位変換 kW へ
                 if (M2 == 1):
-                    W=0.001*W*X[int(LL)+2]
+                    # X[int(LL)+2]: スペースの床面積
+                    W = 0.001 * W * X[int(LL)+2]
                 
                 # 蛍光灯の場合は15%相当を安定器損失として加算
                 if (M1 <= 3):
-                    W = 1.15*W
+                    W = 1.15 * W
 
-                W = 860.0*W
+                # kWからkcalへ
+                W = 860.0 * W
 
                 # 0:埋め込み器具、1:直付け器具、2:吊り下げ器具
                 M1 =int( (M1-1)%3 )
-                X[int(LL)+36] = FL[0][M1]*W
-                X[int(LL)+37] = FL[1][M1]*W
-                X[int(LL)+38] = FL[2][M1]
-                X[int(LL)+39] = FL[3][M1]*W
-                X[int(LL)+40] = FL[4][M1]
+                
+                X[int(LL)+36] = FL[M1][0] * W
+                X[int(LL)+37] = FL[M1][1] * W
+                X[int(LL)+38] = FL[M1][2]
+                X[int(LL)+39] = FL[M1][3] * W
+                X[int(LL)+40] = FL[M1][4]
             
                 if (X[int(LL)+43] != 0):
                     if NUB[line_ex][32:38] == '      ':
@@ -2430,9 +2436,9 @@ while flag_day:
         KSCH[1] = M[int(M1+MDW[1])]   # スケジュールパターン
 
         L1 = int((KSCH[1]-1)*24)
-        LL = int(M[LC+35]+L1)   # DSCHポインタ
-        LH = int(M[LC+47]+L1)
-        LO = int(M[LC+51]+L1)
+        LL = int(M[LC+35]+L1)   # DSCHポインタ（LIGH）
+        LH = int(M[LC+47]+L1)   # DSCHポインタ（HEAT）
+        LO = int(M[LC+51]+L1)   # DSCHポインタ（OCUP）
 
         if (M[LC+35] == 0):
             LL=0
@@ -2454,15 +2460,15 @@ while flag_day:
 
             print(f"計算日時： {int(IDWK[1])}年 {int(IDWK[2])}月 {int(IDWK[3])}日 {J}時")
             
-            ACC1=0.
-            ACC2=0.
-            ACC3=0.
-            ACC4=0.
-            ACC5=0.
-            ACC6=0.
+            ACC1 = 0.0  # 顕熱負荷・対流成分（そのまま冷房負荷に）
+            ACC2 = 0.0  # 顕熱負荷・放射成分（室の重み係数でたたみ込み）
+            ACC3 = 0.0  # 潜熱負荷（そのまま冷房負荷に）
+            ACC4 = 0.0  # 補正項（顕熱）
+            ACC5 = 0.0  # 補正項（潜熱）
+            ACC6 = 0.0  # 消灯面積率の和
 
-            X[LC+74] = 0.
-            X[LC+75] = 0.
+            X[LC+74] = 0.0
+            X[LC+75] = 0.0
 
             L = int(LC + LSZSPC[0])
 
@@ -2498,8 +2504,8 @@ while flag_day:
                         + WD[4,J] * X[L+11] - WD[5,J]*X[L+12] - WD8[J]*X[L+15]
 
                     W = X[L+7] + X[L+8] + EXC*X[L+2]
-                    ACC1 = ACC1+W*FC
-                    ACC2 = ACC2+W*FR
+                    ACC1 += W * FC
+                    ACC2 += W * FR
                     X[L+7] = X[L+7]*X[L+4] + EXC*X[L+3]
                     X[L+8] = X[L+8]*X[L+6] + EXC*X[L+5]
 
@@ -2519,8 +2525,8 @@ while flag_day:
                             EXC = X[L+15] - X[155]
 
                         W = X[L+11] + X[L+12] + EXC*X[L+3]
-                        ACC1 = ACC1 + W*FC
-                        ACC2 = ACC2 + W*FR
+                        ACC1 += W * FC
+                        ACC2 += W * FR
                         X[L+11] = X[L+11]*X[L+7] + EXC*X[L+5]
                         X[L+12] = X[L+12]*X[L+10] + EXC*X[L+8]
     
@@ -2577,7 +2583,7 @@ while flag_day:
                         if X[LC+43] != 0:
                             W = X[L+18] * (V1+V2+V3+V4) * WINCHR[2,1]
                             if W > X[LC+43]:
-                                ACC6 = ACC6 + X[L+19]
+                                ACC6 += X[L+19]
 
                     else:
 
@@ -2587,32 +2593,36 @@ while flag_day:
 
                             # 641の処理
                             W1   = EXC1 * WINCHR[0,1]
-                            ACC1 = ACC1 + W1 * (1.0-X[L+46]) + EXC2*WINCHR[1,1]
-                            ACC2 = ACC2 + W1 * X[L+46] + EXC2*WINCHR[2,1]
+                            ACC1 += W1 * (1.0-X[L+46]) + EXC2*WINCHR[1,1]
+                            ACC2 += W1 * X[L+46] + EXC2*WINCHR[2,1]
                             if X[LC+43] != 0:
                                 W = X[L+18] * (V1+V2+V3+V4) * WINCHR[2,1]
                                 if W > X[LC+43]:
-                                    ACC6 = ACC6 + X[L+19]
+                                    ACC6 += X[L+19]
 
                         else:
 
                             W1   = EXC1 * WINCHR[0,0]
-                            ACC1 = ACC1 + W1*(1.0-X[L+45]) + EXC2*WINCHR[1,0]
-                            ACC2 = ACC2 + W1*X[L+45]+W
-                            ACC4 = ACC4 + WINCHR[0,0]-X[L+5]
+                            ACC1 += W1*(1.0-X[L+45]) + EXC2*WINCHR[1,0]
+                            ACC2 += W1*X[L+45]+W
+                            ACC4 += WINCHR[0,0]-X[L+5]
                     
                             if (X[LC+43] != 0):                        
                                 W = (X[L+15]*V3+X[L+16]*(V1+V3)+X[L+17]*(V2+V4)) * WINCHR[2,0]
                                 if W > X[LC+43]:
-                                    ACC6 = ACC6 + X[L+19]
+                                    ACC6 += X[L+19]
 
                     L = L+LSZSPC[3]                    
 
                 elif M[L] == 4:
 
+
+                    print(f"----{L}-----")
                     # ***          3.11. INFILTRATION **************************************
 
+                    # EXPSへのポインタ
                     LE = int(M[L+1])
+
                     W  = abs(X[LE+2] - WD[6,J])
                     U  = CF( math.cos(W*DR) ) * X[LC+7] * WD[7,J]**2 + (WD[1,J]-X[155])*X[LC+6]
                 
@@ -2640,10 +2650,11 @@ while flag_day:
                         else:
                             V=0.
                 
-                    ACC1 = ACC1 + 0.288 * V *(WD[1,J]-X[155])
-                    ACC3 = ACC3 + 0.720 * V *(WD[2,J]-X[157])
-                    ACC4 = ACC4 + 0.288 * V 
-                    ACC5 = ACC5 + 0.720 * V 
+                    ACC1 += 0.288 * V *(WD[1,J]-X[155])
+                    ACC3 += 0.720 * V *(WD[2,J]-X[157])
+                    ACC4 += 0.288 * V 
+                    ACC5 += 0.720 * V
+
                     X[LC+74] = X[LC+74] + 0.288*V*(WD[1,J]-X[155])
                     X[LC+75] = X[LC+75] + 0.288*V
 
@@ -2656,46 +2667,94 @@ while flag_day:
             if M[L] == 5:
 
                 # ***          3.12. INTERNAL HEAT *************************************
-                if (LL != 0):
-                    if X[LC+43] == 0:
+
+                if (LL != 0):   # 照明
+
+                    # X[LC+43] 昼光利用 (なし：=0、あり：=1/2 設計照度）
+                    if X[LC+43] == 0:   
                         ACC6 = 0
                     if ACC6 > 1:
                         ACC6 = 1
 
-                    W  = X[LL+J] * MCNTL[ int(21+ISEAS[1]) ] /100*(1-ACC6)   # 季節別発熱割合を掛ける
-                    W1 = X[LC+41] + X[LC+42] + W*X[LC+36]
-                    X[LC+41] = X[LC+41] * X[LC+38] + W*X[LC+37]
-                    X[LC+42] = X[LC+42] * X[LC+40] + W*X[LC+39]
-                    ACC1 = ACC1+W1*FC
-                    ACC2 = ACC2+W1*FR
-            
-                if LH != 0:
+                    # LL: DSCHポインタ（LIGH） → X[LL+J]は照明のスケジュール
+                    # MCNTL[22] HRAT 発熱割合 LIGH 夏期 %
+                    # MCNTL[23] HRAT 発熱割合 LIGH 冬期 %
+                    # MCNTL[24] HRAT 発熱割合 LIGH 中間期 %
+                    W  = X[LL+J] * MCNTL[ int(21+ISEAS[1]) ] /100 * (1-ACC6)   # 季節別発熱割合を掛ける
 
+                    # X[LC+36]  照明熱取得：P0 瞬時応答係数[kcal/h]
+                    # X[LC+41]  照明熱取得：Q1 前ステップまでの励振による現ステップでの照明起源の1項目の熱取得 [kcal/h]
+                    # X[LC+42]  照明熱取得：Q2 前ステップまでの励振による現ステップでの照明起源の2項目の熱取得 [kcal/h]
+                    W1 = X[LC+41] + X[LC+42] + W * X[LC+36]
+
+                    # X[LC+37]  照明熱取得：P1 1項目の1ステップ後の応答係数[kcal/h]
+                    # X[LC+38]  照明熱取得：R1 1項目の公比[-]
+                    # X[LC+39]  照明熱取得 P2 2項目の1ステップ後の応答係数[kcal/h]
+                    # X[LC+40]  照明熱取得：R2 1項目の公比[-]
+                    X[LC+41] = X[LC+41] * X[LC+38] + W * X[LC+37]
+                    X[LC+42] = X[LC+42] * X[LC+40] + W * X[LC+39]
+
+                    ACC1 += W1 * FC
+                    ACC2 += W1 * FR
+            
+                if LH != 0:   # 機器
+
+                    # LH: DSCHポインタ（HEAT） → X[LH+J]は機器発熱のスケジュール
+                    # MCNTL[28] HRAT 発熱割合 HEAT 夏期 %
+                    # MCNTL[29] HRAT 発熱割合 HEAT 冬期 %
+                    # MCNTL[30] HRAT 発熱割合 HEAT 中間期 %
                     W1 = X[LH+J] * MCNTL[ int(27+ISEAS[1]) ]/100.   # 季節別発熱割合を掛ける
-                    ACC1 = ACC1 + W1*X[LC+48]
-                    ACC2 = ACC2 + W1*X[LC+49]
-                    ACC3 = ACC3 + W1*X[LC+50]
+
+                    # X[LC+48]  対流放熱量[kcal/h]
+                    # X[LC+49]  放射放熱量[kcal/h]
+                    # X[LC+50]  潜熱放熱量[kcal/h]
+                    ACC1 += W1*X[LC+48]
+                    ACC2 += W1*X[LC+49]
+                    ACC3 += W1*X[LC+50]
                 
+                    # X[LC+74] 面積を持たない部位の冷房負荷（=INFLと強制空冷が選ばれたときのHEAT）
                     if abs(X[LC+49]) < 0.001:  # 強制対流式の場合
-                        X[LC+74] = X[LC+74] + W1*X[LC+48]    # 面積を持たない部位からの負荷に算入
-
+                        X[LC+74] += W1*X[LC+48]
             
-                if LO != 0:
+                if LO != 0:   # 人体
 
+                    # LH: DSCHポインタ（OCUP) → X[LO+J]は人体のスケジュール
+                    # MCNTL[28] HRAT 発熱割合 OCUP 夏期 %
+                    # MCNTL[29] HRAT 発熱割合 OCUP 冬期 %
+                    # MCNTL[30] HRAT 発熱割合 OCUP 中間期 %
                     W  = X[LO+J] * MCNTL[ int(24+ISEAS[1]) ]/100.   # 季節別発熱割合を掛ける
-                    W2 = X[LC+53] + X[LC+54] * (X[ int(LC+214+ISEAS[1]) ]-24.)                
-                    ACC1 = ACC1 + W1*W2*FC
-                    ACC2 = ACC2 + W1*W2*FR
-                    ACC3 = ACC3 + (X[LC+52]-W2)*W1
+
+                    # X[LC+53]  AM2×人数（24℃における顕熱）[kcal/h]
+                    # X[LC+54]  AM3×人数（単位温度上昇あたりの顕熱増加量）[kcal/h℃]
+                    # X[ int(LC+214+ISEAS[1]) ]  室温（各季節）
+                    W2 = X[LC+53] + X[LC+54] * (X[ int(LC+214+ISEAS[1]) ]-24.)          
+ 
+                    ACC1 += W1 * W2 * FC
+                    ACC2 += W1 * W2 * FR
+
+                    # X[LC+52]  AM1×人数（全熱）[kcal/h]
+                    ACC3 += W1 * (X[LC+52] - W2)
 
 
             # ***          3.13 CONVERT HEAT GAIN TO COOLING LOAD ******************
+            
+            # X[LC+8] : 冷房負荷重み係数：P0 瞬時応答係数[kcal/h℃]
+            # X[LC+9] : 冷房負荷重み係数：P1 1ステップ後の応答係数[kcal/h℃]
+            # X[LC+10] : 冷房負荷重み係数：R1 公比
+            # X[LC+11] : 冷房負荷重み係数：Q1 前ステップまでの励振による現ステップでの放射成分起源の冷房負荷 [kcal/h]
+                    
+            X[J]     = ACC1 + X[LC+11] + ACC2 * X[LC+8]
+            X[LC+11] = X[LC+11] * X[LC+10] + ACC2 * X[LC+9]
+            X[J+24]  = ACC4
+            X[J+48]  = ACC3
+            X[J+72]  = ACC5
 
-            X[J] = ACC1+X[LC+11] + ACC2*X[LC+8]
-            X[LC+11] = X[LC+11] * X[LC+10] + ACC2*X[LC+9]
-            X[J+24] = ACC4
-            X[J+48] = ACC3
-            X[J+72] = ACC5
+            # mprint("3.13: J", J)
+            # mprint("3.13: ACC1", ACC1)
+            # mprint("3.13: ACC2", ACC2)
+            # mprint("3.13: X[LC+11]", X[LC+11])
+            # mprint("3.13: X[LC+8]", X[LC+8])
+
 
             # ***                CALCULATION EXTRACTING LOAD   *********************
 
@@ -2722,30 +2781,30 @@ while flag_day:
                             IOPTG,IOPVG,SMRT1,SMRT2,LCG,VOAG,CLDG,P0,RMMN,RMMX,SPCAP,EXCAP,VFLOW,
                             X,M)
 
-                mprint("EXTRC1: J", J)
-                mprint("EXTRC1: NHR", NHR)
-                mprint("EXTRC1: LOPC", LOPC)
-                mprint("EXTRC1: LC", LC)
-                mprint("EXTRC1: NAZ", NAZ)
-                mprint("EXTRC1: NHR", NHR)
-                mprint("EXTRC1: ISEAS[1]", ISEAS[1])
-                mprint("EXTRC1: KSCH[1]", KSCH[1])
-                mprint("EXTRC1: IOPTWK", IOPTWK)
+                # mprint("EXTRC1: J", J)
+                # mprint("EXTRC1: NHR", NHR)
+                # mprint("EXTRC1: LOPC", LOPC)
+                # mprint("EXTRC1: LC", LC)
+                # mprint("EXTRC1: NAZ", NAZ)
+                # mprint("EXTRC1: NHR", NHR)
+                # mprint("EXTRC1: ISEAS[1]", ISEAS[1])
+                # mprint("EXTRC1: KSCH[1]", KSCH[1])
+                # mprint("EXTRC1: IOPTWK", IOPTWK)
 
-                mprint("EXTRC1: IOPTG", IOPTG[1])
-                mprint("EXTRC1: IOPVG", IOPVG[1])
-                mprint("EXTRC1: SMRT1", SMRT1[1])
-                mprint("EXTRC1: SMRT2", SMRT2[1])
-                mprint("EXTRC1: LCG", LCG[1])
-                mprint("EXTRC1: VOAG", VOAG[1])
-                mprint("EXTRC1: CLDG", CLDG[1])
-                mprint("EXTRC1: P0-0", P0[1,0])
-                mprint("EXTRC1: P0-1", P0[1,1])
-                mprint("EXTRC1: RMMN", RMMN[1])
-                mprint("EXTRC1: RMMX", RMMX[1])
-                mprint("EXTRC1: SPCAP", SPCAP[1])
-                mprint("EXTRC1: EXCAP", EXCAP[1])
-                mprint("EXTRC1: VFLOW", VFLOW[1,1,:])
+                # mprint("EXTRC1: IOPTG", IOPTG[1])
+                # mprint("EXTRC1: IOPVG", IOPVG[1])
+                # mprint("EXTRC1: SMRT1", SMRT1[1])
+                # mprint("EXTRC1: SMRT2", SMRT2[1])
+                # mprint("EXTRC1: LCG", LCG[1])
+                # mprint("EXTRC1: VOAG", VOAG[1])
+                # mprint("EXTRC1: CLDG", CLDG[1])
+                # mprint("EXTRC1: P0-0", P0[1,0])
+                # mprint("EXTRC1: P0-1", P0[1,1])
+                # mprint("EXTRC1: RMMN", RMMN[1])
+                # mprint("EXTRC1: RMMX", RMMX[1])
+                # mprint("EXTRC1: SPCAP", SPCAP[1])
+                # mprint("EXTRC1: EXCAP", EXCAP[1])
+                # mprint("EXTRC1: VFLOW", VFLOW[1,1,:])
 
         LCO = int(LC)     # 処理をしたSPACのポインタ
         LC  = int(M[LC])  # 次に処理するSPACのポインタ
