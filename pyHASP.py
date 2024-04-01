@@ -117,7 +117,6 @@ GLKR = np.zeros(MXGT)     # 長波放射成分係数kLR（内側ブラインド�
 NVS = np.zeros(6+1)         # 通気量のサンプリング数（添字は「GLD」第4添字と同）
 GLWK = np.zeros((2,2))      # Work array(第2添字=1:ΔSC, =2:ΔU,  第1添字=1:ブラインド開, =2:閉)
 
-AM = np.zeros((3,9))
 MCNTL = np.zeros(32+1)   # 「CNTL」カードのデータ内容(XMQ配列に相当)           rev 20200403(T.Nagai)
 
 #  COMMON /ETC/MCNTL
@@ -200,7 +199,6 @@ FL = [  [0.4438,0.0534,0.8972,0.0362,0.0000],
         [0.7321,0.0254,0.8926,0.0309,0.0000],
         [1.0000,0.0000,0.0000,0.0000,0.0000]  ]
 
-
 # OCCUPANCY HEAT DISCHARGE
 AM = [  [79.,50.,-3.0],
         [91.,53.,-3.1],
@@ -210,8 +208,7 @@ AM = [  [79.,50.,-3.0],
         [170.,65.,-5.6],
         [194.,72.,-6.0],
         [227.,85.,-6.3],
-        [329.,118.,-5.4] 
-    ]
+        [329.,118.,-5.4] ]
 
 #-----------------------------------------------------------------------
 # ファイルの読み込み
@@ -1077,6 +1074,7 @@ for line in range(bldg_end+1,len(NUB)):
             
         X[L+44] = NUB[line][35:38]
 
+        # 昼光利用 (なし：0、あり：1/2設計照度 = LIGHを読み込んだ時に入力）
         M1 = M[L+43]
         if M1 == 0:
             M1 = 1
@@ -1597,7 +1595,7 @@ for line in range(bldg_end+1,len(NUB)):
                     W = (X[int(LC)+13]-X[int(LL)+5])/X[int(LC)+12]
                     X[L+13] = W*X[int(LC)+3]
                     X[L+14] = W*X[int(LC)+4]
-                    
+                
                 if X[int(LL)+43] == 0:
                     for I in [15,16,17,18,19]:
                         X[L+I]=0.0
@@ -1732,18 +1730,25 @@ for line in range(bldg_end+1,len(NUB)):
                 # 0:埋め込み器具、1:直付け器具、2:吊り下げ器具
                 M1 =int( (M1-1)%3 )
                 
+                # 照明熱取得：P0 瞬時応答係数[kcal/h]
                 X[int(LL)+36] = FL[M1][0] * W
+                # 照明熱取得：P1 1項目の1ステップ後の応答係数[kcal/h]
                 X[int(LL)+37] = FL[M1][1] * W
+                # 照明熱取得：R1 1項目の公比[-]
                 X[int(LL)+38] = FL[M1][2]
+                # 照明熱取得 P2 2項目の1ステップ後の応答係数[kcal/h]
                 X[int(LL)+39] = FL[M1][3] * W
+                # 照明熱取得：R2 1項目の公比[-]
                 X[int(LL)+40] = FL[M1][4]
             
+                # X[int(LL)+43]  昼光利用 (なし：0、あり：1/2設計照度）
                 if (X[int(LL)+43] != 0):
                     if NUB[line_ex][32:38] == '      ':
                         W = 700    
                     else:
                         W = int(NUB[line_ex][32:38])
                     X[int(LL)+43] = W/2.
+
 
             elif KEY_SPAC == "OCUP":
 
@@ -1752,9 +1757,10 @@ for line in range(bldg_end+1,len(NUB)):
                 if LD != LC:
                     raise Exception("LDがLCと異なります")
                 else:
+                    # OCUPスケジュールへのポインタ
                     M[LL+51] = LC+1
 
-                # 作業指数
+                # 作業指数（1～9）
                 if NUB[line_ex][14:17] == '   ':
                     M1 = 3       
                 else:
@@ -1772,13 +1778,14 @@ for line in range(bldg_end+1,len(NUB)):
                 else:
                     M2 = int(NUB[line_ex][23:26])
                     
+                # 単位変換 人
                 if (M2 == 1):
-                    W=W*X[int(LL)+2]
+                    # X[int(LL)+2] 床面積
+                    W = W * X[int(LL)+2]
 
-                X[int(LL)+52] = W*AM[0][M1-1]
-                X[int(LL)+53] = W*AM[1][M1-1]
-                X[int(LL)+54] = W*AM[2][M1-1]
-
+                X[int(LL)+52] = W * AM[M1-1][0]   # 全熱
+                X[int(LL)+53] = W * AM[M1-1][1]   # 顕熱分
+                X[int(LL)+54] = W * AM[M1-1][2]   # 単位温度上昇あたりの顕熱変化量
 
             elif KEY_SPAC == "HEAT":
 
@@ -2467,8 +2474,8 @@ while flag_day:
             ACC5 = 0.0  # 補正項（潜熱）
             ACC6 = 0.0  # 消灯面積率の和
 
-            X[LC+74] = 0.0
-            X[LC+75] = 0.0
+            X[LC+74] = 0.0  # 面積を持たない部位の冷房負荷（=INFLと強制空冷が選ばれたときのHEAT）
+            X[LC+75] = 0.0  # INFLの吸熱応答係数（瞬時） Σ0.288V
 
             L = int(LC + LSZSPC[0])
 
@@ -2708,27 +2715,27 @@ while flag_day:
                     # X[LC+48]  対流放熱量[kcal/h]
                     # X[LC+49]  放射放熱量[kcal/h]
                     # X[LC+50]  潜熱放熱量[kcal/h]
-                    ACC1 += W1*X[LC+48]
-                    ACC2 += W1*X[LC+49]
-                    ACC3 += W1*X[LC+50]
+                    ACC1 += W1 * X[LC+48]
+                    ACC2 += W1 * X[LC+49]
+                    ACC3 += W1 * X[LC+50]
                 
                     # X[LC+74] 面積を持たない部位の冷房負荷（=INFLと強制空冷が選ばれたときのHEAT）
                     if abs(X[LC+49]) < 0.001:  # 強制対流式の場合
-                        X[LC+74] += W1*X[LC+48]
+                        X[LC+74] += W1 * X[LC+48]
             
                 if LO != 0:   # 人体
 
-                    # LH: DSCHポインタ（OCUP) → X[LO+J]は人体のスケジュール
-                    # MCNTL[28] HRAT 発熱割合 OCUP 夏期 %
-                    # MCNTL[29] HRAT 発熱割合 OCUP 冬期 %
-                    # MCNTL[30] HRAT 発熱割合 OCUP 中間期 %
+                    # LO: DSCHポインタ（OCUP) → X[LO+J]は人体のスケジュール
+                    # MCNTL[25] HRAT 発熱割合 OCUP 夏期 %
+                    # MCNTL[26] HRAT 発熱割合 OCUP 冬期 %
+                    # MCNTL[27] HRAT 発熱割合 OCUP 中間期 %
                     W  = X[LO+J] * MCNTL[ int(24+ISEAS[1]) ]/100.   # 季節別発熱割合を掛ける
 
                     # X[LC+53]  AM2×人数（24℃における顕熱）[kcal/h]
                     # X[LC+54]  AM3×人数（単位温度上昇あたりの顕熱増加量）[kcal/h℃]
                     # X[ int(LC+214+ISEAS[1]) ]  室温（各季節）
                     W2 = X[LC+53] + X[LC+54] * (X[ int(LC+214+ISEAS[1]) ]-24.)          
- 
+
                     ACC1 += W1 * W2 * FC
                     ACC2 += W1 * W2 * FR
 
