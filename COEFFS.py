@@ -73,6 +73,7 @@ def COEFFS(LMODE,NZ,IZ,RMMX,RMMN,GRADL,CRHO,VFLOW,FIXEDL,EXCAP1,SPCAP1,ISL,IREP,
             else:
                 if (VFLOW[J] < 0): 
                     raise Exception("想定外エラー")
+                
                 AA[IZ,J] = -CRHO*VFLOW[J]
 
         if ( ISL == 1 ):

@@ -8,21 +8,21 @@ import numpy as np
 # *     2001-06-25, Akihiro Nagata (Revised by T.Nagai)
 
 def CPARAM(nt, g):
-    """数値Laplace逆変換し，convolution parametersを求める．
+    """伝達関数の数値逆変換
+    数値Laplace逆変換し，convolution parametersを求める．
 
     Args:
         nt (_type_): 項数
         g (_type_): 応答
     """
 
-    p = np.zeros(8+1)   # 1始まりとする
-
-    h = np.zeros(9+1)   # 1始まりとする
-    z = np.zeros([4+1,5+1])   # 1始まりとする
-    zz = np.zeros(5+1)   # 1始まりとする
-    e  = np.zeros(2+1)   # 1始まりとする
-    ee  = np.zeros(2+1)   # 1始まりとする
-    a   = np.zeros(2+1)   # 1始まりとする
+    p   = np.zeros(8+1)         # 1始まりとする
+    h   = np.zeros(9+1)         # 1始まりとする
+    z   = np.zeros([4+1,5+1])   # 1始まりとする
+    zz  = np.zeros(5+1)         # 1始まりとする
+    e   = np.zeros(2+1)         # 1始まりとする
+    ee  = np.zeros(2+1)         # 1始まりとする
+    a   = np.zeros(2+1)         # 1始まりとする
 
     # sは0始まり
     s = [ 0.00000, 0.00025, 0.00100, 0.00400, 0.01600, 0.06400, 0.25600, 1.02400, 4.09600, 16.38400]
@@ -31,8 +31,6 @@ def CPARAM(nt, g):
 
     for j in range(1, 9+1):
         h[j] = (g[j] - g[0])/s[j]
-    for i in range(1, 8+1):
-        p[i] = 0
 
     n = 1
 
@@ -153,6 +151,7 @@ def CPARAM(nt, g):
     # Convolution parameters
     p[1] = g[0]
     p[2] = g[0]
+
     for i in range(1, n+1):
         u    = a[i]/e[i]
         v    = math.exp(-e[i])
@@ -161,6 +160,7 @@ def CPARAM(nt, g):
         p[3*i+0] = -u*(1.-v)**2
         p[3*i+1] = -u*(1.-v)**2/(1.+v)
         p[3*i+2] = v
+
 
     for i in range(n+1, 2+1):
         p[3*i+0] = 0
