@@ -2013,8 +2013,8 @@ for line in range(bldg_end+1,len(NUB)):
 
                 if IFURS >= 1:
                     P = CPARAM(2,GAS)   # 家具の蓄熱応答係数のみ計算（簡易MRT計算用）
-                    for I in range(0,9):
-                        X[LL+I+63] = P[I]
+                    for I in range(1,9):
+                        X[LL+63+I] = P[I]
                         
                 M[LL+101] = IZ
 
@@ -2177,7 +2177,7 @@ while flag_day:
     IDWK[2]  = int(ID[1,2])   # 計算日の月
     IDWK[3]  = int(ID[1,3])   # 計算日の日
 
-    print(f"{int(IDWK[1])}年 {int(IDWK[2])}月 {int(IDWK[3])}日")
+    print(f"計算日： {int(IDWK[1])}年 {int(IDWK[2])}月 {int(IDWK[3])}日")
 
     # 気象データをRewindした回数（Rewind前）
     ICYCLO = ICYCL
@@ -2412,6 +2412,8 @@ while flag_day:
     # SPACのポインタ
     LC = int(M[106])
 
+    print(f"計算対象SPAC: {NAME(M[LC+1])}, L = {LC}")
+
     LCGB = LC
     LCO  = LC  # 追加（元のfortranにはない）
 
@@ -2518,8 +2520,6 @@ while flag_day:
         # ***          3.7. HOURLY LOOP START **********************************
 
         for J in range(1,25):
-
-            print(f"計算日時： {int(IDWK[1])}年 {int(IDWK[2])}月 {int(IDWK[3])}日 {J}時")
             
             ACC1 = 0.0  # 顕熱負荷・対流成分（そのまま冷房負荷に）
             ACC2 = 0.0  # 顕熱負荷・放射成分（室の重み係数でたたみ込み）
@@ -2533,8 +2533,6 @@ while flag_day:
 
             L = int(LC + LSZSPC[0])
             
-            print(f"---- L = {L}-----")
-
             if LOPC != 0:  # LOPC: OPCOデータへのポインタ(L)
 
                 # IOPTWK 空調運転状態フラグ =0:停止中、=1:運転中、=2:起動、=3:停止
@@ -2916,4 +2914,3 @@ while (LL != 0):
 
     # 次のスペースに移動
     LL = int(M[LL])
-    
