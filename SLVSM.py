@@ -157,8 +157,6 @@ def SLVSM(NZ,IOPT,EXCAP,SPCAP,NAZ,VFLOW,P0,CRHO,VOA,
 
         print(f"--- SLVSM XX: {BB}")
 
-        # print(f"--- SLVSM XX: {BB}")
-
         for IZ in range(1, NZ+1):  # ゾーン loop
 
             # 熱平衡式の切片を求める
@@ -197,8 +195,8 @@ def SLVSM(NZ,IOPT,EXCAP,SPCAP,NAZ,VFLOW,P0,CRHO,VOA,
             for IZ in range(1, NZ+1):
                 RM[IZ] = BB[IZ]
 
-            print(f"--- SLVSM ITER: {ITER}")
-            print(f"--- SLVSM RM: {RM[1]}")
+            # print(f"--- SLVSM ITER: {ITER}")
+            # print(f"--- SLVSM RM: {RM[1]}")
 
             return LMODE,AN,RM,AA,BB,IP,X,M
 

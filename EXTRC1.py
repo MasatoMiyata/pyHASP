@@ -57,6 +57,7 @@ def EXTRC1(JHR,NHR,LOPC,LC,NAZ,ISEAS,KSCH,IOPTWK,IOPTG,IOPVG,SMRT1,SMRT2,LCG,VOA
     
     NSL = 2  # 顕熱と潜熱
 
+    # OPCOのポインタ
     LOPC = int(LOPC)
 
     if (JHR < 1):
@@ -65,6 +66,7 @@ def EXTRC1(JHR,NHR,LOPC,LC,NAZ,ISEAS,KSCH,IOPTWK,IOPTG,IOPVG,SMRT1,SMRT2,LCG,VOA
         raise Exception("例外が発生しました")
 
     # 外気導入モード ( IOPVG )
+    # X[ int(LOPC+165) ] 外気導入量
     if ( X[ int(LOPC+165) ] < 0.01 ):
         IOPVWK = 0
     elif ( M[LC+61] == 1 ):   # 前日より外気導入継続中
@@ -73,14 +75,19 @@ def EXTRC1(JHR,NHR,LOPC,LC,NAZ,ISEAS,KSCH,IOPTWK,IOPTG,IOPVG,SMRT1,SMRT2,LCG,VOA
             raise Exception("例外が発生しました")
         if (IOPTWK == 2):
             raise Exception("例外が発生しました")
-    elif ( JHR < M[LOPC+164] ):
+    elif ( int(JHR) < int(M[LOPC+164]) ):
         IOPVWK = 0
-    elif ( JHR > M[LOPC+164] ):
+    elif ( int(JHR) > int(M[LOPC+164]) ):
         IOPVWK = IOPTWK
     elif (IOPTWK == 0) or (IOPTWK == 3):
         IOPVWK = 0
     else:
         IOPVWK = 2
+
+    # print(f'-----------JHR: {JHR}')
+    # print(f'-----------LOPC: {LOPC}')
+    # print(f'-----------int(M[LOPC+164]): {int(M[LOPC+164])}')
+    # print(f'-----------IOPVWK: {IOPVWK}')
 
     if (IOPVWK==0) or (IOPVWK == 3):
         M[LC+61] = 0   # たとえ前ステップまで外気導入が継続していたとしてもこのステップで途絶えた

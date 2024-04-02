@@ -757,9 +757,9 @@ for line in range(1,bldg_end):
         
         # 外気導入開始時刻（デフォルト値は0=終日導入しない）  M(L+164)  
         if NUB[line][11:14] == "   ":
-            X[L+164] = 0
+            M[L+164] = 0
         else:
-            X[L+164] = float(NUB[line][11:14])
+            M[L+164] = float(NUB[line][11:14])
 
         # 運転終了時間（スケジュール1） M1
         if NUB[line][14:17] == "   ":

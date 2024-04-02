@@ -113,12 +113,12 @@ def EXTRC2(NHR,IPEAK,ISEAS,NAZ,IOPTG,NZ,IOPVG,SMRT1,SMRT2,
     NTRM   = np.array([0, 2, 1])            # ISLと対応。最初の0はダミー
     LSTP   = np.array([
                     [0,0,0],
-                    [0,17,20],
-                    [0,27,0]])  # 潜熱の2項目はダミー（XMQ配列変更時注意）
+                    [0,17,27],
+                    [0,20,0]])  # 潜熱の2項目はダミー（XMQ配列変更時注意）
     LSTQ   = np.array([
                     [0,0,0],
-                    [0,23,24],
-                    [0,30,0]])  # 潜熱の2項目はダミー（XMQ配列変更時注意）
+                    [0,23,30],
+                    [0,24,0]])  # 潜熱の2項目はダミー（XMQ配列変更時注意）
 
     IDLT   = np.zeros(MSTP+1)
     RMSET  = np.zeros(MZ+1)                     # 設定温湿度上限・下限
@@ -158,7 +158,7 @@ def EXTRC2(NHR,IPEAK,ISEAS,NAZ,IOPTG,NZ,IOPVG,SMRT1,SMRT2,
 
     for ISL in range(1, NSL+1):   # 顕熱・潜熱 loop
 
-        print(f"--- EXTRC2 顕熱・潜熱ループ: {ISL}")
+        # print(f"--- EXTRC2 顕熱・潜熱ループ: {ISL}")
 
         #---------------------------------------
         # 各ゾーンの設定温湿度上限・下限
@@ -174,7 +174,7 @@ def EXTRC2(NHR,IPEAK,ISEAS,NAZ,IOPTG,NZ,IOPVG,SMRT1,SMRT2,
 
         for JHR in range(1, NHR+1):    # 時刻ループ
 
-            print(f"--- EXTRC2 時刻ループ: {JHR}")
+            # print(f"--- EXTRC2 時刻ループ: {JHR}")
 
             #---------------------------------------
             # 導入外気温湿度（外調機考慮） (OATX)
@@ -267,7 +267,7 @@ def EXTRC2(NHR,IPEAK,ISEAS,NAZ,IOPTG,NZ,IOPVG,SMRT1,SMRT2,
 
             for IREP in [0, 1]:   # 直前・直後 loop
 
-                print(f"--- EXTRC2 直前・直後ループ: {IREP}")
+                # print(f"--- EXTRC2 直前・直後ループ: {IREP}")
 
                 #---------------------------------------
                 # 運転状態の判定
@@ -317,7 +317,7 @@ def EXTRC2(NHR,IPEAK,ISEAS,NAZ,IOPTG,NZ,IOPVG,SMRT1,SMRT2,
                     # 冷房負荷 CLDG + 空気の容積比熱 * 外気導入量 * (外気温度/湿度 - 基準温度/湿度)
                     FIXEDL[IZ] = CLDG[IZ,JHR,ISL] + CRHO[ISL] * VOAWK[IZ,IREP,JHR] * ( OATX[IZ,JHR] - REFWD[ISL] )
 
-                    print(f"--- EXTRC2 FIXEDL: {FIXEDL[IZ]}")
+                    print(f"--- EXTRC2 FIXEDL①: {FIXEDL[IZ]}")
                     print(f"--- EXTRC2   CLDG[IZ,JHR,ISL]: {CLDG[IZ,JHR,ISL]}")
                     print(f"--- EXTRC2   CRHO[ISL]: {CRHO[ISL]}")
                     print(f"--- EXTRC2   VOAWK[IZ,IREP,JHR]: {VOAWK[IZ,IREP,JHR]}")
@@ -327,7 +327,10 @@ def EXTRC2(NHR,IPEAK,ISEAS,NAZ,IOPTG,NZ,IOPVG,SMRT1,SMRT2,
                     # NTRM 蓄熱応答係数の項数
                     for I in range(1, NTRM[ISL]+1):
                         FIXEDL[IZ] += X[ int( LCG[IZ]+LSTQ[I,ISL] ) ]
+                        # print(f"---  X[ int( LCG[IZ]+LSTQ[I,ISL] ) ]: { X[ int( LCG[IZ]+LSTQ[I,ISL] ) ]}")
                     
+                    print(f"--- EXTRC2 FIXEDL②: {FIXEDL[IZ]}")
+
                     if ( ISL == 1 ):  # 顕熱
 
                         # 各スペースの「内壁」のループ
@@ -343,6 +346,8 @@ def EXTRC2(NHR,IPEAK,ISEAS,NAZ,IOPTG,NZ,IOPVG,SMRT1,SMRT2,
                                 FIXEDL[IZ] += X[L+11] + X[L+12]
                                 # 次の要素のポインタ
                                 L += int(LSZSPC[int(M[L])])
+
+                    print(f"--- EXTRC2 FIXEDL③: {FIXEDL[IZ]}")
 
                     # 直前の室温湿度変動による直後の流入熱を加算する
                     # 直後の計算で一定除去熱量計算を行わない場合 か 予熱運転ではない状態で一定除去熱量計算を行う場合
@@ -372,8 +377,11 @@ def EXTRC2(NHR,IPEAK,ISEAS,NAZ,IOPTG,NZ,IOPVG,SMRT1,SMRT2,
                                     # 次の要素のポインタ
                                     L += int(LSZSPC[int(M[L])])
 
-                if ( IWARM1 == 1 ):  # 一定除去熱量を計算する
+                    print(f"--- EXTRC2 FIXEDL④: {FIXEDL[IZ]}")
 
+
+                if ( IWARM1 == 1 ):  # 一定除去熱量を計算する
+                        
                     #---------------------------------------
                     # 前処理（OUT: PV(0:NSTP1-1,NZ), PR(0:NSTP1,NZ), 添字0を除く）
                     # PR(0:MSTP,MZ)   予熱開始後各ステップにおける蓄熱応答係数（右側直角三角、吸熱側が正）PV(0),PR(0)は現在時刻のもの
@@ -433,8 +441,8 @@ def EXTRC2(NHR,IPEAK,ISEAS,NAZ,IOPTG,NZ,IOPVG,SMRT1,SMRT2,
                                     RMSET,REFWD[ISL],ISL,LCG[IZ]+LSZSPC[0],LSZSPC,NA,NSIZE,AA,BB,IPS,X,M)
 
 
-                    print(f"--- EXTRC2 AA: {AA}")
-                    print(f"--- EXTRC2 BB: {BB}")
+                    # print(f"--- EXTRC2 AA: {AA}")
+                    # print(f"--- EXTRC2 BB: {BB}")
 
                     # 予熱開始直前までの室温湿度変動による蓄熱負荷を更新する
                     if ( IREP == 1 ):
@@ -515,11 +523,11 @@ def EXTRC2(NHR,IPEAK,ISEAS,NAZ,IOPTG,NZ,IOPVG,SMRT1,SMRT2,
                             # 各ゾーンの室除去熱量（室負荷） = 各ゾーンの装置除去熱量から外気負荷を差し引いたもの
                             RN[IZ,IREP,JHR,ISL] = AN[IZ,IREP,JHR,ISL] - EOA
 
-                    # print(f"--- EXTRC2 JHR: {JHR}")
-                    # print(f"--- EXTRC2 RN[1,0,JHR,1]: {RN[1,0,JHR,1]}")
-                    # print(f"--- EXTRC2 RN[1,1,JHR,1]: {RN[1,1,JHR,1]}")
-                    # print(f"--- EXTRC2 RN[1,0,JHR,2]: {RN[1,0,JHR,2]}")
-                    # print(f"--- EXTRC2 RN[1,1,JHR,2]: {RN[1,1,JHR,2]}")
+                    print(f"--- EXTRC2 JHR: {JHR}")
+                    print(f"--- EXTRC2 RM[1,0,JHR,1]: {RM[1,0,JHR,1]}")
+                    print(f"--- EXTRC2 RM[1,1,JHR,1]: {RM[1,1,JHR,1]}")
+                    print(f"--- EXTRC2 RM[1,0,JHR,2]: {RM[1,0,JHR,2]}")
+                    print(f"--- EXTRC2 RM[1,1,JHR,2]: {RM[1,1,JHR,2]}")
 
                     # MRTの計算
                     if ( ISL == 1 ):  # 顕熱計算の場合
@@ -544,20 +552,33 @@ def EXTRC2(NHR,IPEAK,ISEAS,NAZ,IOPTG,NZ,IOPVG,SMRT1,SMRT2,
 
                                 X[LSTQWK] = X[LSTPWK+2] * X[LSTQWK] \
                                     - ( X[LSTPWK] - X[LSTPWK+1] ) * RM[IZ,0,JHR,ISL] - X[LSTPWK+1] * RM[IZ,1,JHR,ISL]
+                            
+                                # print(f"--- EXTRC2 蓄熱応答係数の項数 J: {J}")
+                                # print(f"--- EXTRC2 LSTP[J,ISL]: {LSTP[J,ISL]}")
+                                # print(f"--- EXTRC2 X[LSTQWK]: {X[LSTQWK]}")
+                                # print(f"--- EXTRC2 X[LSTPWK]: {X[LSTPWK]}")
+                                # print(f"--- EXTRC2 X[LSTPWK+1]: {X[LSTPWK+1]}")
+                                # print(f"--- EXTRC2 X[LSTPWK+2]: {X[LSTPWK+2]}")
 
-                            if ( ISL == 1 ):
+                                # print(f"--- EXTRC2 RM[IZ,0,JHR,ISL]: {RM[IZ,0,JHR,ISL]}")
+                                # print(f"--- EXTRC2 RM[IZ,1,JHR,ISL]: {RM[IZ,1,JHR,ISL]}")
+
+                            if ( ISL == 1 ): # 顕熱計算の場合
+
                                 L = int( LCG[IZ] + LSZSPC[0] )
 
                                 flag_RTVADJ = True
                                 while flag_RTVADJ:
+
                                     (L,JZ,ISTAT) = RTVADJ(LSZSPC,L,M)
                                     if ISTAT != 1:
                                         flag_RTVADJ = False
                                     else:
-                                        X[L+11] = X[L+ 7]*X[L+11] + (X[L+5]-X[L+6])*RM[JZ,0,JHR,ISL] +X[L+6]*RM[JZ,1,JHR,ISL]
-                                        X[L+12] = X[L+10]*X[L+12] + (X[L+8]-X[L+9])*RM[JZ,0,JHR,ISL] +X[L+9]*RM[JZ,1,JHR,ISL]
+                                        
+                                        X[L+11] = X[L+ 7]*X[L+11] + (X[L+5]-X[L+6])*RM[JZ,0,JHR,ISL] + X[L+6]*RM[JZ,1,JHR,ISL]
+                                        X[L+12] = X[L+10]*X[L+12] + (X[L+8]-X[L+9])*RM[JZ,0,JHR,ISL] + X[L+9]*RM[JZ,1,JHR,ISL]
+
                                         L += int(LSZSPC[int(M[L])])
-            
 
 
     # 計算結果の出力
@@ -645,4 +666,12 @@ def EXTRC2(NHR,IPEAK,ISEAS,NAZ,IOPTG,NZ,IOPVG,SMRT1,SMRT2,
 
 
 if __name__ == '__main__':
+
+    LSTQ   = np.array([
+                [0,0,0],
+                [0,23,24],
+                [0,30,0]])  # 潜熱の2項目はダミー（XMQ配列変更時注意）
+    
+    print(LSTQ[1,1])
+
     pass
