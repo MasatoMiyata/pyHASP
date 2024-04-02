@@ -7,6 +7,7 @@
 import math
 import numpy as np
 import xlrd
+import pandas as pd
 
 from RHEAD import RHEAD
 from NDATE import NDATE
@@ -2057,10 +2058,11 @@ for line in range(bldg_end+1,len(NUB)):
 
 LL = int(M[106])  # SPACポインタ
 NRM = 0
+result = {}
 
 while (LL != 0):
 
-    NRM=NRM+1
+    NRM += 1
 
     WF[1,1] = X[LL+15]
     WF[1,2] = X[LL+16]
@@ -2090,14 +2092,21 @@ while (LL != 0):
     for J in range(2,9):
         WF[J,3] = U1
         WF[J,4] = V1
-        U1 = U1*X[LL+29]
-        V1  =V1*X[LL+29]
+        U1 = U1 * X[LL+29]
+        V1 = V1 * X[LL+29]
         
     WF[9,3] = X[LL+29]
     WF[9,4] = X[LL+29]
     
     QSP = NAME(M[LL + 1])
 
+    # 結果格納用のデータを作成
+    result[str(LL)] = {
+                "name": QSP,
+                "calc_data": [],
+            }
+
+    # 次のスペースに移動
     LL = int(M[LL])
 
 
@@ -2441,38 +2450,38 @@ while flag_day:
                 # #  ISEAS[1]:本日の季節(=1:夏期,2:冬期,3:中間期), ISEAS[2]:明日の季節
                 II = min(2,ISEAS[1])
 
-                # mprint("NHR")             # 1日のステップ数 (24で固定)
-                # mprint("MCNTL[1]")        # 計算モード =1:ピーク計算モード、=0:シミュレーションモード
-                # mprint("ISEAS[1]")        # 本日の季節 =1:夏期、=2:冬期、=3:中間期
-                # mprint("NAZ")             # 1グループあたりの最大スペース数（20で固定）
-                # mprint("IOPTG")           # 空調運転状態フラグ= 0:停止中、=1:運転中、=2:起動、=3:停止 <EXTRC1>
-                # mprint("NZ")              # グループに属するスペース数
-                # mprint("IOPVG")           # 外気導入状態フラグ、=0:カット中、=1:導入中、=2:導入開始、=3:導入停止 <EXTRC1>
-                # mprint("SMRT1")           # 面積を持たない部位からの冷房負荷 <EXTRC1>
-                # mprint("SMRT2")           # INFLの吸熱応答係数 <EXTRC1>
-                # mprint("VOAG")            # 導入時の外気量 <EXTRC1>
-                # mprint("LCG")             # XMQ配列のSPACデータへのポインタ（L）<EXTRC1>
-                # mprint("CLDG")            # 冷房負荷 <EXTRC1>
-                # mprint("NWD")             # WDの整合寸法（=7）
-                # mprint("WD")              # 外界気象（基準温湿度からの偏差ではない）
-                # mprint("REFWD")           # 基準温湿度
-                # mprint("P0")              # 瞬時蓄熱応答係数（吸熱される側が正）第2添字 =0:二等辺三角、=1:右側直角二等辺三角 <EXTRC1>
-                # mprint("M[ int(LOPC+165+II) ]")   # 予熱時間（ステップ）
-                # mprint("VFLOW")           # 第1添字目のスペースから第2添字目のスペースへの流入、風量（体積流量、0以上、対角項は0とする）
-                # mprint("EXCAP")           # 各スペースの装置容量（冷却、0以上） <EXTRC1>
-                # mprint("SPCAP")           # 各スペースの装置容量（加熱、0以上） <EXTRC1>
-                # mprint("RMMX")            # 各スペースの設定温湿度上限 <EXTRC1>
-                # mprint("RMMN")            # 各スペースの設定温湿度下限 <EXTRC1>
-                # mprint("NUOT+KSPAC-NZ")   # テキスト出力ファイルの装置番号（最初の装置番号）
-                # mprint("IDWK")            # 年・月・日
-                # mprint("MDW[1]")          # # MDW(1)  :本日の曜日(=1:月,2:火,..,7:日,8:祝,9:特)
-                # mprint("MODE")            # =1:助走、=2:本計算、=3:最終日
-                # mprint("MCNTL[2]")        # 出力モード =0:簡易出力(1h1行)、=1:詳細出力(1h2行)
-                # mprint("LSZSPC")          # XMQ配列のうち、(0):SPAC, (1):OWAL, (2):IWAL, (3):WNDW, (4):INFL の変数の数
+                # mprint("EXTRC2 NHR: ", NHR)                 # 1日のステップ数 (24で固定)
+                # mprint("EXTRC2 MCNTL[1]: ", MCNTL[1])       # 計算モード =1:ピーク計算モード、=0:シミュレーションモード
+                # mprint("EXTRC2 ISEAS[1]: ", ISEAS[1])       # 本日の季節 =1:夏期、=2:冬期、=3:中間期
+                # mprint("EXTRC2 NAZ: ",NAZ)                  # 1グループあたりの最大スペース数（20で固定）
+                # mprint("EXTRC2 IOPTG: ",IOPTG)              # 空調運転状態フラグ= 0:停止中、=1:運転中、=2:起動、=3:停止 <EXTRC1>
+                # mprint("EXTRC2 NZ: ",NZ)                    # グループに属するスペース数
+                # mprint("EXTRC2 IOPVG: ",IOPVG)              # 外気導入状態フラグ、=0:カット中、=1:導入中、=2:導入開始、=3:導入停止 <EXTRC1>
+                # mprint("EXTRC2 SMRT1: ",SMRT1)              # 面積を持たない部位からの冷房負荷 <EXTRC1>
+                # mprint("EXTRC2 SMRT2: ",SMRT2)              # INFLの吸熱応答係数 <EXTRC1>
+                # mprint("EXTRC2 VOAG: ",VOAG)                # 導入時の外気量 <EXTRC1>
+                # mprint("EXTRC2 LCG: ",LCG)                  # XMQ配列のSPACデータへのポインタ（L）<EXTRC1>
+                # mprint("EXTRC2 CLDG: ",CLDG)                # 冷房負荷 <EXTRC1>
+                # mprint("EXTRC2 NWD: ",NWD)                  # WDの整合寸法（=7）
+                # mprint("EXTRC2 WD: ",WD)                    # 外界気象（基準温湿度からの偏差ではない）
+                # mprint("EXTRC2 REFWD: ",REFWD)              # 基準温湿度
+                # mprint("EXTRC2 P0: ",P0)                    # 瞬時蓄熱応答係数（吸熱される側が正）第2添字 =0:二等辺三角、=1:右側直角二等辺三角 <EXTRC1>
+                # mprint("EXTRC2 M[ int(LOPC+165+II) ]", M[ int(LOPC+165+II) ])   # 予熱時間（ステップ）
+                # mprint("EXTRC2 VFLOW: ",VFLOW)              # 第1添字目のスペースから第2添字目のスペースへの流入、風量（体積流量、0以上、対角項は0とする）
+                # mprint("EXTRC2 EXCAP: ",EXCAP)              # 各スペースの装置容量（冷却、0以上） <EXTRC1>
+                # mprint("EXTRC2 SPCAP: ",SPCAP)              # 各スペースの装置容量（加熱、0以上） <EXTRC1>
+                # mprint("EXTRC2 RMMX: ",RMMX)                # 各スペースの設定温湿度上限 <EXTRC1>
+                # mprint("EXTRC2 RMMN: ",RMMN)                # 各スペースの設定温湿度下限 <EXTRC1>
+                # mprint("EXTRC2 NUOT+KSPAC-NZ: ", NUOT+KSPAC-NZ)   # テキスト出力ファイルの装置番号（最初の装置番号）
+                # mprint("EXTRC2 IDWK: ", IDWK)               # 年・月・日
+                # mprint("EXTRC2 MDW[1]: ",MDW[1])            # MDW(1)  :本日の曜日(=1:月,2:火,..,7:日,8:祝,9:特)
+                # mprint("EXTRC2 MODE: ", MODE)               # =1:助走、=2:本計算、=3:最終日
+                # mprint("EXTRC2 MCNTL[2]: ", MCNTL[2])       # 出力モード =0:簡易出力(1h1行)、=1:詳細出力(1h2行)
+                # mprint("EXTRC2 LSZSPC: ", LSZSPC)           # XMQ配列のうち、(0):SPAC, (1):OWAL, (2):IWAL, (3):WNDW, (4):INFL の変数の数
 
-                # (X,M) = EXTRC2(NHR,MCNTL[1],ISEAS[1],NAZ,IOPTG,NZ,IOPVG,SMRT1,SMRT2,VOAG,LCG,CLDG,NWD,WD,REFWD,
-                #         P0,M[int(LOPC+165+II)],VFLOW,EXCAP,SPCAP,RMMX,RMMN,10,
-                #         NUOT+KSPAC-NZ,IDWK,MDW[1],MODE,MCNTL[2],LSZSPC,X,M)
+                (X,M,result) = EXTRC2(NHR,MCNTL[1],ISEAS[1],NAZ,IOPTG,NZ,IOPVG,SMRT1,SMRT2,VOAG,LCG,CLDG,NWD,WD,REFWD,
+                        P0,M[int(LOPC+165+II)],VFLOW,EXCAP,SPCAP,RMMX,RMMN,10,
+                        NUOT+KSPAC-NZ,IDWK,MDW[1],MODE,MCNTL[2],LSZSPC,X,M,result)
 
         # 全スペース終了
         if LC == 0:
@@ -2563,7 +2572,7 @@ while flag_day:
                     X[L+7] = X[L+7]*X[L+4] + EXC*X[L+3]
                     X[L+8] = X[L+8]*X[L+6] + EXC*X[L+5]
 
-                    mprint("(1) 3.8. HEAT GAIN THROUGH OUTSIDE WALL: ACC1", ACC1)
+                    # mprint("(1) 3.8. HEAT GAIN THROUGH OUTSIDE WALL: ACC1", ACC1)
 
                     L = L+LSZSPC[1]
 
@@ -2586,7 +2595,7 @@ while flag_day:
                         X[L+11] = X[L+11]*X[L+7] + EXC*X[L+5]
                         X[L+12] = X[L+12]*X[L+10] + EXC*X[L+8]
     
-                    mprint("(2) 3.9. HEAT GAIN THROUGH INSIDE WALL: ACC1", ACC1)
+                    # mprint("(2) 3.9. HEAT GAIN THROUGH INSIDE WALL: ACC1", ACC1)
 
                     L = L+LSZSPC[2]
 
@@ -2682,7 +2691,7 @@ while flag_day:
                                 if W > X[LC+43]:
                                     ACC6 += X[L+19]
 
-                    mprint("(3) 3.10. HEAT GAIN THROUGH WINDOW: ACC1", ACC1)
+                    # mprint("(3) 3.10. HEAT GAIN THROUGH WINDOW: ACC1", ACC1)
 
                     L = L+LSZSPC[3]                    
 
@@ -2732,7 +2741,7 @@ while flag_day:
                     # mprint("L", L)
                     # mprint("X[L+3]", X[L+3])
 
-                    mprint("(4) 3.11. INFILTRATION: ACC1", ACC1)
+                    # mprint("(4) 3.11. INFILTRATION: ACC1", ACC1)
                 
                     L = L+LSZSPC[4]
 
@@ -2807,7 +2816,7 @@ while flag_day:
                     # X[LC+52]  AM1×人数（全熱）[kcal/h]
                     ACC3 += W1 * (X[LC+52] - W2)
 
-                mprint("(5) 3.12. INTERNAL HEAT: ACC1", ACC1)
+                # mprint("(5) 3.12. INTERNAL HEAT: ACC1", ACC1)
 
             # ***          3.13 CONVERT HEAT GAIN TO COOLING LOAD ******************
             
@@ -2822,11 +2831,11 @@ while flag_day:
             X[J+48]  = ACC3
             X[J+72]  = ACC5
 
-            mprint("3.13: J", J)
-            mprint("3.13: ACC1", ACC1)
-            mprint("3.13: ACC2", ACC2)
-            mprint("3.13: X[LC+11]", X[LC+11])
-            mprint("3.13: X[LC+8]", X[LC+8])
+            # mprint("3.13: J", J)
+            # mprint("3.13: ACC1", ACC1)
+            # mprint("3.13: ACC2", ACC2)
+            # mprint("3.13: X[LC+11]", X[LC+11])
+            # mprint("3.13: X[LC+8]", X[LC+8])
 
 
             # ***                CALCULATION EXTRACTING LOAD   *********************
@@ -2887,6 +2896,24 @@ while flag_day:
             break
 
 
+#-----------------------------------------------------------------------
+# 99. 結果の出力
+#-----------------------------------------------------------------------
 
+# XMQデータの出力
 display_XMQ_matrix(X,M,2000,3000)
 
+
+# 計算結果の出力
+cols = ["YEAR","MO","DY","YB","HR","IREP",
+        "ROOM-T","CLOD-S","RHEX-S","AHEX-S","FS",
+        "ROOM-H","CLOD-L","RHEX-L","AHEX-L","FL","MRT"]
+
+LL = int(M[106])
+while (LL != 0):
+
+    pd.DataFrame(result[str(LL)]["calc_data"], columns=cols).to_csv("pyHASP_"+result[str(LL)]["name"]+".csv")
+
+    # 次のスペースに移動
+    LL = int(M[LL])
+    
