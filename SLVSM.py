@@ -148,13 +148,15 @@ def SLVSM(NZ,IOPT,EXCAP,SPCAP,NAZ,VFLOW,P0,CRHO,VOA,
                 GRADL[IZ],CRHO,VFLOW[1,IZ],FIXEDL[IZ],EXCAP1[IZ],SPCAP1[IZ],
                 ISL,IREP,LCG[IZ]+LSZSPC[0],LSZSPC,NA,X,M)
 
-        # print(f"--- SLVSM AA: {AA[1,:]}")
-        # print(f"--- SLVSM BB: {BB}")
-        # print(f"--- SLVSM FIXEDL: {FIXEDL[1]}")
+        print(f"--- SLVSM AA: {AA[1,:]}")
+        print(f"--- SLVSM BB: {BB}")
+        print(f"--- SLVSM FIXEDL: {FIXEDL[1]}")
 
         # 方程式を解く
         (BB) = DGESV(AA, BB)
-        
+
+        print(f"--- SLVSM XX: {BB}")
+
         # print(f"--- SLVSM XX: {BB}")
 
         for IZ in range(1, NZ+1):  # ゾーン loop

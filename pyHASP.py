@@ -414,8 +414,8 @@ for line in range(1,bldg_end):
         X[157] = SATX(X[155]) * X[156] / 100   # 基準湿度（絶対湿度）
         X[158] = 0.860 * X[158]                   # W/m2 を kcal/m2h に変換
 
-        REFWD[0] = X[155]   # 基準温度
-        REFWD[1] = X[157]   # 基準湿度（絶対湿度）
+        REFWD[1] = X[155]   # 基準温度
+        REFWD[2] = X[157]   # 基準湿度（絶対湿度）
 
 
     elif KEY == "CNTL":
@@ -1051,8 +1051,8 @@ for line in range(bldg_end+1,len(NUB)):
 
         for II in [1,2]:
             L1 = L+86+(II-1)*7
-            X[L1+1] = REFWD[II-1]  # 基準温湿度
-            X[L1+6] = REFWD[II-1]  # 基準温湿度
+            X[L1+1] = REFWD[II]  # 基準温湿度
+            X[L1+6] = REFWD[II]  # 基準温湿度
             for I in [2,3,4,5]:
                 X[L1+I] = 0.0
             M[L1+7] = 9

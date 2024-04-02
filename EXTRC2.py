@@ -316,6 +316,13 @@ def EXTRC2(NHR,IPEAK,ISEAS,NAZ,IOPTG,NZ,IOPVG,SMRT1,SMRT2,
                     # 各ゾーンの、未知変数に依存しない固定流入熱量
                     # 冷房負荷 CLDG + 空気の容積比熱 * 外気導入量 * (外気温度/湿度 - 基準温度/湿度)
                     FIXEDL[IZ] = CLDG[IZ,JHR,ISL] + CRHO[ISL] * VOAWK[IZ,IREP,JHR] * ( OATX[IZ,JHR] - REFWD[ISL] )
+
+                    print(f"--- EXTRC2 FIXEDL: {FIXEDL[IZ]}")
+                    print(f"--- EXTRC2   CLDG[IZ,JHR,ISL]: {CLDG[IZ,JHR,ISL]}")
+                    print(f"--- EXTRC2   CRHO[ISL]: {CRHO[ISL]}")
+                    print(f"--- EXTRC2   VOAWK[IZ,IREP,JHR]: {VOAWK[IZ,IREP,JHR]}")
+                    print(f"--- EXTRC2   OATX[IZ,JHR]: {OATX[IZ,JHR]}")
+                    print(f"--- EXTRC2   REFWD[ISL]: {REFWD[ISL]}")
                     
                     # NTRM 蓄熱応答係数の項数
                     for I in range(1, NTRM[ISL]+1):
@@ -332,7 +339,7 @@ def EXTRC2(NHR,IPEAK,ISEAS,NAZ,IOPTG,NZ,IOPVG,SMRT1,SMRT2,
                             if ISTAT != 1:
                                 flag_RTVADJ = False
                             else:
-                                # 前ステップまでの励振による現ステップでの貫流負荷 [kcal/h]を加算
+                                # 前ステップまでの励振による現ステップでの貫流負荷 [kcal/h]
                                 FIXEDL[IZ] += X[L+11] + X[L+12]
                                 # 次の要素のポインタ
                                 L += int(LSZSPC[int(M[L])])
