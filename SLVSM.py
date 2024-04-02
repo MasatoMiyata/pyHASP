@@ -63,9 +63,9 @@ def SLVSM(NZ,IOPT,EXCAP,SPCAP,NAZ,VFLOW,P0,CRHO,VOA,
     # 収束判定のための許容範囲（kcal/h）
     EPS2   = 0.01
 
-    LMODE  = np.zeros(NZ+1)
-    AN     = np.zeros(NZ+1)
-    RM     = np.zeros(NZ+1)
+    LMODE  = np.zeros(MZ+1)
+    AN     = np.zeros(MZ+1)
+    RM     = np.zeros(MZ+1)
     AA     = np.zeros([NA+1,NZ+1])
     BB     = np.zeros(NZ+1)
     IP     = np.zeros(NZ+1)
@@ -191,10 +191,14 @@ def SLVSM(NZ,IOPT,EXCAP,SPCAP,NAZ,VFLOW,P0,CRHO,VOA,
             AN[IZ] = -GRADL[IZ]*BB[IZ] + WK
         
         if ( ICONV == 1 ):  # 全てのゾーンで負荷状態モードが変化しない
+
             for IZ in range(1, NZ+1):
                 RM[IZ] = BB[IZ]
 
-            return LMODE[1],AN[1],RM[1],AA,BB,IP,X,M
+            print(f"--- SLVSM ITER: {ITER}")
+            print(f"--- SLVSM RM: {RM[1]}")
+
+            return LMODE,AN,RM,AA,BB,IP,X,M
 
     raise Exception("収束していません")
 
