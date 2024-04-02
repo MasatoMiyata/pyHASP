@@ -317,19 +317,19 @@ def EXTRC2(NHR,IPEAK,ISEAS,NAZ,IOPTG,NZ,IOPVG,SMRT1,SMRT2,
                     # 冷房負荷 CLDG + 空気の容積比熱 * 外気導入量 * (外気温度/湿度 - 基準温度/湿度)
                     FIXEDL[IZ] = CLDG[IZ,JHR,ISL] + CRHO[ISL] * VOAWK[IZ,IREP,JHR] * ( OATX[IZ,JHR] - REFWD[ISL] )
 
-                    print(f"--- EXTRC2 FIXEDL①: {FIXEDL[IZ]}")
-                    print(f"--- EXTRC2   CLDG[IZ,JHR,ISL]: {CLDG[IZ,JHR,ISL]}")
-                    print(f"--- EXTRC2   CRHO[ISL]: {CRHO[ISL]}")
-                    print(f"--- EXTRC2   VOAWK[IZ,IREP,JHR]: {VOAWK[IZ,IREP,JHR]}")
-                    print(f"--- EXTRC2   OATX[IZ,JHR]: {OATX[IZ,JHR]}")
-                    print(f"--- EXTRC2   REFWD[ISL]: {REFWD[ISL]}")
+                    # print(f"--- EXTRC2 FIXEDL①: {FIXEDL[IZ]}")
+                    # print(f"--- EXTRC2   CLDG[IZ,JHR,ISL]: {CLDG[IZ,JHR,ISL]}")
+                    # print(f"--- EXTRC2   CRHO[ISL]: {CRHO[ISL]}")
+                    # print(f"--- EXTRC2   VOAWK[IZ,IREP,JHR]: {VOAWK[IZ,IREP,JHR]}")
+                    # print(f"--- EXTRC2   OATX[IZ,JHR]: {OATX[IZ,JHR]}")
+                    # print(f"--- EXTRC2   REFWD[ISL]: {REFWD[ISL]}")
                     
                     # NTRM 蓄熱応答係数の項数
                     for I in range(1, NTRM[ISL]+1):
                         FIXEDL[IZ] += X[ int( LCG[IZ]+LSTQ[I,ISL] ) ]
                         # print(f"---  X[ int( LCG[IZ]+LSTQ[I,ISL] ) ]: { X[ int( LCG[IZ]+LSTQ[I,ISL] ) ]}")
                     
-                    print(f"--- EXTRC2 FIXEDL②: {FIXEDL[IZ]}")
+                    # print(f"--- EXTRC2 FIXEDL②: {FIXEDL[IZ]}")
 
                     if ( ISL == 1 ):  # 顕熱
 
@@ -347,7 +347,7 @@ def EXTRC2(NHR,IPEAK,ISEAS,NAZ,IOPTG,NZ,IOPVG,SMRT1,SMRT2,
                                 # 次の要素のポインタ
                                 L += int(LSZSPC[int(M[L])])
 
-                    print(f"--- EXTRC2 FIXEDL③: {FIXEDL[IZ]}")
+                    # print(f"--- EXTRC2 FIXEDL③: {FIXEDL[IZ]}")
 
                     # 直前の室温湿度変動による直後の流入熱を加算する
                     # 直後の計算で一定除去熱量計算を行わない場合 か 予熱運転ではない状態で一定除去熱量計算を行う場合
@@ -377,7 +377,7 @@ def EXTRC2(NHR,IPEAK,ISEAS,NAZ,IOPTG,NZ,IOPVG,SMRT1,SMRT2,
                                     # 次の要素のポインタ
                                     L += int(LSZSPC[int(M[L])])
 
-                    print(f"--- EXTRC2 FIXEDL④: {FIXEDL[IZ]}")
+                    # print(f"--- EXTRC2 FIXEDL④: {FIXEDL[IZ]}")
 
 
                 if ( IWARM1 == 1 ):  # 一定除去熱量を計算する
@@ -523,11 +523,11 @@ def EXTRC2(NHR,IPEAK,ISEAS,NAZ,IOPTG,NZ,IOPVG,SMRT1,SMRT2,
                             # 各ゾーンの室除去熱量（室負荷） = 各ゾーンの装置除去熱量から外気負荷を差し引いたもの
                             RN[IZ,IREP,JHR,ISL] = AN[IZ,IREP,JHR,ISL] - EOA
 
-                    print(f"--- EXTRC2 JHR: {JHR}")
-                    print(f"--- EXTRC2 RM[1,0,JHR,1]: {RM[1,0,JHR,1]}")
-                    print(f"--- EXTRC2 RM[1,1,JHR,1]: {RM[1,1,JHR,1]}")
-                    print(f"--- EXTRC2 RM[1,0,JHR,2]: {RM[1,0,JHR,2]}")
-                    print(f"--- EXTRC2 RM[1,1,JHR,2]: {RM[1,1,JHR,2]}")
+                    # print(f"--- EXTRC2 JHR: {JHR}")
+                    # print(f"--- EXTRC2 RM[1,0,JHR,1]: {RM[1,0,JHR,1]}")
+                    # print(f"--- EXTRC2 RM[1,1,JHR,1]: {RM[1,1,JHR,1]}")
+                    # print(f"--- EXTRC2 RM[1,0,JHR,2]: {RM[1,0,JHR,2]}")
+                    # print(f"--- EXTRC2 RM[1,1,JHR,2]: {RM[1,1,JHR,2]}")
 
                     # MRTの計算
                     if ( ISL == 1 ):  # 顕熱計算の場合

@@ -2571,6 +2571,7 @@ while flag_day:
                     X[L+8] = X[L+8]*X[L+6] + EXC*X[L+5]
 
                     # mprint("(1) 3.8. HEAT GAIN THROUGH OUTSIDE WALL: ACC1", ACC1)
+                    # mprint("3.8 外壁 ACC1:", ACC1)
 
                     L = L+LSZSPC[1]
 
@@ -2594,6 +2595,7 @@ while flag_day:
                         X[L+12] = X[L+12]*X[L+10] + EXC*X[L+8]
     
                     # mprint("(2) 3.9. HEAT GAIN THROUGH INSIDE WALL: ACC1", ACC1)
+                    # mprint("3.9 内壁 ACC1:", ACC1)
 
                     L = L+LSZSPC[2]
 
@@ -2690,6 +2692,7 @@ while flag_day:
                                     ACC6 += X[L+19]
 
                     # mprint("(3) 3.10. HEAT GAIN THROUGH WINDOW: ACC1", ACC1)
+                    # mprint("3.10 窓 ACC1:", ACC1)
 
                     L = L+LSZSPC[3]                    
 
@@ -2740,6 +2743,7 @@ while flag_day:
                     # mprint("X[L+3]", X[L+3])
 
                     # mprint("(4) 3.11. INFILTRATION: ACC1", ACC1)
+                    # mprint("3.11 隙間風 ACC1:", ACC1)
                 
                     L = L+LSZSPC[4]
 
@@ -2776,6 +2780,8 @@ while flag_day:
                     ACC1 += W1 * FC
                     ACC2 += W1 * FR
             
+                    # mprint("3.12 照明発熱 ACC1:", ACC1)
+
                 if LH != 0:   # 機器
 
                     # LH: DSCHポインタ（HEAT） → X[LH+J]は機器発熱のスケジュール
@@ -2794,14 +2800,16 @@ while flag_day:
                     # X[LC+74] 面積を持たない部位の冷房負荷（=INFLと強制空冷が選ばれたときのHEAT）
                     if abs(X[LC+49]) < 0.001:  # 強制対流式の場合
                         X[LC+74] += W1 * X[LC+48]
-            
+
+                    # mprint("3.12 機器発熱 ACC1:", ACC1)
+
                 if LO != 0:   # 人体
 
                     # LO: DSCHポインタ（OCUP) → X[LO+J]は人体のスケジュール
                     # MCNTL[25] HRAT 発熱割合 OCUP 夏期 %
                     # MCNTL[26] HRAT 発熱割合 OCUP 冬期 %
                     # MCNTL[27] HRAT 発熱割合 OCUP 中間期 %
-                    W  = X[LO+J] * MCNTL[ int(24+ISEAS[1]) ]/100.   # 季節別発熱割合を掛ける
+                    W1  = X[LO+J] * MCNTL[ int(24+ISEAS[1]) ]/100.   # 季節別発熱割合を掛ける
 
                     # X[LC+53]  AM2×人数（24℃における顕熱）[kcal/h]
                     # X[LC+54]  AM3×人数（単位温度上昇あたりの顕熱増加量）[kcal/h℃]
@@ -2813,6 +2821,10 @@ while flag_day:
 
                     # X[LC+52]  AM1×人数（全熱）[kcal/h]
                     ACC3 += W1 * (X[LC+52] - W2)
+
+                    # mprint("3.12 人体発熱 ACC1:", ACC1)
+                    # mprint("3.12 人体発熱 ACC1:", ACC1)
+                    # mprint("3.12 人体発熱 ACC1:", ACC1)
 
                 # mprint("(5) 3.12. INTERNAL HEAT: ACC1", ACC1)
 
