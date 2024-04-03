@@ -616,12 +616,34 @@ def EXTRC2(NHR,IPEAK,ISEAS,NAZ,IOPTG,NZ,IOPVG,SMRT1,SMRT2,
 
                     for ISL in range(1, NSL+1):
 
+                        # ROOM-T, ROOM-H  室温[℃]、湿度[g/kgDA]
                         EOUT[1,ISL] = RM[IZ,IREP,JHR,ISL] + REFWD[ISL]
+    
+                        # CLOD-S, CLOD-L  冷房負荷[W/m2]: 室の仮想連続空調負荷
+                        # 正の値が冷房負荷、負の値が暖房負荷（基準温度・湿度に維持するための負荷）
                         EOUT[2,ISL] = CLDG[IZ,JHR,ISL]*FF
-                        EOUT[3,ISL] = RN[IZ,IREP,JHR,ISL]*FF
-                        EOUT[4,ISL] = AN[IZ,IREP,JHR,ISL]*FF
+    
+                        # RHEX-S, RHEX-L  室除去熱量[W/m2]: 空調装置によって室から取り除かれる熱量
+                        # 室除去熱量 = 冷房負荷＋室温励振による流入熱量
+                        if RN[IZ,IREP,JHR,ISL]*FF < 0.0001:
+                            EOUT[3,ISL] = 0
+                        else:
+                            EOUT[3,ISL] = RN[IZ,IREP,JHR,ISL]*FF
+    
+                        # AHEX-S, AHEX-L  装置除去熱量[W/m2]: 室除去熱量に外気負荷を加えたもの。
+                        # 正の値が冷房による装置除去熱量、負の値が暖房に装置除去熱量
+                        if AN[IZ,IREP,JHR,ISL]*FF < 0.0001:
+                            EOUT[4,ISL] = 0
+                        else:
+                            EOUT[4,ISL] = AN[IZ,IREP,JHR,ISL]*FF
+    
+                        # FS, FL  空調運転状態フラグ（=9 停止中、=10 運転中）
                         LMODEB[ISL] = LMODE[IZ,IREP,JHR,ISL]
 
+                    # 平均表面温度[℃]
+                    # 当該スペースに接する表面積を有する部位の表面温度（家具や隣接スペースの表面温度を含めたMRTではない）
+                    # 表面熱伝達率を一定とみなして計算をしているため、
+                    # 日射の影響を受けるペリメータゾーンでは室温との乖離が過剰に計算される可能性がある。
                     EMRT = AMRT[IZ,IREP,JHR] + REFWD[1]
 
                     if (IREP == 0) and (MODE >= 2):  # 平均を取って出力
