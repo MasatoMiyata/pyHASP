@@ -2901,9 +2901,9 @@ def pyHASP(inputfile_name, climatefile_name, wndwtabl_filename, wcontabl_filenam
             LCO = int(LC)     # 処理をしたSPACのポインタ
             LC  = int(M[LC])  # 次に処理するSPACのポインタ
 
-            if MODE == 3:
-                flag_day = False
-                break
+        if MODE == 3:
+            flag_day = False
+            break
 
 
     #-----------------------------------------------------------------------
