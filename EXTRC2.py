@@ -625,14 +625,14 @@ def EXTRC2(NHR,IPEAK,ISEAS,NAZ,IOPTG,NZ,IOPVG,SMRT1,SMRT2,
     
                         # RHEX-S, RHEX-L  室除去熱量[W/m2]: 空調装置によって室から取り除かれる熱量
                         # 室除去熱量 = 冷房負荷＋室温励振による流入熱量
-                        if RN[IZ,IREP,JHR,ISL]*FF < 0.0001:
+                        if abs(RN[IZ,IREP,JHR,ISL]*FF) < 0.0001:
                             EOUT[3,ISL] = 0
                         else:
                             EOUT[3,ISL] = RN[IZ,IREP,JHR,ISL]*FF
     
                         # AHEX-S, AHEX-L  装置除去熱量[W/m2]: 室除去熱量に外気負荷を加えたもの。
                         # 正の値が冷房による装置除去熱量、負の値が暖房に装置除去熱量
-                        if AN[IZ,IREP,JHR,ISL]*FF < 0.0001:
+                        if abs(AN[IZ,IREP,JHR,ISL]*FF) < 0.0001:
                             EOUT[4,ISL] = 0
                         else:
                             EOUT[4,ISL] = AN[IZ,IREP,JHR,ISL]*FF
