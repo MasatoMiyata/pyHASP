@@ -706,9 +706,15 @@ for line in range(1,bldg_end):
 
     elif KEY == "SDAY":
 
-        N = 0  # 特別日のカウント
-
+        # 特別日のカウント
+        N = 1
         for i in range(1,35): # ! データ行のループ(34:365日を特別日とする場合の最大行数)
+            if (len(NUB[line+i]) > 4) and (NUB[line+i][0:4] == "+   "):
+                N += 1
+            else:
+                break
+
+        for i in range(1,N+1): # ! データ行のループ(34:365日を特別日とする場合の最大行数)
 
             # 読み込む行数
             n = line + (i-1)
@@ -721,9 +727,6 @@ for line in range(1,bldg_end):
                     
                     M[M1]   = NUB[n][11+6*j  :11+6*j+3]   # 月
                     M[M1+1] = NUB[n][11+6*j+3:11+6*j+6]   # 日
-
-                    # 特別日のカウント
-                    N = N + 1
 
                     # 通し日の算出 M2
                     M2 = NDATE(M[M1],M[M1+1]) 
