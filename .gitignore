@@ -9,9 +9,8 @@
 *.png
 *.pyc
 
-/input/
+/test/
 /newHASP/
 /reference/
 /venv312/
-
-
+NewHASP*
