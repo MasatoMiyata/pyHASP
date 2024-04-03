@@ -43,14 +43,11 @@ def CF(Z):
     return y
 
 
-def pyHASP(inputfile_name, climatefile_name, resultfile_prefix=""):
-
+def pyHASP(inputfile_name, climatefile_name, wndwtabl_filename, wcontabl_filename, resultfile_prefix=""):
 
     #-----------------------------------------------------------------------
     # 1. JOB START
     #-----------------------------------------------------------------------
-
-    QVER='20200403'                                               
 
     NUB=1    # 建物データファイルの装置番号
     NUW=11   # 気象データファイルの装置番号
@@ -239,11 +236,8 @@ def pyHASP(inputfile_name, climatefile_name, resultfile_prefix=""):
     else:
         IWFLG[1] = 0   # ヘッダー行がない
 
-    # 入力ファイル 3行目 出力先のディレクトリ名称
-    QPATH = "./out/"
-
     # K,SCC,SCRの読み込み
-    wb = xlrd.open_workbook("./input/wndwtabl.xlsx")
+    wb = xlrd.open_workbook(wndwtabl_filename)
 
     # NTBL    :窓特性値表の数
     for II in range(1, NTBL+1):
@@ -334,7 +328,7 @@ def pyHASP(inputfile_name, climatefile_name, resultfile_prefix=""):
 
 
     # 入力ファイル 5行目 建材のファイル 
-    NUBW = xlrd.open_workbook("./input/wcontabl.xlsx")
+    NUBW = xlrd.open_workbook(wcontabl_filename)
     # print(NUBW.sheet_by_name("Sheet1").cell(0,0).value)
 
 
