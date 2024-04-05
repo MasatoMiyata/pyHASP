@@ -43,6 +43,21 @@ def CF(Z):
     y=-0.01107+Z*(0.03675+Z*0.02332)
     return y
 
+# 入力データが空白である場合の処理
+def input_default(X, dtype, default_value):
+
+    if X.strip() == "":
+        Y = 0
+    else:
+        if dtype == "float":
+            Y = float(X)
+        elif dtype == "int":
+            Y = int(X)
+        else:
+            Y = X
+
+    return Y
+
 
 def pyHASP(inputfile_name, climatefile_name, wndwtabl_filename, wcontabl_filename, resultfile_prefix=""):
 
@@ -345,10 +360,23 @@ def pyHASP(inputfile_name, climatefile_name, wndwtabl_filename, wcontabl_filenam
 
     L = 1500
 
+    # 末尾の空白を削除する。
+    for line in range(1, len(NUB)):
+        if NUB[line][0:4] == "WCON":
+            NUB[line] = NUB[line].rstrip() + " "
+        elif NUB[line][0:4] == "DSCH":
+            NUB[line] = NUB[line].rstrip() + " "
+        elif NUB[line][0:4] == "SDAY":
+            NUB[line] = NUB[line].rstrip() + " "
+        elif NUB[line][0:4] == "+   ":
+            NUB[line] = NUB[line].rstrip() + " "
+        elif NUB[line][0:4] == "    ":
+            NUB[line] = " "
+
     # Building Dataの終了行を探す。
     bldg_end = 0
     for line in range(1, len(NUB)):
-        if len(NUB[line]) == 1:  # 空白行を探す
+        if (len(NUB[line]) <= 1):  # 空白行を探す
             bldg_end = line
             break
     print(f"建物データの最終行: {bldg_end}")
@@ -510,9 +538,11 @@ def pyHASP(inputfile_name, climatefile_name, wndwtabl_filename, wcontabl_filenam
 
             if len(NUB[line]) > 24:
 
-                X[L+12] = float(NUB[line][23:26])   # 隣棟距離[m]
-                X[L+13] = float(NUB[line][26:29])   # 隣棟高さ[m]
-
+                # 隣棟距離[m]
+                X[L+12] = input_default(NUB[line][23:26],"float",0)
+                # 隣棟高さ[m]
+                X[L+13] = input_default(NUB[line][26:29],"float",0)
+ 
             X[L+2]  = W1				  # 傾斜角 X(起点+2)
             X[L+3]  = math.sin(DR*W1)	  # 傾斜角のsin X(起点+3)
             X[L+4]  = math.cos(DR*W1)	  # 傾斜角のcos X(起点+4)
@@ -526,10 +556,10 @@ def pyHASP(inputfile_name, climatefile_name, wndwtabl_filename, wcontabl_filenam
 
             if len(NUB[line]) > 30:
 
-                X[1] = float(NUB[line][29:35])  # 庇の出[ZH] X(1)
-                X[2] = float(NUB[line][35:41])  # 窓下[y1] X(2)
-                X[3] = float(NUB[line][41:47])  # 窓高[y2] X(3)
-                X[4] = float(NUB[line][47:53])  # 小壁[y3] X(4)
+                X[1] = input_default(NUB[line][29:35],"float",0)  # 庇の出[ZH] X(1)
+                X[2] = input_default(NUB[line][35:41],"float",0)  # 窓下[y1] X(2)
+                X[3] = input_default(NUB[line][41:47],"float",0)  # 窓高[y2] X(3)
+                X[4] = input_default(NUB[line][47:53],"float",0)  # 小壁[y3] X(4)
 
                 X[L+14] = X[1]                  # 庇の出 X(起点+14)
                 X[L+15] = X[3]                  # 窓高  X(起点+15)
@@ -537,10 +567,10 @@ def pyHASP(inputfile_name, climatefile_name, wndwtabl_filename, wcontabl_filenam
                 X[L+17] = X[3] + X[4]           # 窓高+小壁  X(起点+17)
                 X[L+18] = X[2] + X[3] + X[4]    # 窓下＋窓高+小壁  X(起点+18)
 
-                X[1] = float(NUB[line][53:59])  # 袖庇の出[ZV] X(1)
-                X[2] = float(NUB[line][59:65])  # 右袖壁[x1] X(2)
-                X[3] = float(NUB[line][65:71])  # 窓幅[x2] X(3)
-                X[4] = float(NUB[line][71:77])  # 左袖壁[x3] X(4)
+                X[1] = input_default(NUB[line][53:59],"float",0)  # 袖庇の出[ZV] X(1)
+                X[2] = input_default(NUB[line][59:65],"float",0)  # 右袖壁[x1] X(2)
+                X[3] = input_default(NUB[line][65:71],"float",0)  # 窓幅[x2] X(3)
+                X[4] = input_default(NUB[line][71:77],"float",0)  # 左袖壁[x3] X(4)
 
                 X[L+19] = X[1]                         # 袖庇の出 X(起点+19)
                 X[L+20] = X[3]                         # 窓幅 X(起点+20)
@@ -681,6 +711,9 @@ def pyHASP(inputfile_name, climatefile_name, wndwtabl_filename, wcontabl_filenam
 
                     while K1 < len(NUB[n])-8 and M1 != 0:
 
+                        if NUB[n][K1+2:K1+5] == "   ":
+                            break
+
                         # スケジュール 比率% W
                         # スケジュール 終了時刻 M2
                         W  = int(NUB[n][K1+2:K1+5])
@@ -714,16 +747,18 @@ def pyHASP(inputfile_name, climatefile_name, wndwtabl_filename, wcontabl_filenam
 
                     for j in range(0, int(len(NUB[n][11:-1])/6) ):
 
-                        M1 = 171 + 2*j
-                        
-                        M[M1]   = NUB[n][11+6*j  :11+6*j+3]   # 月
-                        M[M1+1] = NUB[n][11+6*j+3:11+6*j+6]   # 日
+                        if (NUB[n][11+6*j  :11+6*j+3]) != "   ":
 
-                        # 通し日の算出 M2
-                        M2 = NDATE(M[M1],M[M1+1]) 
-                        
-                        # M(193)=1/1、M(558)=12/31 特別日なら 1
-                        M[192+M2] = 1   
+                            M1 = 171 + 2*j
+                            
+                            M[M1]   = NUB[n][11+6*j  :11+6*j+3]   # 月
+                            M[M1+1] = NUB[n][11+6*j+3:11+6*j+6]   # 日
+
+                            # 通し日の算出 M2
+                            M2 = NDATE(M[M1],M[M1+1]) 
+                            
+                            # M(193)=1/1、M(558)=12/31 特別日なら 1
+                            M[192+M2] = 1   
 
             # 特別日の日数 M(170)
             M[170] = N 
@@ -2941,10 +2976,10 @@ def pyHASP(inputfile_name, climatefile_name, wndwtabl_filename, wcontabl_filenam
 
 if __name__ == '__main__':
 
-    inputfile_name   = "./test/test_001_single_room/inputdata.txt"
-    climatefile_name = "./test/test_001_single_room/36300110_SI.hasH"
-    wndwtabl_filename = "./test/test_001_single_room/wndwtabl.xlsx"
-    wcontabl_filename = "./test/test_001_single_room/wcontabl.xlsx"
+    inputfile_name   = "./test/test_001_single_room_壁窓のみ_機器発熱のみ/inputdata.txt"
+    climatefile_name = "./test/test_001_single_room_壁窓のみ_機器発熱のみ/36300110_SI.hasH"
+    wndwtabl_filename = "./test/test_001_single_room_壁窓のみ_機器発熱のみ/wndwtabl.xlsx"
+    wcontabl_filename = "./test/test_001_single_room_壁窓のみ_機器発熱のみ/wcontabl.xlsx"
     resultfile_prefix  = "pyHASP_"
 
     pyHASP(inputfile_name, climatefile_name, wndwtabl_filename, wcontabl_filename,resultfile_prefix)
