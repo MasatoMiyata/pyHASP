@@ -8,6 +8,8 @@ import math
 import numpy as np
 import xlrd
 import pandas as pd
+import io,sys
+sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='shift-jis')
 
 from RHEAD import RHEAD
 from NDATE import NDATE
@@ -542,7 +544,7 @@ def pyHASP(inputfile_name, climatefile_name, wndwtabl_filename, wcontabl_filenam
                 X[L+12] = input_default(NUB[line][23:26],"float",0)
                 # 隣棟高さ[m]
                 X[L+13] = input_default(NUB[line][26:29],"float",0)
- 
+
             X[L+2]  = W1				  # 傾斜角 X(起点+2)
             X[L+3]  = math.sin(DR*W1)	  # 傾斜角のsin X(起点+3)
             X[L+4]  = math.cos(DR*W1)	  # 傾斜角のcos X(起点+4)
@@ -2976,11 +2978,11 @@ def pyHASP(inputfile_name, climatefile_name, wndwtabl_filename, wcontabl_filenam
 
 if __name__ == '__main__':
 
-    inputfile_name   = "./test/test_001_single_room_壁窓のみ_機器発熱のみ/inputdata.txt"
-    climatefile_name = "./test/test_001_single_room_壁窓のみ_機器発熱のみ/36300110_SI.hasH"
-    wndwtabl_filename = "./test/test_001_single_room_壁窓のみ_機器発熱のみ/wndwtabl.xlsx"
-    wcontabl_filename = "./test/test_001_single_room_壁窓のみ_機器発熱のみ/wcontabl.xlsx"
-    resultfile_prefix  = "pyHASP_"
+    inputfile_name    = "./test/test_002_single_room/inputdata.txt"
+    climatefile_name  = "./test/test_002_single_room/36300110_SI.hasH"
+    wndwtabl_filename = "./test/test_002_single_room/wndwtabl.xlsx"
+    wcontabl_filename = "./test/test_002_single_room/wcontabl.xlsx"
+    resultfile_prefix = "./test/test_002_single_room/pyHASP_"
 
     pyHASP(inputfile_name, climatefile_name, wndwtabl_filename, wcontabl_filename,resultfile_prefix)
 
