@@ -19,6 +19,7 @@ from GVECTR import GVECTR
 from CPARAM import CPARAM
 from RTVADJ import RTVADJ
 from INWD import INWD
+from WEOUT import WEOUT
 from EXTRC0 import EXTRC0
 from EXTRC1 import EXTRC1
 from EXTRC2 import EXTRC2
@@ -2059,6 +2060,8 @@ def pyHASP(inputfile_name, climatefile_name, wndwtabl_filename, wcontabl_filenam
     LL = int(M[106])  # SPACポインタ
     NRM = 0
     result = {}
+    WOUT = np.zeros([2,2+1])   # 気象データ保存用（WEOUTで使用）
+    weather_data = []
 
     while (LL != 0):
 
@@ -2222,11 +2225,13 @@ def pyHASP(inputfile_name, climatefile_name, wndwtabl_filename, wcontabl_filenam
 
         for J in range(1,25):
             
+            # 外気温度
             if (MCNTL[31] == 3):
                 WD[1,J] = 0.1*(WD[1,J]-500.)
             else:
                 WD[1,J] = 0.1*WD[1,J]
             
+            # 外気湿度
             WD[2,J] = 0.1*WD[2,J]
 
             if (MCNTL[3] == 0):
@@ -2487,6 +2492,8 @@ def pyHASP(inputfile_name, climatefile_name, wndwtabl_filename, wcontabl_filenam
 
             # 全スペース終了
             if LC == 0:
+                (weather_data, WOUT) = WEOUT(NHR,NWD,WD,IDWK,MDW[1],MODE,MCNTL[12],NUOW,WOUT,weather_data)
+
                 flag_space = False
                 break
 
@@ -2927,11 +2934,18 @@ def pyHASP(inputfile_name, climatefile_name, wndwtabl_filename, wcontabl_filenam
         # 次のスペースに移動
         LL = int(M[LL])
 
+    # 気象データの出力
+    cols = ["YEAR","MO","DY","YB","HR","IREP","OUT-T","OUT-X"]
+    pd.DataFrame(weather_data, columns=cols).to_csv( resultfile_prefix + "weath.csv" )
+
 
 if __name__ == '__main__':
 
-    inputfile_name   = "./input/test_001_single_room.txt"
-    climatefile_name = "./input/36300110_SI.hasH"
-    resultfile_prefix  = "test_001_single_room_"
+    inputfile_name   = "./test/test_001_single_room/inputdata.txt"
+    climatefile_name = "./test/test_001_single_room/36300110_SI.hasH"
+    wndwtabl_filename = "./test/test_001_single_room/wndwtabl.xlsx"
+    wcontabl_filename = "./test/test_001_single_room/wcontabl.xlsx"
+    resultfile_prefix  = "pyHASP_"
 
-    pyHASP(inputfile_name,climatefile_name,resultfile_prefix)
+    pyHASP(inputfile_name, climatefile_name, wndwtabl_filename, wcontabl_filename,resultfile_prefix)
+
