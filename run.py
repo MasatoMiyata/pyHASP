@@ -1,8 +1,9 @@
 import subprocess
 from pyHASP import pyHASP
 
-# folder = ".\\test\\Sample_Input_NewHASP\\"
-folder = ".\\test\\test_001_single_room\\"
+# folder = ".\\test\\test_001_single_room\\"
+# folder = ".\\test\\test_002_single_room\\"
+folder = ".\\test\\test_002_roof\\"
 
 
 ## setting

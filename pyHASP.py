@@ -96,7 +96,7 @@ def pyHASP(inputfile_name, climatefile_name, wndwtabl_filename, wcontabl_filenam
     MT = np.zeros(21)
     TH = np.zeros(21)
     G = np.zeros(10)  # G(0:9)
-    P = np.zeros(8)
+    P = np.zeros(8+1)
     WF = np.zeros((10,5))
     GTR = np.zeros(10) # GTR(0:9)
     GAD = np.zeros(10) # GAD(0:9)
@@ -535,8 +535,12 @@ def pyHASP(inputfile_name, climatefile_name, wndwtabl_filename, wcontabl_filenam
             # 隣棟距離 X(L+12)
             # 隣棟高さ X(L+13)
 
-            W2 = float(NUB[line][11:17])    # 傾斜角
-            W1 = float(NUB[line][17:23])    # 方位角
+            W2 = float(NUB[line][11:17])    # 傾斜角 W2
+            W1 = float(NUB[line][17:23])    # 方位角 W1
+
+            mprint("EXPS L",  L)
+            mprint("EXPS 傾斜角 W2", W2)
+            mprint("EXPS 方位角 W1", W1)
 
             if len(NUB[line]) > 24:
 
@@ -545,16 +549,28 @@ def pyHASP(inputfile_name, climatefile_name, wndwtabl_filename, wcontabl_filenam
                 # 隣棟高さ[m]
                 X[L+13] = input_default(NUB[line][26:29],"float",0)
 
-            X[L+2]  = W1				  # 傾斜角 X(起点+2)
-            X[L+3]  = math.sin(DR*W1)	  # 傾斜角のsin X(起点+3)
-            X[L+4]  = math.cos(DR*W1)	  # 傾斜角のcos X(起点+4)
-            X[L+5]  = math.sin(DR*W2)	  # 方位角のsin X(起点+5)
-            X[L+6]  = math.cos(DR*W2)	  # 方位角のcos X(起点+6)
-            X[L+7]  = X[L+3] * X[L+5]     # 傾斜角のsinと方位角のsinの積
-            X[L+8]  = X[L+3] * X[L+6]     # 傾斜角のsinと方位角のcosの積
-            X[L+9]  = X[L+4] * X[L+5]     # 傾斜角のcosと方位角のsinの積
-            X[L+10] = X[L+4] * X[L+6]     # 傾斜角のcosと方位角のcosの積
-            X[L+11] = (1.0-X[L+6])/2.0    # (1-cos(方位角))/2
+            X[L+2]  = W1				  # 方位角 X(起点+2)
+            X[L+3]  = math.sin(DR*W1)	  # 方位角のsin X(起点+3)
+            X[L+4]  = math.cos(DR*W1)	  # 方位角のcos X(起点+4)
+            X[L+5]  = math.sin(DR*W2)	  # 傾斜角のsin X(起点+5)
+            X[L+6]  = math.cos(DR*W2)	  # 傾斜角のcos X(起点+6)
+            X[L+7]  = X[L+3] * X[L+5]     # 方位角のsinと傾斜角のsinの積
+            X[L+8]  = X[L+3] * X[L+6]     # 方位角のsinと傾斜角のcosの積
+            X[L+9]  = X[L+4] * X[L+5]     # 方位角のcosと傾斜角のsinの積
+            X[L+10] = X[L+4] * X[L+6]     # 方位角のcosと傾斜角のcosの積
+            X[L+11] = (1.0-X[L+6])/2.0    # (1-cos(傾斜角))/2
+
+            mprint("EXPS X[L+2]", X[L+2])
+            mprint("EXPS X[L+3]", X[L+3])
+            mprint("EXPS X[L+4]", X[L+4])
+            mprint("EXPS X[L+5]", X[L+5])
+            mprint("EXPS X[L+6]", X[L+6])
+            mprint("EXPS X[L+7]", X[L+7])
+            mprint("EXPS X[L+8]", X[L+8])
+            mprint("EXPS X[L+9]", X[L+9])
+            mprint("EXPS X[L+10]", X[L+10])
+            mprint("EXPS X[L+11]", X[L+11])
+
 
             if len(NUB[line]) > 30:
 
@@ -784,8 +800,8 @@ def pyHASP(inputfile_name, climatefile_name, wndwtabl_filename, wcontabl_filenam
                 print(f"OPCO: " + {NUB[line][5:9]})
                 raise Exception("LDが0以外になります")
         
-            print(f"OPCOの起点番号 LC: {LC}")
-            print(f"OPCOの行番号 L: {L}")
+            # print(f"OPCOの起点番号 LC: {LC}")
+            # print(f"OPCOの行番号 L: {L}")
 
             M[int(LC)] = L
             M[int(L)] = LD
@@ -874,9 +890,9 @@ def pyHASP(inputfile_name, climatefile_name, wndwtabl_filename, wcontabl_filenam
                 IWK=26+(II-1)*18
                 L1=L+1+(II-1)*4
 
-                print(f"OPCO II: {II}")
-                print(f"OPCO IWK: {IWK}")
-                print(f"OPCO L1: {L1}")
+                # print(f"OPCO II: {II}")
+                # print(f"OPCO IWK: {IWK}")
+                # print(f"OPCO L1: {L1}")
 
                 # DB上限 X(L+2), X(L+6), X(L+10)
                 # DB下限 X(L+3), X(L+7), X(L+11) 
@@ -899,14 +915,14 @@ def pyHASP(inputfile_name, climatefile_name, wndwtabl_filename, wcontabl_filenam
                 # 予熱時間を読み込む    ：newHASPのコメントが間違っている？
                 if II <= 2:
                     M[L+165+II] = NUB[line][IWK+12:IWK+15]
-                    print(f"OPCO L+165+II: {L+165+II}")
+                    # print(f"OPCO L+165+II: {L+165+II}")
 
                 # 運転開始時刻
                 IWK=23+(II-1)*18
                 (NNAM,LC,LD) = RETRIV(147,NUB[line][IWK:IWK+3]+" ",M)
 
                 I=L+14+(II-1)*50    # スケジュール2種類（24時間×2=48）
-                print(f"OPCO I: {I}")
+                # print(f"OPCO I: {I}")
 
                 if LD != LC:  # 該当するOSCHデータが見つからない場合
 
@@ -1200,26 +1216,22 @@ def pyHASP(inputfile_name, climatefile_name, wndwtabl_filename, wcontabl_filenam
 
                     GTR,GAD = GVECTR('OWAL',NL,MT,TH,HT,HOX,TCM)
 
-                    # print("---NL---")
-                    # print(NL)
-                    # print("---MT---")
-                    # print(MT)
-                    # print("---TH---")
-                    # print(TH)
-                    # print("---HT---")
-                    # print(HT)
-                    # print("---HOX---")
-                    # print(HOX)
-
-                    # print("---GTR---")
-                    # print(GTR)
-                    # print("---GAD---")
-                    # print(GAD)
+                    mprint('-----  2.10. OWAL DATA -----',"")
+                    mprint("NL",NL)
+                    mprint("MT",MT)
+                    mprint("TH",TH)
+                    mprint("HT",HT)
+                    mprint("HOX",HOX)
+                    mprint("GTR",GTR)
+                    mprint("GAD",GAD)
 
                     for J in range(0,9+1):
                         GRM[J]=GRM[J]+A*GAD[J]
 
                     P = CPARAM(2,GTR)
+
+                    mprint("A",A)
+                    mprint("P",P)
 
                     X[L+2]=A*P[1]
                     X[L+3]=A*P[3]
@@ -2289,13 +2301,15 @@ def pyHASP(inputfile_name, climatefile_name, wndwtabl_filename, wcontabl_filenam
             WD[7,J] = 0.1*WD[7,J]
             WD8[J] = SATX(WD[1,J])-WD[2,J]   # 飽差（外気飽和絶対湿度－外気絶対湿度)
 
-        # print("気象データ")
-        # print(WD[:,1])
-        # print(WD[1,2])
-        # print(WD[1,3])
-        # print(WD[1,4])
-        # print(WD[1,5])
-        # print(WD[1,6])
+        mprint("---- 3.2 WEATHER DATA", "")
+        mprint("WD[1,J]",WD[1,:])
+        mprint("WD[2,J]",WD[2,:])
+        mprint("WD[3,J]",WD[3,:])
+        mprint("WD[4,J]",WD[4,:])
+        mprint("WD[5,J]",WD[5,:])
+        mprint("WD[6,J]",WD[6,:])
+        mprint("WD[7,J]",WD[7,:])
+        mprint("WD8[j]",WD8)
             
         # ***          3.3. OUTPUT 2 (WEATHER DATA) ****************************
         # skip
@@ -2314,17 +2328,23 @@ def pyHASP(inputfile_name, climatefile_name, wndwtabl_filename, wcontabl_filenam
             W2 = -0.000279+0.122772*math.cos(W+1.49831)-0.165458*math.cos(2.*W-1.26155)-0.005354*math.cos(3.*W-1.1571)
             SD = math.sin(W1*DR)
             CD = math.cos(W1*DR)
-            ET = (W2+X[152]-12.)
-            SS = X[150]*SD
-            SC = X[150]*CD
-            CS = X[151]*SD
-            CC = X[151]*CD
+            ET = (W2+X[152]-12.)  # X[152] 均時差
+            SS = X[150]*SD   # X[150] 緯度のsin
+            SC = X[150]*CD   # X[150] 緯度のsin
+            CS = X[151]*SD   # X[151] 緯度のcos
+            CC = X[151]*CD   # X[151] 緯度のcos
 
             for J in range(1,25):
-                W1 = 15.*(ET+J)*DR
-                SH[J] = SS+CC*math.cos(W1)
+
+                W1      = 15.*(ET+J)*DR
+                SH[J]   = SS+CC*math.cos(W1)
                 CHSA[J] = CD*math.sin(W1)
                 CHCA[J] = -CS+SC*math.cos(W1)
+
+            mprint("SH[J]",SH[:])
+            mprint("CHSA[J]",CHSA[:])
+            mprint("CHCA[J]",CHCA[:])
+
 
             # ***          3.5. 'EXPS' UPDATE **************************************
 
@@ -2336,78 +2356,85 @@ def pyHASP(inputfile_name, climatefile_name, wndwtabl_filename, wcontabl_filenam
                 for J in range(1,25):
 
                     if SH[J] <= 0:
+
                         X[L+J+27] = 0.
                         X[L+J+51] = 0.
-                        L = int(M[L])
-                        break   # for文を抜ける
 
-                    SS = SH[J] * X[L+6] + CHCA[J] * X[L+9] + CHSA[J] * X[L+7]
-
-                    if SS <= 0:
-                        X[L+J+27] = 0.
-                        X[L+J+51] = 0.  
-                        L = int(M[L])
-                        break   # for文を抜ける
-
-                    if (X[L+14]==0) and (X[L+19]==0):
-                        X[L+J+27] = SS 
-                        X[L+J+51] = GF(SS**2)
-                        L = int(M[L])
-                        break   # for文を抜ける
-
-                    CS = CHSA[J] * X[L+4] - CHCA[J] * X[L+3]
-                    CC = -SH[J]  * X[L+5] + CHCA[J] * X[L+10] + CHSA[J] * X[L+8]
-                    U  = X[L+19] * abs(CS)/SS
-                    V  = X[L+14] * abs(CC)/SS
-
-                    if (U >= X[L+23]) or (V >= X[L+18]):
-                        X[L+J+27] = 0. 
-                        X[L+J+51] = 0. 
-                        L = int(M[L])
-                        break   # for文を抜ける
-
-                    ST = (X[L+23]-U)*(X[L+18]-V)
-
-                    if (X[L+25] == 0):
-                        SG = 0
                     else:
 
-                        if (CS < 0):
-                            UG = X[L+22]-U
-                            if (UG > X[L+20]):
-                                UG = X[L+20]
-                            if (UG < 0):
-                                UG=0.
+                        SS = SH[J] * X[L+6] + CHCA[J] * X[L+9] + CHSA[J] * X[L+7]
+
+                        if SS <= 0:
+
+                            X[L+J+27] = 0.
+                            X[L+J+51] = 0.  
+
                         else:
-                            UG = X[L+21]-U
-                            if (UG > X[L+20]):
-                                UG = X[L+20]
-                            if (UG < 0.):
-                                UG=0.
 
-                        if (CC < 0):
-                            VG=X(L+17)-V
-                            if (VG > X[L+15]):
-                                VG = X[L+15]
-                            if (VG < 0.):
-                                VG = 0.
-                        else:
-                            VG = X[L+16]-V
-                            if (VG > X[L+15]):
-                                VG = X[L+15]
-                            if (VG < 0):
-                                VG = 0.
+                            if (X[L+14]==0) and (X[L+19]==0):
 
-                        SG = UG*VG
-                        X[L+J+51] = GF(SS**2)*SG/X[L+25]     
+                                X[L+J+27] = SS 
+                                X[L+J+51] = GF(SS**2)
+                            
+                            else:
 
-                    if (X[L+24] == 0):  # 壁面全体面積-窓面積=0                           
-                        X[L+J+27] = 0.                                 
-                    else:                                                                 
-                        X[L+J+27] = SS*(ST-SG)/X[L+24]                                         
+                                CS = CHSA[J] * X[L+4] - CHCA[J] * X[L+3]
+                                CC = -SH[J]  * X[L+5] + CHCA[J] * X[L+10] + CHSA[J] * X[L+8]
+                                U  = X[L+19] * abs(CS)/SS
+                                V  = X[L+14] * abs(CC)/SS
 
-                    # 次のEXPSへ
-                    L = int(M[L])
+                                if (U >= X[L+23]) or (V >= X[L+18]):
+
+                                    X[L+J+27] = 0. 
+                                    X[L+J+51] = 0. 
+                                
+                                else:
+
+                                    ST = (X[L+23]-U)*(X[L+18]-V)
+
+                                    if (X[L+25] == 0):
+                                        SG = 0
+                                    else:
+
+                                        if (CS < 0):
+                                            UG = X[L+22]-U
+                                            if (UG > X[L+20]):
+                                                UG = X[L+20]
+                                            if (UG < 0):
+                                                UG=0.
+                                        else:
+                                            UG = X[L+21]-U
+                                            if (UG > X[L+20]):
+                                                UG = X[L+20]
+                                            if (UG < 0.):
+                                                UG=0.
+
+                                        if (CC < 0):
+                                            VG=X(L+17)-V
+                                            if (VG > X[L+15]):
+                                                VG = X[L+15]
+                                            if (VG < 0.):
+                                                VG = 0.
+                                        else:
+                                            VG = X[L+16]-V
+                                            if (VG > X[L+15]):
+                                                VG = X[L+15]
+                                            if (VG < 0):
+                                                VG = 0.
+
+                                        SG = UG*VG
+                                        # X[L+J+51] sin h*g(h*)fg （窓用日照面積率計算用）
+                                        X[L+J+51] = GF(SS**2)*SG/X[L+25]     
+
+                                    # X[L+J+27] sin h*fw （壁用日照面積率計算用）
+                                    if (X[L+24] == 0):  # 壁面全体面積-窓面積=0                           
+                                        X[L+J+27] = 0.                                 
+                                    else:                                                                 
+                                        X[L+J+27] = SS*(ST-SG)/X[L+24]                                         
+
+                # 次のEXPSへ
+                L = int(M[L]) 
+                    
 
 
         # ***          3.5.5 OAHU PRE-PROCESS **********************************
@@ -2595,27 +2622,57 @@ def pyHASP(inputfile_name, climatefile_name, wndwtabl_filename, wcontabl_filenam
 
                         # ***          3.8. HEAT GAIN THROUGH OUTSIDE WALL **********************
 
+                        mprint(" -----(1) 3.8. HEAT GAIN THROUGH OUTSIDE WALL", "")
+
                         LE = int(M[L+1])
 
                         if (CHCA[J]*X[LE+4]+CHSA[J]*X[LE+3] < 0):
-                            W = WD[3,J]
+                            W = WD[3,J]  # 法線面直達日射量
                         else:
                             if (X[L+13]*CHSA[J]+X[L+14]*CHCA[J] < SH[J]):
                                 W = WD[3,J]
                             else:
                                 W = 0
 
+                        # X[155]: 基準温度
                         EXC = WD[1,J] - X[155] + W * (X[int(LE+J+27)]*X[L+9]+SH[J]*X[L+10]) \
                             + WD[4,J] * X[L+11] - WD[5,J]*X[L+12] - WD8[J]*X[L+15]
 
+                        mprint("3.8 外壁 L", L)
+                        mprint("3.8 外壁 LE", LE)
+                        mprint("3.8 外壁 WD[1,J] ",WD[1,J] )
+                        mprint("3.8 外壁 X[155]",X[155])
+                        mprint("3.8 外壁 W",W)
+                        mprint("3.8 外壁 WD[3,J]",WD[3,J])
+                        mprint("3.8 外壁 X[int(LE+J+27)]",X[int(LE+J+27)])
+                        mprint("3.8 外壁 X[L+9]",X[L+9])
+                        mprint("3.8 外壁 SH[J]",SH[J])
+                        mprint("3.8 外壁 X[L+10]",X[L+10])
+                        mprint("3.8 外壁 WD[4,J]",WD[4,J])
+                        mprint("3.8 外壁 X[L+11]",X[L+11])
+                        mprint("3.8 外壁 WD[5,J]",WD[5,J])
+                        mprint("3.8 外壁 X[L+12]",X[L+12])
+                        mprint("3.8 外壁 WD8[J]",WD8[J])
+                        mprint("3.8 外壁 X[L+15]",X[L+15])
+                        mprint("3.8 外壁 X[L+2]", X[L+2] )
+                        mprint("3.8 外壁 X[L+7]", X[L+7] )
+                        mprint("3.8 外壁 X[L+8]", X[L+8] )
+                        mprint("3.8 外壁 EXC", EXC )
+
                         W = X[L+7] + X[L+8] + EXC*X[L+2]
+
+                        mprint("3.8 外壁 W",W)
+
                         ACC1 += W * FC
                         ACC2 += W * FR
                         X[L+7] = X[L+7]*X[L+4] + EXC*X[L+3]
                         X[L+8] = X[L+8]*X[L+6] + EXC*X[L+5]
 
-                        # mprint("(1) 3.8. HEAT GAIN THROUGH OUTSIDE WALL: ACC1", ACC1)
-                        # mprint("3.8 外壁 ACC1:", ACC1)
+                        mprint("3.8 外壁 ACC1:", ACC1)
+                        mprint("3.8 外壁 ACC2:", ACC2)
+                        mprint("3.8 外壁 X[L+7]", X[L+7] )
+                        mprint("3.8 外壁 X[L+8]", X[L+8] )
+
 
                         L = L+LSZSPC[1]
 
@@ -2638,8 +2695,8 @@ def pyHASP(inputfile_name, climatefile_name, wndwtabl_filename, wcontabl_filenam
                             X[L+11] = X[L+11]*X[L+7] + EXC*X[L+5]
                             X[L+12] = X[L+12]*X[L+10] + EXC*X[L+8]
         
-                        # mprint("(2) 3.9. HEAT GAIN THROUGH INSIDE WALL: ACC1", ACC1)
-                        # mprint("3.9 内壁 ACC1:", ACC1)
+                        mprint(" -----(2) 3.9. HEAT GAIN THROUGH INSIDE WALL: ACC1", ACC1)
+                        mprint("3.9 内壁 ACC1:", ACC1)
 
                         L = L+LSZSPC[2]
 
@@ -2735,8 +2792,8 @@ def pyHASP(inputfile_name, climatefile_name, wndwtabl_filename, wcontabl_filenam
                                     if W > X[LC+43]:
                                         ACC6 += X[L+19]
 
-                        # mprint("(3) 3.10. HEAT GAIN THROUGH WINDOW: ACC1", ACC1)
-                        # mprint("3.10 窓 ACC1:", ACC1)
+                        mprint(" -----(3) 3.10. HEAT GAIN THROUGH WINDOW: ACC1", ACC1)
+                        mprint("3.10 窓 ACC1:", ACC1)
 
                         L = L+LSZSPC[3]                    
 
@@ -2786,8 +2843,8 @@ def pyHASP(inputfile_name, climatefile_name, wndwtabl_filename, wcontabl_filenam
                         # mprint("L", L)
                         # mprint("X[L+3]", X[L+3])
 
-                        # mprint("(4) 3.11. INFILTRATION: ACC1", ACC1)
-                        # mprint("3.11 隙間風 ACC1:", ACC1)
+                        mprint(" -----(4) 3.11. INFILTRATION: ACC1", ACC1)
+                        mprint("3.11 隙間風 ACC1:", ACC1)
                     
                         L = L+LSZSPC[4]
 
@@ -2870,7 +2927,7 @@ def pyHASP(inputfile_name, climatefile_name, wndwtabl_filename, wcontabl_filenam
                         # mprint("3.12 人体発熱 ACC1:", ACC1)
                         # mprint("3.12 人体発熱 ACC1:", ACC1)
 
-                    # mprint("(5) 3.12. INTERNAL HEAT: ACC1", ACC1)
+                    mprint(" -----(5) 3.12. INTERNAL HEAT: ACC1", ACC1)
 
                 # ***          3.13 CONVERT HEAT GAIN TO COOLING LOAD ******************
                 
@@ -2885,11 +2942,17 @@ def pyHASP(inputfile_name, climatefile_name, wndwtabl_filename, wcontabl_filenam
                 X[J+48]  = ACC3
                 X[J+72]  = ACC5
 
-                # mprint("3.13: J", J)
-                # mprint("3.13: ACC1", ACC1)
-                # mprint("3.13: ACC2", ACC2)
-                # mprint("3.13: X[LC+11]", X[LC+11])
-                # mprint("3.13: X[LC+8]", X[LC+8])
+                mprint("3.13: J", J)
+                mprint("3.13: ACC1", ACC1)
+                mprint("3.13: ACC2", ACC2)
+                mprint("3.13: X[J]", X[J])
+                mprint("3.13: X[LC+8]", X[LC+8])
+                mprint("3.13: X[LC+9]", X[LC+9])
+                mprint("3.13: X[LC+10]", X[LC+10])
+                mprint("3.13: X[LC+11]", X[LC+11])
+                mprint("3.13: X[J+24]", X[J+24])
+                mprint("3.13: X[J+48]", X[J+48])
+                mprint("3.13: X[J+72]", X[J+72])
 
 
                 # ***                CALCULATION EXTRACTING LOAD   *********************
@@ -2955,7 +3018,7 @@ def pyHASP(inputfile_name, climatefile_name, wndwtabl_filename, wcontabl_filenam
     #-----------------------------------------------------------------------
 
     # XMQデータの出力
-    # display_XMQ_matrix(X,M,2000,3000)
+    display_XMQ_matrix(X,M,2000,3000)
 
 
     # 計算結果の出力
@@ -2978,11 +3041,14 @@ def pyHASP(inputfile_name, climatefile_name, wndwtabl_filename, wcontabl_filenam
 
 if __name__ == '__main__':
 
-    inputfile_name    = "./test/test_002_single_room/inputdata.txt"
-    climatefile_name  = "./test/test_002_single_room/36300110_SI.hasH"
-    wndwtabl_filename = "./test/test_002_single_room/wndwtabl.xlsx"
-    wcontabl_filename = "./test/test_002_single_room/wcontabl.xlsx"
-    resultfile_prefix = "./test/test_002_single_room/pyHASP_"
+    # folder = ".\\test\\test_001_single_room\\"
+    folder = ".\\test\\test_002_roof\\"
+
+    inputfile_name    = folder + "inputdata.txt"
+    climatefile_name  = folder + "36300110_SI.hasH"
+    wndwtabl_filename = folder + "wndwtabl.xlsx"
+    wcontabl_filename = folder + "wcontabl.xlsx"
+    resultfile_prefix = folder + "pyHASP_"
 
     pyHASP(inputfile_name, climatefile_name, wndwtabl_filename, wcontabl_filename,resultfile_prefix)
 

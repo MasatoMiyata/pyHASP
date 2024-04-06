@@ -1,8 +1,12 @@
 import numpy as np
 import math
 
+from mprint import mprint
+
 def GVECTR(QWL,NL,MT,TH,HT,HO,TCM=np.zeros([2,100])):
     """_summary_
+
+    ★引数にリストがあるため参照渡しになる点に注意！
 
     Args:
         QWL (_type_): 識別子（文字列4）
@@ -10,7 +14,7 @@ def GVECTR(QWL,NL,MT,TH,HT,HO,TCM=np.zeros([2,100])):
         MT (_type_): 建材番号のリスト
         TH (_type_): 長さのリスト
         HT (_type_): HC+HR
-        HO (_type_): 建材データベースのファイル、H0=20　（QWLによって変わる）
+        HO (_type_): 建材データベースのファイル、H0=20 （QWLによって変わる）
         TCM (_type_, optional): 建材データベースを読みとった値. Defaults to np.zeros([2,100]).
 
     Returns:
@@ -105,6 +109,8 @@ def GVECTR(QWL,NL,MT,TH,HT,HO,TCM=np.zeros([2,100])):
 
     else:
 
+        # print('-----  GVECTR  -----')
+
         # 初項
         R[0] = 1/HT
         C[0] =0.0
@@ -129,49 +135,83 @@ def GVECTR(QWL,NL,MT,TH,HT,HO,TCM=np.zeros([2,100])):
             R[int(NL)]=1/HO
             C[int(NL)]=0.
 
-        # print("----NL----")
-        # print(NL)
-        # print("----R----")
-        # print(R)
-        # print("----C----")
-        # print(C)
-
+        mprint("NL",NL)
+        mprint("R",R)
+        mprint("C",C)
 
         for J in range(0,10):
 
-            G0=1.0
-            U1=1.0
-            U2=0.0
-            U3=0.0
-            U4=1.0
+            G0 = 1.0
+            U1 = 1.0
+            U2 = 0.0
+            U3 = 0.0
+            U4 = 1.0
         
+            # 層の数
             for L in range(0,int(NL+1)):
             
                 W = math.sqrt(S[J]*R[L]*C[L])
 
-                # print(f"L: {L}")
-                # print(f"J: {J}")
-                # print(f"W: {W}")
-
                 if (W == 0):
-                    V1=1.
-                    V2=R[L]
-                    V3=0.
+                    V1 = 1.
+                    V2 = R[L]
+                    V3 = 0.
+
+                    mprint('-------------------',"")
+                    mprint("L",L)
+                    mprint("J",J)
+                    mprint("W",W)
+                    mprint("R[L]",R[L])
+                    mprint("V0","-")
+                    mprint("V1",V1)
+                    mprint("V2",V2)
+                    mprint("V3",V3)
+
                 else:
-                    V0=math.exp(-W)
-                    G0=G0*V0
-                    V1=0.5*(1.+V0**2)
-                    V2=0.5*R[L]*(1.-V0**2)/W
-                    V3=0.5*W*(1.-V0**2)/R[L]
-                
-                W1=U1
-                W3=U3
-                U1=W1*V1+U2*V3
-                U2=W1*V2+U2*V1
-                U3=W3*V1+U4*V3
-                U4=W3*V2+U4*V1
+                    V0 = math.exp(-W)
+                    G0 = G0*V0
+                    V1 = 0.5*(1.0 + V0**2)
+                    V2 = 0.5*R[L]*(1.0 - V0**2)/W
+                    V3 = 0.5*W*(1.0 - V0**2)/R[L]
+
+                    mprint('-------------------',"")
+                    mprint("L",L)
+                    mprint("J",J)
+                    mprint("W",W)
+                    mprint("0.5*R[L]",0.5*R[L])
+                    mprint("V0**2",V0**2)
+                    mprint("(1.0 - V0**2)",(1.0 - V0**2))
+                    mprint("1/W",1/W)
+                    mprint("R[L]",R[L])
+                    mprint("V0",V0)
+                    mprint("V1",V1)
+                    mprint("V2",V2)
+                    mprint("V3",V3)
+
+                W1 = U1
+                W3 = U3
+                U1 = W1*V1 + U2*V3
+                U2 = W1*V2 + U2*V1
+                U3 = W3*V1 + U4*V3
+                U4 = W3*V2 + U4*V1
+
+                mprint('-------------------',"")
+                mprint("W1",W1)
+                mprint("W3",W3)
+                mprint("U1",U1)
+                mprint("U2",U2)
+                mprint("U3",U3)
+                mprint("U4",U4)
             
-            TRNS[J]=G0/U2
-            ADMT[J]=U4/U2
+            TRNS[J] = G0/U2
+            ADMT[J] = U4/U2
+
+            mprint('--------------------------------------',"")
+            mprint("G0",G0)
+            mprint("U4",U4)
+            mprint("U2",U2)
+
+        mprint("TRNS",TRNS)
+        mprint("ADMT",ADMT)
 
     return TRNS,ADMT
