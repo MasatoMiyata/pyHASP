@@ -8,8 +8,6 @@ import math
 import numpy as np
 import xlrd
 import pandas as pd
-import io,sys
-sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='shift-jis')
 
 from RHEAD import RHEAD
 from NDATE import NDATE
@@ -381,14 +379,14 @@ def pyHASP(inputfile_name, climatefile_name, wndwtabl_filename, wcontabl_filenam
         if (len(NUB[line]) <= 1):  # 空白行を探す
             bldg_end = line
             break
-    print(f"建物データの最終行: {bldg_end}")
+    mprint("建物データの最終行", bldg_end)
 
 
     for line in range(1,bldg_end):
         
         KEY = NUB[line][0:4]
 
-        print(f"KEY: {KEY}")
+        mprint("KEY", KEY)
 
         if KEY == "BUIL":
 
@@ -1052,7 +1050,7 @@ def pyHASP(inputfile_name, climatefile_name, wndwtabl_filename, wcontabl_filenam
             # Lの更新 （183個 間隔）
             L=L+183
 
-    print("---建物データの読み込み終了---")
+    mprint("---建物データの読み込み終了---", "")
 
     NRM = 0
     IZ = 1
@@ -1065,7 +1063,7 @@ def pyHASP(inputfile_name, climatefile_name, wndwtabl_filename, wcontabl_filenam
 
         if KEY == "CMPL":
 
-            print("---SPACデータの読み込み終了---")
+            mprint("---SPACデータの読み込み終了---","")
             break
 
         elif KEY == "SPAC":
@@ -1074,7 +1072,7 @@ def pyHASP(inputfile_name, climatefile_name, wndwtabl_filename, wcontabl_filenam
             QSP=NUB[line][5:9]
             (NNAM,LC,LD) = RETRIV(106,QSP,M)
 
-            print(f"SPAC: 室名{QSP}")
+            mprint("SPAC: 室名", QSP)
 
             if LD != 0:
                 print(f"SPAC: " + {NUB[line][5:9]})
@@ -1161,7 +1159,7 @@ def pyHASP(inputfile_name, climatefile_name, wndwtabl_filename, wcontabl_filenam
             for line_ex in range(line+1, spec_end+1):
 
                 KEY_SPAC = NUB[line_ex][0:4]
-                print(f"KEY_SPAC: {KEY_SPAC}")
+                mprint("KEY_SPAC", KEY_SPAC)
 
                 if KEY_SPAC == "OWAL":
 
@@ -1174,7 +1172,7 @@ def pyHASP(inputfile_name, climatefile_name, wndwtabl_filename, wcontabl_filenam
                     if LD != LC:
                         raise Exception("LDがLCと異なります")
                     
-                    print(f"WCON LC: {LC}")
+                    mprint("WCON LC", LC)
 
                     # 層の構成数
                     NL=M[int(LC+2)]
@@ -1244,8 +1242,8 @@ def pyHASP(inputfile_name, climatefile_name, wndwtabl_filename, wcontabl_filenam
                     if LD != LC:
                         raise Exception("LDがLCと異なります")
 
-                    print(f"EXPS LC: {LC}")
-                    print(f"EXPS LL: {LL}")
+                    mprint("EXPS LC", LC)
+                    mprint("EXPS LL", LL)
 
                     M[L+1]=int(LC)
                     V1=X[int(LC)+26]
@@ -2229,7 +2227,7 @@ def pyHASP(inputfile_name, climatefile_name, wndwtabl_filename, wcontabl_filenam
         IDWK[2]  = int(ID[1,2])   # 計算日の月
         IDWK[3]  = int(ID[1,3])   # 計算日の日
 
-        print(f"計算日： {int(IDWK[1])}年 {int(IDWK[2])}月 {int(IDWK[3])}日")
+        # print(f"計算日： {int(IDWK[1])}年 {int(IDWK[2])}月 {int(IDWK[3])}日")
 
         # 気象データをRewindした回数（Rewind前）
         ICYCLO = ICYCL
@@ -2481,7 +2479,7 @@ def pyHASP(inputfile_name, climatefile_name, wndwtabl_filename, wcontabl_filenam
         # SPACのポインタ
         LC = int(M[106])
 
-        print(f"計算対象SPAC: {NAME(M[LC+1])}, L = {LC}")
+        # print(f"計算対象SPAC: {NAME(M[LC+1])}, L = {LC}")
 
         LCGB = LC
         LCO  = LC  # 追加（元のfortranにはない）
@@ -3018,8 +3016,7 @@ def pyHASP(inputfile_name, climatefile_name, wndwtabl_filename, wcontabl_filenam
     #-----------------------------------------------------------------------
 
     # XMQデータの出力
-    display_XMQ_matrix(X,M,2000,3000)
-
+    # display_XMQ_matrix(X,M,2000,3000)
 
     # 計算結果の出力
     cols = ["YEAR","MO","DY","YB","HR","IREP",
