@@ -17,6 +17,6 @@ def display_XMQ_matrix(X,M,start, end):
 
 
     # ファイルに書き込む
-    with open('output_XMQ.txt', 'w') as file:
+    with open('display_XMQ_matrix_out.txt', 'w') as file:
         for i, (item1, item2) in enumerate(zip(X, M), start=1):
             file.write(f"{i-1}: {item1}, {item2}\n")

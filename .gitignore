@@ -10,6 +10,7 @@
 *.pyc
 
 /test/
+/subtool/
 /newHASP/
 /reference/
 /venv312/
