@@ -2050,14 +2050,6 @@ def pyHASP(inputfile_name, climatefile_name, wndwtabl_filename, wcontabl_filenam
                             L2 = L2 + LSZSPC(M[int(L2)])
                         else:
                             flag_RTVADJ = False
-                    
-                        if (ISTAT2 == 1) or (ISTAT2 == -2):
-                            for J in range(0,10):
-                                G[J] = HC*ARM/(HC*ARM+FR*GRM[J])*X(L2+16+J)
-                            P = CPARAM(2,G)
-                            for I in range(0,9):
-                                X[int(L2)+I+2] = P[I]
-                            L2=L2+LSZSPC[int(M[L2])]
 
                     if IFURS >= 1:
                         P = CPARAM(2,GAS)   # 家具の蓄熱応答係数のみ計算（簡易MRT計算用）
@@ -2067,7 +2059,9 @@ def pyHASP(inputfile_name, climatefile_name, wndwtabl_filename, wcontabl_filenam
                     M[LL+101] = IZ
 
                     if KEY == ":   ":  # スペースの結合(グループの継続)が指示された場合
-                        raise Exception('まだ作成していません')
+                        IZ = IZ+1
+                        if IZ > NAZ:
+                            raise Exception("想定外のエラーが発生しました")
 
                     elif KEY == "CFLW":  # 空気移動量が指定された場合(現在のグループのうち最後のスペースのはず)
                         raise Exception('まだ作成していません')
@@ -3038,7 +3032,7 @@ def pyHASP(inputfile_name, climatefile_name, wndwtabl_filename, wcontabl_filenam
 
 if __name__ == '__main__':
 
-    folder = ".\\test\\test_019\\"
+    folder = ".\\test\\test_021\\"
 
     inputfile_name    = folder + "inputdata.txt"
     climatefile_name  = folder + "36300110_SI.hasH"
