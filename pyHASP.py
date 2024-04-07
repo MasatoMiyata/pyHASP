@@ -715,7 +715,7 @@ def pyHASP(inputfile_name, climatefile_name, wndwtabl_filename, wcontabl_filenam
                 # 読み込む行数
                 n = line + (i-1)
 
-                if i == 1 or (i > 1 and NUB[n][0:4] == "+   "):
+                if i == 1 or (i == 2 and NUB[n][0:4] == "+   ") or (i == 3 and NUB[n-1][0:4] == "+   " and NUB[n][0:4] == "+   "):
 
                     # もし空白であれば 24時間停止（1時から24時まで0）とする。
                     if NUB[n][11:14] == "   " or len(NUB[n]) < 15:
@@ -3041,8 +3041,7 @@ def pyHASP(inputfile_name, climatefile_name, wndwtabl_filename, wcontabl_filenam
 
 if __name__ == '__main__':
 
-    # folder = ".\\test\\test_001_single_room\\"
-    folder = ".\\test\\test_002_roof\\"
+    folder = ".\\test\\test_019\\"
 
     inputfile_name    = folder + "inputdata.txt"
     climatefile_name  = folder + "36300110_SI.hasH"
