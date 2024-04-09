@@ -7,6 +7,7 @@ from DGESV import DGESV
 from POSTP import POSTP
 from SLVSM import SLVSM
 from CLCMRT import CLCMRT
+from mprint import mprint
 
 def EXTRC2(NHR,IPEAK,ISEAS,NAZ,IOPTG,NZ,IOPVG,SMRT1,SMRT2,
         VOAG,LCG,CLDG,NWD,WD,REFWD,P0,NSTP,VFLOW,EXCAP,SPCAP,RMMX,RMMN,
@@ -158,7 +159,7 @@ def EXTRC2(NHR,IPEAK,ISEAS,NAZ,IOPTG,NZ,IOPVG,SMRT1,SMRT2,
 
     for ISL in range(1, NSL+1):   # 顕熱・潜熱 loop
 
-        # print(f"--- EXTRC2 顕熱・潜熱ループ: {ISL}")
+        mprint("--- EXTRC2 顕熱・潜熱ループ", ISL)
 
         #---------------------------------------
         # 各ゾーンの設定温湿度上限・下限
@@ -174,21 +175,25 @@ def EXTRC2(NHR,IPEAK,ISEAS,NAZ,IOPTG,NZ,IOPVG,SMRT1,SMRT2,
 
         for JHR in range(1, NHR+1):    # 時刻ループ
 
-            # print(f"--- EXTRC2 時刻ループ: {JHR}")
+            mprint("--- EXTRC2 時刻ループ", JHR)
 
             #---------------------------------------
             # 導入外気温湿度（外調機考慮） (OATX)
             #---------------------------------------
-            for IZ in [1, NZ+1]:
+            for IZ in range(1, NZ+1):
 
                 ## OAHUデータへのポインタ(L), LCGはXMQ配列のSPACデータへのポインタ
                 L = M[ int(LCG[IZ]+202) ]
+                mprint("EXTRC2 ---------------------- IZ ", IZ)
+                mprint("EXTRC2 ---------------------- L ", L)
 
                 if ( L == 0 ):   # OAHUデータが指定されていない場合
                     OATX[IZ,JHR] = WD[ISL,JHR]   # 外気温度・湿度
                 else:
                     OATX[IZ,JHR] = X[ int( L+80+(ISL-1)*25+JHR ) ]   # 外調機の出口温度・湿度
             
+                mprint("EXTRC2 ---------------------- OATX[IZ,JHR] ", OATX[IZ,JHR])
+                    
             #---------------------------------------
             # 予熱運転モードか否かの判定（IWARM, KSTP）
             #---------------------------------------
@@ -267,7 +272,7 @@ def EXTRC2(NHR,IPEAK,ISEAS,NAZ,IOPTG,NZ,IOPVG,SMRT1,SMRT2,
 
             for IREP in [0, 1]:   # 直前・直後 loop
 
-                # print(f"--- EXTRC2 直前・直後ループ: {IREP}")
+                mprint("--- EXTRC2 直前・直後ループ", IREP)
 
                 #---------------------------------------
                 # 運転状態の判定
@@ -317,19 +322,20 @@ def EXTRC2(NHR,IPEAK,ISEAS,NAZ,IOPTG,NZ,IOPVG,SMRT1,SMRT2,
                     # 冷房負荷 CLDG + 空気の容積比熱 * 外気導入量 * (外気温度/湿度 - 基準温度/湿度)
                     FIXEDL[IZ] = CLDG[IZ,JHR,ISL] + CRHO[ISL] * VOAWK[IZ,IREP,JHR] * ( OATX[IZ,JHR] - REFWD[ISL] )
 
-                    # print(f"--- EXTRC2 FIXEDL①: {FIXEDL[IZ]}")
-                    # print(f"--- EXTRC2   CLDG[IZ,JHR,ISL]: {CLDG[IZ,JHR,ISL]}")
-                    # print(f"--- EXTRC2   CRHO[ISL]: {CRHO[ISL]}")
-                    # print(f"--- EXTRC2   VOAWK[IZ,IREP,JHR]: {VOAWK[IZ,IREP,JHR]}")
-                    # print(f"--- EXTRC2   OATX[IZ,JHR]: {OATX[IZ,JHR]}")
-                    # print(f"--- EXTRC2   REFWD[ISL]: {REFWD[ISL]}")
+                    mprint("--- EXTRC2 FIXEDL①", FIXEDL[IZ])
+                    mprint("--- EXTRC2   IZ", IZ)
+                    mprint("--- EXTRC2   CLDG[IZ,JHR,ISL]" ,CLDG[IZ,JHR,ISL])
+                    mprint("--- EXTRC2   CRHO[ISL]", CRHO[ISL])
+                    mprint("--- EXTRC2   VOAWK[IZ,IREP,JHR]", VOAWK[IZ,IREP,JHR])
+                    mprint("--- EXTRC2   OATX[IZ,JHR]", OATX[IZ,JHR])
+                    mprint("--- EXTRC2   REFWD[ISL]", REFWD[ISL])
                     
                     # NTRM 蓄熱応答係数の項数
                     for I in range(1, NTRM[ISL]+1):
                         FIXEDL[IZ] += X[ int( LCG[IZ]+LSTQ[I,ISL] ) ]
-                        # print(f"---  X[ int( LCG[IZ]+LSTQ[I,ISL] ) ]: { X[ int( LCG[IZ]+LSTQ[I,ISL] ) ]}")
+                        mprint("--- EXTRC2  X[ int( LCG[IZ]+LSTQ[I,ISL] ) ]", X[ int( LCG[IZ]+LSTQ[I,ISL] ) ])
                     
-                    # print(f"--- EXTRC2 FIXEDL②: {FIXEDL[IZ]}")
+                    mprint("--- EXTRC2 FIXEDL②", FIXEDL[IZ])
 
                     if ( ISL == 1 ):  # 顕熱
 
@@ -347,7 +353,7 @@ def EXTRC2(NHR,IPEAK,ISEAS,NAZ,IOPTG,NZ,IOPVG,SMRT1,SMRT2,
                                 # 次の要素のポインタ
                                 L += int(LSZSPC[int(M[L])])
 
-                    # print(f"--- EXTRC2 FIXEDL③: {FIXEDL[IZ]}")
+                    mprint("--- EXTRC2 FIXEDL③",FIXEDL[IZ])
 
                     # 直前の室温湿度変動による直後の流入熱を加算する
                     # 直後の計算で一定除去熱量計算を行わない場合 か 予熱運転ではない状態で一定除去熱量計算を行う場合
@@ -373,11 +379,11 @@ def EXTRC2(NHR,IPEAK,ISEAS,NAZ,IOPTG,NZ,IOPVG,SMRT1,SMRT2,
                                 else:
                                     # X[L+3]  貫流応答係数（顕熱） 瞬時応答係数、二等辺三角波励振
                                     # X[L+4]  貫流応答係数（顕熱） 瞬時応答係数、右側直角三角波励振
-                                    FIXEDL[IZ] += ( X[L+3] - X[L+4] ) * RM[JZ,0,JHR,ISL]
+                                    FIXEDL[IZ] += ( X[L+3] - X[L+4] ) * RM[int(JZ),0,int(JHR),int(ISL)]
                                     # 次の要素のポインタ
                                     L += int(LSZSPC[int(M[L])])
 
-                    # print(f"--- EXTRC2 FIXEDL④: {FIXEDL[IZ]}")
+                    mprint("--- EXTRC2 FIXEDL④", FIXEDL[IZ])
 
 
                 if ( IWARM1 == 1 ):  # 一定除去熱量を計算する
@@ -575,8 +581,8 @@ def EXTRC2(NHR,IPEAK,ISEAS,NAZ,IOPTG,NZ,IOPVG,SMRT1,SMRT2,
                                         flag_RTVADJ = False
                                     else:
                                         
-                                        X[L+11] = X[L+ 7]*X[L+11] + (X[L+5]-X[L+6])*RM[JZ,0,JHR,ISL] + X[L+6]*RM[JZ,1,JHR,ISL]
-                                        X[L+12] = X[L+10]*X[L+12] + (X[L+8]-X[L+9])*RM[JZ,0,JHR,ISL] + X[L+9]*RM[JZ,1,JHR,ISL]
+                                        X[L+11] = X[L+ 7]*X[L+11] + (X[L+5]-X[L+6])*RM[int(JZ),0,int(JHR),int(ISL)] + X[L+6]*RM[int(JZ),1,int(JHR),int(ISL)]
+                                        X[L+12] = X[L+10]*X[L+12] + (X[L+8]-X[L+9])*RM[int(JZ),0,int(JHR),int(ISL)] + X[L+9]*RM[int(JZ),1,int(JHR),int(ISL)]
 
                                         L += int(LSZSPC[int(M[L])])
 

@@ -1,8 +1,10 @@
 from NAME import NAME
 from RETRIV import RETRIV
 
+from mprint import mprint
+
 #-----------------------------------------------------------------------
-#     SPACデータのうち、次のIWALデータを探して先頭ポインタ等を返す
+#  SPACデータのうち、次のIWALデータを探して先頭ポインタ等を返す
 #-----------------------------------------------------------------------
 def RTVADJ(LSZSPC, L, M):
 
@@ -29,42 +31,45 @@ def RTVADJ(LSZSPC, L, M):
     # メインループ
     for II in range(1, 10000):
         
-        # print(f"II: {II}")
-        # print(f"L:{L}")
-        # print(f"M[L]:{M[L]}")
-        # print(f"M[L+1]:{M[L+1]}")
-        # print(f"LSZSPC[int(M[L])]:{LSZSPC[int(M[L])]}")
+        # mprint("RTVADJ II", II)
+        # mprint("RTVADJ L", L)
+        # mprint("RTVADJ M[L]", M[L])
+        # mprint("RTVADJ M[L+1]", M[L+1])
 
         if M[L] < 1 or M[L] > 5:
-            # print("--aルート---")
-            print(f"M[L]: {M[L]}")
+            # mprint("RTVADJ --aルート---", "")
+            # mprint("RTVADJ M[L]:", M[L])
             raise Exception("RTVADJでエラーが発生しました")
 
         elif M[L] == 5:  # SPACデータ終了
-            # print("--bルート---")
+            # mprint("RTVADJ --bルート---", "")
             ISTAT = 0
             return L, JZ, ISTAT
         
         elif M[L] != 2:  # IWAL以外
-            # print("--cルート---")
+            # mprint("RTVADJ --cルート---", "")
             L += LSZSPC[int(M[L])]
 
         elif M[L+1] != 3:  # IWALだがadjacent wallではない
-            # print("--dルート---")
+            # mprint("RTVADJ --dルート---", "")
             L += LSZSPC[int(M[L])]
 
         else:  # IWAL で adjacent wall
-            # print("--eルート---")
+            # mprint("RTVADJ --eルート---", "")
 
-            QSP = NAME(LSZSPC[L + 2])
-            # print(f"QSP: {QSP}")
+            QSP = NAME(M[int(L+2)])
+            # mprint("RTVADJ QSP", QSP)
 
             (NNAM,LC,LD) = RETRIV(106,QSP,M)
+            # mprint("RTVADJ NNAM", NNAM)
+            # mprint("RTVADJ LC", LC)
+            # mprint("RTVADJ LD", LD)
+            # mprint("RTVADJ M[int(LC+101)] ", M[int(LC+101)] )
 
             if LD != LC:
                 ISTAT = -2  # adjacent wallだが隣接SPACは見つからない（ERROR5相当。ただしL だけは正しく返せる）
             else:
-                JZ = M[LC+101]  # ! 隣接スペースは当該グループのうち何番目に登録されているか
+                JZ = M[int(LC+101)]  # ! 隣接スペースは当該グループのうち何番目に登録されているか
                 ISTAT = 1       # IWAL(adjacent)とその隣接スペースが見つかった
             
             return L, JZ, ISTAT

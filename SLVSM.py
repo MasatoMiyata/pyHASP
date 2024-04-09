@@ -141,20 +141,26 @@ def SLVSM(NZ,IOPT,EXCAP,SPCAP,NAZ,VFLOW,P0,CRHO,VOA,
     for ITER in range(1, NITER+1):  # 収束計算 loop
 
         ICONV = 1
-    
+
+        mprint("--- SLVSM NZ", NZ)
+        mprint("--- SLVSM ITER", ITER)
+
+        AA = np.zeros([NA+1, NZ+1])    
         for IZ in range(1, NZ+1):   # ゾーン loop
 
             # 係数行列の該当部分に値をセットする
             AA,BB[IZ],X,M = COEFFS(LMODE[IZ],NZ,IZ,RMMX[IZ]-REFWD,RMMN[IZ]-REFWD,
-                GRADL[IZ],CRHO,VFLOW[1,IZ],FIXEDL[IZ],EXCAP1[IZ],SPCAP1[IZ],
-                ISL,IREP,LCG[IZ]+LSZSPC[0],LSZSPC,NA,X,M)
+                GRADL[IZ],CRHO,VFLOW[:,IZ],FIXEDL[IZ],EXCAP1[IZ],SPCAP1[IZ],
+                ISL,IREP,LCG[IZ]+LSZSPC[0],LSZSPC,NA,AA,X,M)
 
         mprint("--- SLVSM AA", AA[1,:])
+        mprint("--- SLVSM AA", AA[2,:])
         mprint("--- SLVSM BB", BB)
-        mprint("--- SLVSM FIXEDL", FIXEDL[1])
+        mprint("--- SLVSM FIXEDL[1]", FIXEDL[1])
+        mprint("--- SLVSM FIXEDL[2]", FIXEDL[2])
 
         # 方程式を解く
-        (BB) = DGESV(AA, BB)
+        (BB) = DGESV(AA, BB, NZ)
 
         mprint("--- SLVSM XX",BB)
 
@@ -174,7 +180,7 @@ def SLVSM(NZ,IOPT,EXCAP,SPCAP,NAZ,VFLOW,P0,CRHO,VOA,
                     if ISTAT != 1:
                         flag_RTVADJ = False
                     else:
-                        WK = WK + X[ int(L+3+IREP) ]*BB[JZ]
+                        WK = WK + X[ int(L+3+IREP) ]*BB[int(JZ)]
                         L += int(LSZSPC[int(M[L])])
     
             WK += FIXEDL[IZ]

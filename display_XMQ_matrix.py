@@ -6,14 +6,14 @@ def display_XMQ_matrix(X,M,start, end):
         end (_type_): 出力を終了する行数
     """
 
-    set_range = range(start,end)
-    print("***********************************************")
-    for i in set_range:
-        print( f"X {str(i)} :  {X[i]} " )
-    print("***********************************************")
-    for i in set_range:
-        print( f"M {str(i)} :  {M[i]} " )
-    print("***********************************************")
+    # set_range = range(start,end)
+    # print("***********************************************")
+    # for i in set_range:
+    #     print( f"X {str(i)} :  {X[i]} " )
+    # print("***********************************************")
+    # for i in set_range:
+    #     print( f"M {str(i)} :  {M[i]} " )
+    # print("***********************************************")
 
 
     # ファイルに書き込む

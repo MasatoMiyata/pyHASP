@@ -1155,7 +1155,12 @@ def pyHASP(inputfile_name, climatefile_name, wndwtabl_filename, wcontabl_filenam
                 if len(NUB[line_ex]) == 1:  # 空白行を探す
                     spec_end = line_ex
                     break
+                elif NUB[line_ex][0:4] == ":   ":
+                    spec_end = line_ex
+                    break
             
+            mprint("SPACの行数", spec_end)
+
             for line_ex in range(line+1, spec_end+1):
 
                 KEY_SPAC = NUB[line_ex][0:4]
@@ -1344,8 +1349,9 @@ def pyHASP(inputfile_name, climatefile_name, wndwtabl_filename, wcontabl_filenam
                         # ここで処理終了
                             
                     else:
-                        M[L]=2
-                        M[L+1]=I
+
+                        M[L]   = 2   # 内壁を表すID
+                        M[L+1] = I   # 隣室モード
                         for J in range(0,10):
                             if M[L+1] == 0:
                                 GRM[J] = GRM[J] + A*(GAD[J]-(1.0-W1)*GTR[J])
@@ -1356,30 +1362,36 @@ def pyHASP(inputfile_name, climatefile_name, wndwtabl_filename, wcontabl_filenam
 
                             # 隣室SPAC名
                             (NNAM,LC,LD) = RETRIV(102,NUB[line_ex][20:24],M) # NNAMへの変換機能のみ利用
-                            M[L+2] = NNAM
+                            M[L+2] = int(NNAM)
 
+                            mprint("IWAL: 隣室あり L ", L)
+                            mprint("IWAL: 隣室あり M[L+2]", M[L+2])
+
+                            # 貫流応答伝達係数（顕熱）S(0)時（M(L+1)=3のときのみ使用
                             for J in range(0,10):
                                 X[L+16+J] = A*GTR[J]
 
                         else:
+
                             P = CPARAM(2,GTR)
-                            X[L+3] = A*P[1]
-                            X[L+4] = A*P[2]
-                            X[L+5] = A*P[3]
-                            X[L+6] = A*P[4]
-                            X[L+7] = P[5]
-                            X[L+8] = A*P[6]
-                            X[L+9] = A*P[7]
-                            X[L+10] = P[8]
-                                
 
-                        X[L+11] = 0.0
-                        X[L+12] = 0.0
-                        X[L+13] = 0.0
-                        X[L+14] = 0.0
-                        X[L+15] = W1
+                            # 貫流応答係数（顕熱）
+                            X[L+3] = A*P[1]  # P0 （瞬時応答係数、二等辺三角波励振[kcal/h℃]）
+                            X[L+4] = A*P[2]  # P0R （瞬時応答係数、右側直角三角波励振[kcal/h℃]）
+                            X[L+5] = A*P[3]  # P1 （1項目の1ステップ後の応答係数、二等辺三角波励振[kcal/h℃]）
+                            X[L+6] = A*P[4]  # P1R （1項目の1ステップ後の応答係数、右側直角三角波励振[kcal/h℃]）
+                            X[L+7] = P[5]    # R1 （1項目の公比[-]）
+                            X[L+8] = A*P[6]  # P2 （2項目の1ステップ後の応答係数、二等辺三角波励振[kcal/h℃]）
+                            X[L+9] = A*P[7]  # P2R （2項目の1ステップ後の応答係数、右側直角三角波励振[kcal/h℃]）
+                            X[L+10] = P[8]   # R2 （2項目の公比[-]）
 
-                        L=L+LSZSPC[2]
+                        X[L+11] = 0.0  # Q1 （前ステップまでの励振による現ステップでの1項目の貫流負荷[kcal/h]）
+                        X[L+12] = 0.0  # Q2 （前ステップまでの励振による現ステップでの2項目の貫流負荷[kcal/h]）
+                        X[L+13] = 0.0  # Q1' （予熱時一定除去熱量計算用）
+                        X[L+14] = 0.0  # Q2' （予熱時一定除去熱量計算用） 
+                        X[L+15] = W1   # 隣室条件
+
+                        L += LSZSPC[2]
 
                 elif KEY_SPAC == "GWAL":
                     
@@ -2009,8 +2021,9 @@ def pyHASP(inputfile_name, climatefile_name, wndwtabl_filename, wcontabl_filenam
                 else:
 
                     # ***          2.20. SPACE WEIGHTING FACTOR ****************************
+                    # KEY_SPAC が "    ", ":   ", "CFLW"のとき
                                                     
-                    # print(f"室名： {QSP}")
+                    mprint(f"2.20. SPACE WEIGHTING FACTOR 室名", QSP)
 
                     M[L] = 5
                     X[LL+63] = ARM
@@ -2034,20 +2047,31 @@ def pyHASP(inputfile_name, climatefile_name, wndwtabl_filename, wcontabl_filenam
                     for I in range(1,6):
                         X[LL+I+24] = P[I]
 
-                    L2=LL+LSZSPC[0]
+                    L2 = LL + LSZSPC[0]
 
                     flag_RTVADJ = True
                     while flag_RTVADJ:
 
+                        # IWALデータを検索
                         (L2, JZ, ISTAT2) = RTVADJ(LSZSPC, L2, M)
 
+                        # ISTAT2 =  1 : IWAL(adjacent)が見つかった
+                        # ISTAT2 = -2 : adjacent wallにも関わらず隣接SPACが見つからない
                         if (ISTAT2 == 1) or (ISTAT2 == -2):
+
                             for J in range(0,10):
                                 G[J] = HC*ARM/(HC*ARM+FR*GRM[J])*X[int(L2)+16+J]
+
                             P = CPARAM(2,G)
-                            for J in range(1,9):
-                                X[int(L2)+I+2]=P[I]
-                            L2 = L2 + LSZSPC(M[int(L2)])
+
+                            for I in range(1,9):
+                                X[int(L2)+I+2] = P[I]
+
+                            mprint("2.20. SPACE WEIGHTING FACTOR L2",L2)
+                            mprint("2.20. SPACE WEIGHTING FACTOR M[int(L2)]",M[int(L2)])
+
+                            L2 += LSZSPC[int(M[int(L2)])]
+
                         else:
                             flag_RTVADJ = False
 
@@ -2058,40 +2082,52 @@ def pyHASP(inputfile_name, climatefile_name, wndwtabl_filename, wcontabl_filenam
                             
                     M[LL+101] = IZ
 
-                    if KEY == ":   ":  # スペースの結合(グループの継続)が指示された場合
+                    if KEY_SPAC == ":   ":  # スペースの結合(グループの継続)が指示された場合
+                        mprint("2.20. SPACE WEIGHTING FACTOR スペースの結合あり","")
                         IZ = IZ+1
+                        mprint("2.20. SPACE WEIGHTING FACTOR スペースの結合 IZ",IZ)
                         if IZ > NAZ:
                             raise Exception("想定外のエラーが発生しました")
 
-                    elif KEY == "CFLW":  # 空気移動量が指定された場合(現在のグループのうち最後のスペースのはず)
+                    elif KEY_SPAC == "CFLW":  # 空気移動量が指定された場合(現在のグループのうち最後のスペースのはず)
                         raise Exception('まだ作成していません')
 
-                    else:  
+                    elif len(NUB[line_ex]) == 1:  # 空白行であった場合
+
+                        # display_XMQ_matrix(X,M,2000,3000)
+                        if IZ >= 2:  # スペースの結合がある場合
                         
-                        if (IZ >= 2):
+                            mprint("2.20. SPACE WEIGHTING FACTOR IZ",IZ)
+                            mprint("2.20. SPACE WEIGHTING FACTOR LCGB",LCGB)
+
                             # IWAL(adjacent)の参照error check
-                            L1=LCGB
+                            # LCGB: 現在のグループの先頭スペースのSPACデータポインタ(L)
+                            L1 = LCGB
+                            
                             for I in range(1,IZ+1):
-                                L2=L1+LSZSPC[0]
+
+                                L2 = L1 + LSZSPC[0]
 
                                 flag_RTVADJ_2 = True
                                 while flag_RTVADJ_2:
                                     (L2, JZ, ISTAT2) = RTVADJ(LSZSPC, L2, M)
                                     if ISTAT2 == -2:
-                                        raise Exception("隣室条件が不正です")
+                                        raise Exception("隣室条件が不正です(-2)")
                                     elif ISTAT2 == -1:
-                                        raise Exception("隣室条件が不正です")
-                                    elif (ISTAT2==0) and (I != IZ):
-                                        L1=M[int(L1)]
+                                        raise Exception("隣室条件が不正です(-1)")
+                                    elif (ISTAT2 == 0) and (I != IZ):
+                                        L1 = int(M[int(L1)])
                                         flag_RTVADJ_2 = False
-                                    elif (ISTAT2==1):
-                                        L2=L2+LSZSPC(int(M[L2]))
+                                    elif (ISTAT2 == 1):
+                                        L2 += int(LSZSPC[int(M[L2])])
+                                    else:
+                                        flag_RTVADJ_2 = False
 
                         # 次のグループのためのセット
-                        IZ = 1
-                        LCGB=L+1
+                        IZ   = 1
+                        LCGB = L+1
 
-                    L=L+1
+                    L += 1
                     # print(f"L: {L}")
                     # print(f"LCGB: {LCGB}")
 
@@ -2221,7 +2257,7 @@ def pyHASP(inputfile_name, climatefile_name, wndwtabl_filename, wcontabl_filenam
         IDWK[2]  = int(ID[1,2])   # 計算日の月
         IDWK[3]  = int(ID[1,3])   # 計算日の日
 
-        # print(f"計算日： {int(IDWK[1])}年 {int(IDWK[2])}月 {int(IDWK[3])}日")
+        mprint("計算日", f"{int(IDWK[1])}年 {int(IDWK[2])}月 {int(IDWK[3])}日")
 
         # 気象データをRewindした回数（Rewind前）
         ICYCLO = ICYCL
@@ -2473,11 +2509,10 @@ def pyHASP(inputfile_name, climatefile_name, wndwtabl_filename, wcontabl_filenam
         # SPACのポインタ
         LC = int(M[106])
 
-        # print(f"計算対象SPAC: {NAME(M[LC+1])}, L = {LC}")
+        mprint(f"計算対象SPAC: {NAME(M[LC+1])}, L = {LC}", "")
 
         LCGB = LC
-        LCO  = LC  # 追加（元のfortranにはない）
-
+        # LCO  = LC  # 追加（元のfortranにはない）
         KSPAC = 0
         
         # スペースループのフラグ
@@ -2513,34 +2548,34 @@ def pyHASP(inputfile_name, climatefile_name, wndwtabl_filename, wcontabl_filenam
                     # #  ISEAS[1]:本日の季節(=1:夏期,2:冬期,3:中間期), ISEAS[2]:明日の季節
                     II = min(2,ISEAS[1])
 
-                    # mprint("EXTRC2 NHR: ", NHR)                 # 1日のステップ数 (24で固定)
-                    # mprint("EXTRC2 MCNTL[1]: ", MCNTL[1])       # 計算モード =1:ピーク計算モード、=0:シミュレーションモード
-                    # mprint("EXTRC2 ISEAS[1]: ", ISEAS[1])       # 本日の季節 =1:夏期、=2:冬期、=3:中間期
-                    # mprint("EXTRC2 NAZ: ",NAZ)                  # 1グループあたりの最大スペース数（20で固定）
-                    # mprint("EXTRC2 IOPTG: ",IOPTG)              # 空調運転状態フラグ= 0:停止中、=1:運転中、=2:起動、=3:停止 <EXTRC1>
-                    # mprint("EXTRC2 NZ: ",NZ)                    # グループに属するスペース数
-                    # mprint("EXTRC2 IOPVG: ",IOPVG)              # 外気導入状態フラグ、=0:カット中、=1:導入中、=2:導入開始、=3:導入停止 <EXTRC1>
-                    # mprint("EXTRC2 SMRT1: ",SMRT1)              # 面積を持たない部位からの冷房負荷 <EXTRC1>
-                    # mprint("EXTRC2 SMRT2: ",SMRT2)              # INFLの吸熱応答係数 <EXTRC1>
-                    # mprint("EXTRC2 VOAG: ",VOAG)                # 導入時の外気量 <EXTRC1>
-                    # mprint("EXTRC2 LCG: ",LCG)                  # XMQ配列のSPACデータへのポインタ（L）<EXTRC1>
-                    # mprint("EXTRC2 CLDG: ",CLDG)                # 冷房負荷 <EXTRC1>
-                    # mprint("EXTRC2 NWD: ",NWD)                  # WDの整合寸法（=7）
-                    # mprint("EXTRC2 WD: ",WD)                    # 外界気象（基準温湿度からの偏差ではない）
-                    # mprint("EXTRC2 REFWD: ",REFWD)              # 基準温湿度
-                    # mprint("EXTRC2 P0: ",P0)                    # 瞬時蓄熱応答係数（吸熱される側が正）第2添字 =0:二等辺三角、=1:右側直角二等辺三角 <EXTRC1>
-                    # mprint("EXTRC2 M[ int(LOPC+165+II) ]", M[ int(LOPC+165+II) ])   # 予熱時間（ステップ）
-                    # mprint("EXTRC2 VFLOW: ",VFLOW)              # 第1添字目のスペースから第2添字目のスペースへの流入、風量（体積流量、0以上、対角項は0とする）
-                    # mprint("EXTRC2 EXCAP: ",EXCAP)              # 各スペースの装置容量（冷却、0以上） <EXTRC1>
-                    # mprint("EXTRC2 SPCAP: ",SPCAP)              # 各スペースの装置容量（加熱、0以上） <EXTRC1>
-                    # mprint("EXTRC2 RMMX: ",RMMX)                # 各スペースの設定温湿度上限 <EXTRC1>
-                    # mprint("EXTRC2 RMMN: ",RMMN)                # 各スペースの設定温湿度下限 <EXTRC1>
-                    # mprint("EXTRC2 NUOT+KSPAC-NZ: ", NUOT+KSPAC-NZ)   # テキスト出力ファイルの装置番号（最初の装置番号）
-                    # mprint("EXTRC2 IDWK: ", IDWK)               # 年・月・日
-                    # mprint("EXTRC2 MDW[1]: ",MDW[1])            # MDW(1)  :本日の曜日(=1:月,2:火,..,7:日,8:祝,9:特)
-                    # mprint("EXTRC2 MODE: ", MODE)               # =1:助走、=2:本計算、=3:最終日
-                    # mprint("EXTRC2 MCNTL[2]: ", MCNTL[2])       # 出力モード =0:簡易出力(1h1行)、=1:詳細出力(1h2行)
-                    # mprint("EXTRC2 LSZSPC: ", LSZSPC)           # XMQ配列のうち、(0):SPAC, (1):OWAL, (2):IWAL, (3):WNDW, (4):INFL の変数の数
+                    mprint("EXTRC2 NHR: ", NHR)                 # 1日のステップ数 (24で固定)
+                    mprint("EXTRC2 MCNTL[1]: ", MCNTL[1])       # 計算モード =1:ピーク計算モード、=0:シミュレーションモード
+                    mprint("EXTRC2 ISEAS[1]: ", ISEAS[1])       # 本日の季節 =1:夏期、=2:冬期、=3:中間期
+                    mprint("EXTRC2 NAZ: ",NAZ)                  # 1グループあたりの最大スペース数（20で固定）
+                    mprint("EXTRC2 IOPTG: ",IOPTG)              # 空調運転状態フラグ= 0:停止中、=1:運転中、=2:起動、=3:停止 <EXTRC1>
+                    mprint("EXTRC2 NZ: ",NZ)                    # グループに属するスペース数
+                    mprint("EXTRC2 IOPVG: ",IOPVG)              # 外気導入状態フラグ、=0:カット中、=1:導入中、=2:導入開始、=3:導入停止 <EXTRC1>
+                    mprint("EXTRC2 SMRT1: ",SMRT1)              # 面積を持たない部位からの冷房負荷 <EXTRC1>
+                    mprint("EXTRC2 SMRT2: ",SMRT2)              # INFLの吸熱応答係数 <EXTRC1>
+                    mprint("EXTRC2 VOAG: ",VOAG)                # 導入時の外気量 <EXTRC1>
+                    mprint("EXTRC2 LCG: ",LCG)                  # XMQ配列のSPACデータへのポインタ（L）<EXTRC1>
+                    mprint("EXTRC2 CLDG: ",CLDG)                # 冷房負荷 <EXTRC1>
+                    mprint("EXTRC2 NWD: ",NWD)                  # WDの整合寸法（=7）
+                    mprint("EXTRC2 WD: ",WD)                    # 外界気象（基準温湿度からの偏差ではない）
+                    mprint("EXTRC2 REFWD: ",REFWD)              # 基準温湿度
+                    mprint("EXTRC2 P0: ",P0)                    # 瞬時蓄熱応答係数（吸熱される側が正）第2添字 =0:二等辺三角、=1:右側直角二等辺三角 <EXTRC1>
+                    mprint("EXTRC2 M[ int(LOPC+165+II) ]", M[ int(LOPC+165+II) ])   # 予熱時間（ステップ）
+                    mprint("EXTRC2 VFLOW: ",VFLOW)              # 第1添字目のスペースから第2添字目のスペースへの流入、風量（体積流量、0以上、対角項は0とする）
+                    mprint("EXTRC2 EXCAP: ",EXCAP)              # 各スペースの装置容量（冷却、0以上） <EXTRC1>
+                    mprint("EXTRC2 SPCAP: ",SPCAP)              # 各スペースの装置容量（加熱、0以上） <EXTRC1>
+                    mprint("EXTRC2 RMMX: ",RMMX)                # 各スペースの設定温湿度上限 <EXTRC1>
+                    mprint("EXTRC2 RMMN: ",RMMN)                # 各スペースの設定温湿度下限 <EXTRC1>
+                    mprint("EXTRC2 NUOT+KSPAC-NZ: ", NUOT+KSPAC-NZ)   # テキスト出力ファイルの装置番号（最初の装置番号）
+                    mprint("EXTRC2 IDWK: ", IDWK)               # 年・月・日
+                    mprint("EXTRC2 MDW[1]: ",MDW[1])            # MDW(1)  :本日の曜日(=1:月,2:火,..,7:日,8:祝,9:特)
+                    mprint("EXTRC2 MODE: ", MODE)               # =1:助走、=2:本計算、=3:最終日
+                    mprint("EXTRC2 MCNTL[2]: ", MCNTL[2])       # 出力モード =0:簡易出力(1h1行)、=1:詳細出力(1h2行)
+                    mprint("EXTRC2 LSZSPC: ", LSZSPC)           # XMQ配列のうち、(0):SPAC, (1):OWAL, (2):IWAL, (3):WNDW, (4):INFL の変数の数
 
                     (X,M,result) = EXTRC2(NHR,MCNTL[1],ISEAS[1],NAZ,IOPTG,NZ,IOPVG,SMRT1,SMRT2,VOAG,LCG,CLDG,NWD,WD,REFWD,
                             P0,M[int(LOPC+165+II)],VFLOW,EXCAP,SPCAP,RMMX,RMMN,10,
@@ -2583,6 +2618,8 @@ def pyHASP(inputfile_name, climatefile_name, wndwtabl_filename, wcontabl_filenam
             # ***          3.7. HOURLY LOOP START **********************************
 
             for J in range(1,25):
+
+                mprint("3.7. HOURLY LOOP START  J", J)
                 
                 ACC1 = 0.0  # 顕熱負荷・対流成分（そのまま冷房負荷に）
                 ACC2 = 0.0  # 顕熱負荷・放射成分（室の重み係数でたたみ込み）
@@ -3010,7 +3047,7 @@ def pyHASP(inputfile_name, climatefile_name, wndwtabl_filename, wcontabl_filenam
     #-----------------------------------------------------------------------
 
     # XMQデータの出力
-    # display_XMQ_matrix(X,M,2000,3000)
+    display_XMQ_matrix(X,M,2000,3000)
 
     # 計算結果の出力
     cols = ["YEAR","MO","DY","YB","HR","IREP",

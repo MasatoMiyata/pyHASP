@@ -1,7 +1,8 @@
 import numpy as np
 from RTVADJ import RTVADJ
+from mprint import mprint
 
-def COEFFS(LMODE,NZ,IZ,RMMX,RMMN,GRADL,CRHO,VFLOW,FIXEDL,EXCAP1,SPCAP1,ISL,IREP,LSTRT,LSZSPC,NA,X,M):
+def COEFFS(LMODE,NZ,IZ,RMMX,RMMN,GRADL,CRHO,VFLOW,FIXEDL,EXCAP1,SPCAP1,ISL,IREP,LSTRT,LSZSPC,NA,AA,X,M):
     """シミュレーション計算のための方程式を作成する
 
     # 引数
@@ -37,8 +38,6 @@ def COEFFS(LMODE,NZ,IZ,RMMX,RMMN,GRADL,CRHO,VFLOW,FIXEDL,EXCAP1,SPCAP1,ISL,IREP,
     INTEGER     ISTAT
     """
 
-    AA = np.zeros([NA+1, NZ+1])
-
     if (NZ > NA) or (IZ > NZ): 
         raise Exception("想定外エラー")
     if (GRADL < 0): 
@@ -54,10 +53,10 @@ def COEFFS(LMODE,NZ,IZ,RMMX,RMMN,GRADL,CRHO,VFLOW,FIXEDL,EXCAP1,SPCAP1,ISL,IREP,
     if ( LMODE == 1 ) or ( LMODE == -1 ):
 
         for J in range(1, NZ+1):
-            if ( J == IZ ):
-                AA[IZ,J] = 1.0
+            if ( J == int(IZ) ):
+                AA[int(IZ),J] = 1.0
             else:
-                AA[IZ,J] = 0.0
+                AA[int(IZ),J] = 0.0
 
         if ( LMODE == 1 ):
             BB = RMMX
@@ -69,26 +68,47 @@ def COEFFS(LMODE,NZ,IZ,RMMX,RMMN,GRADL,CRHO,VFLOW,FIXEDL,EXCAP1,SPCAP1,ISL,IREP,
         for J in range(1, NZ+1):
 
             if ( J == IZ ):
-                AA[IZ,J] = GRADL
+                AA[int(IZ),J] = GRADL
             else:
                 if (VFLOW[J] < 0): 
                     raise Exception("想定外エラー")
                 
-                AA[IZ,J] = -CRHO*VFLOW[J]
+                AA[int(IZ),int(J)] = -CRHO*VFLOW[J]
 
-        if ( ISL == 1 ):
+        if ( ISL == 1 ): # 顕熱計算
             
             L = int(LSTRT)
-            # print(f"COEFFS L: {L}")
-
+        
             flag_RTVADJ = True
             while flag_RTVADJ:
+
+                # L: IWALのポインタ
+                # JZ: 隣接する内壁のポインタ
+                # ISTAT: =1 IWAL(adjacent)が見つかった
                 (L,JZ,ISTAT) = RTVADJ(LSZSPC,L,M)
+                
                 if ISTAT != 1:
+
                     flag_RTVADJ = False
+                
                 else:
-                    AA[IZ,JZ] = AA[IZ,JZ] - X[L+3+IREP]
-                    L = L + int(LSZSPC[int(M[L])])
+
+                    # ISTAT = 1: IWAL(adjacent)が見つかった場合
+                    # X(L+3+0): 貫流応答係数（顕熱）P0 （瞬時応答係数、二等辺三角波励振[kcal/h℃]）
+                    # X(L+4+1): 貫流応答係数（顕熱）P0R （瞬時応答係数、右側直角三角波励振[kcal/h℃]）
+
+                    AA[int(IZ),int(JZ)] = AA[int(IZ),int(JZ)] - X[int(L+3+IREP)]
+
+                    # mprint("COEFFS AA", AA)
+                    # mprint("COEFFS NZ", NZ)
+                    # mprint("COEFFS IZ", IZ)
+
+                    L += int(LSZSPC[int(M[L])])
+
+        mprint("COEFFS LMODE", LMODE)
+        mprint("COEFFS FIXEDL", FIXEDL)
+        mprint("COEFFS EXCAP1", EXCAP1)
+        mprint("COEFFS SPCAP1", SPCAP1)
 
         if LMODE == 2:
             BB = FIXEDL - EXCAP1
