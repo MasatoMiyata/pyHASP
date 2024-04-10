@@ -1,7 +1,7 @@
 import subprocess
 from pyHASP import pyHASP
 
-folder = ".\\test\\test_021\\"
+folder = ".\\test\\test_022\\"
 
 
 ## setting

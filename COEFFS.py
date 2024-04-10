@@ -109,6 +109,9 @@ def COEFFS(LMODE,NZ,IZ,RMMX,RMMN,GRADL,CRHO,VFLOW,FIXEDL,EXCAP1,SPCAP1,ISL,IREP,
         mprint("COEFFS FIXEDL", FIXEDL)
         mprint("COEFFS EXCAP1", EXCAP1)
         mprint("COEFFS SPCAP1", SPCAP1)
+        mprint("COEFFS GRADL", GRADL)
+        mprint("COEFFS CRHO", CRHO)
+        mprint("COEFFS VFLOW", VFLOW)
 
         if LMODE == 2:
             BB = FIXEDL - EXCAP1

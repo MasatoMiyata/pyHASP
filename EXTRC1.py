@@ -137,16 +137,17 @@ def EXTRC1(JHR,NHR,LOPC,LC,NAZ,ISEAS,KSCH,IOPTWK,IOPTG,IOPVG,SMRT1,SMRT2,LCG,VOA
 
         L1 = int( LC+101+(I-1)*5 )
 
+        # CFLWスケジュールオプション（=2:CFLW入力どおりあるいは空調on･off指定）
         if M[L1+2] == 2:
             if (IOPTWK == 1) or (IOPTWK == 3):
                 RFLW = X[L1+4]   # 空調on時の割合を使用
             else:
-                RFLW = X[L1+5]   # 空調off時の割合を使用            
+                RFLW = X[L1+5]   # 空調off時の割合を使用         
         elif ( M[L1+2] == 1 ):  # DSCH使用
             RFLW = X[ int( M[L1+3]+(KSCH-1)*24+JHR ) ]
         
         if (M[L1+2] >= 1) and (I != IZ):   # M(L1+2)=0は未定義の場合
-            VFLOW[I,IZ,JHR] = RFLW*X[L1+1]
+            VFLOW[I,IZ,JHR] = RFLW * X[L1+1]
         else:
             VFLOW[I,IZ,JHR] = 0.0
 

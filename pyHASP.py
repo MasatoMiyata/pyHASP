@@ -180,8 +180,8 @@ def pyHASP(inputfile_name, climatefile_name, wndwtabl_filename, wcontabl_filenam
     # IOPTWK                # 空調運転状態フラグ、=0:停止中、=1:運転中、=2:起動、=3:停止
 
     WINCHR = np.zeros((3,2))        # 窓の物性値（第1添字=0:K, 1:SCC, 2:SCR、第2添字=0:ブラインド開時、1:閉時）
-    MFLWK = np.zeros(2)             # CFLWデータセット用Work array
-    XFLWK = np.zeros(2)             # CFLWデータセット用Work array
+    MFLWK = np.zeros(2+1)           # CFLWデータセット用Work array
+    XFLWK = np.zeros(2+1)           # CFLWデータセット用Work array
     LSZSPC = np.zeros(5)            # XMQ配列のうち、(0):SPAC, (1):OWAL, (2):IWAL,(3):WNDW, (4):INFL の変数の数
     IWFLG = np.zeros(4+1)           # 気象データヘッダ行のデータ                add 20200403(T.Nagai)
                                     # (1) =0:ヘッダ行がない、=1:ヘッダ行がある
@@ -2090,11 +2090,121 @@ def pyHASP(inputfile_name, climatefile_name, wndwtabl_filename, wcontabl_filenam
                             raise Exception("想定外のエラーが発生しました")
 
                     elif KEY_SPAC == "CFLW":  # 空気移動量が指定された場合(現在のグループのうち最後のスペースのはず)
-                        raise Exception('まだ作成していません')
+
+                        CFLW_flag = True
+                        line_num = 0
+
+                        while CFLW_flag:
+
+                            if NUB[line_ex+line_num][9:13] == "    ":    # DSCH名を引用していない
+
+                                MFLWK[1] = 2
+                                
+                                # 空調運転時の風量割合[%]
+                                if NUB[line_ex+line_num][14:17] == "   ":
+                                    XFLWK[1] = 1
+                                else:
+                                    XFLWK[1] = float(NUB[line_ex+line_num][14:17])/100
+
+                                # 空調停止時の風量割合[%]
+                                if NUB[line_ex+line_num][17:20] == "   ":
+                                    XFLWK[2] = 1
+                                else:
+                                    XFLWK[2] = float(NUB[line_ex+line_num][17:20])/100
+
+                            else:
+
+                                MFLWK[1] = 1
+
+                                # DSCHの検索
+                                (NNAM,LC,LD) = RETRIV(104,NUB[line_ex+line_num][9:13],M)
+
+                                if LD != 0:
+                                    raise Exception("LDが0以外になります")
+                                else:
+                                    # DSCH名
+                                    MFLWK[2] = LC+1
+
+                            # V1: 単位隣接境界長さ[m]あたりの風量[m3/mh]
+                            if NUB[line_ex+line_num][20:26] == "      ":
+                                V1 = 150
+                            else:
+                                V1 = float(NUB[line_ex+line_num][20:26])
+
+                            # 何パターン入力されているか。
+                            II_max = 1
+                            if len(NUB[line_ex+line_num]) > 49 and NUB[line_ex+line_num][45:49] != "    ":
+                                II_max += 1
+                            if len(NUB[line_ex+line_num]) > 67 and NUB[line_ex+line_num][63:67] != "    ":
+                                II_max += 1
+
+                            for II in range(1, II_max+1):
+
+                                # 流出SPAC
+                                (NNAM,LC1,LD) = RETRIV(LCGB,NUB[line_ex+line_num][18*II+10-1 : 18*II+13],M)
+                                if LD != LC1:
+                                    print("LD!=LC1となります")
+                                    break
+
+                                # 流入SPAC
+                                (NNAM,LC2,LD) = RETRIV(LCGB,NUB[line_ex+line_num][18*II+14-1 : 18*II+17],M)
+                                if LD != LC2:
+                                    print("LD!=LC1となります")
+                                    break
+                                
+                                # 流入方向（=0 双方向、=1 順方向<流出から流入>、=2 逆方向<流入から流出>）
+                                if NUB[line_ex+line_num][18*II+18-1:18*II+20] == "   ":
+                                    I = 0
+                                else:
+                                    I = float(NUB[line_ex+line_num][18*II+18-1:18*II+20])
+
+                                # 境界長さ[m]
+                                if NUB[line_ex+line_num][18*II+21-1:18*II+26] == "      ":
+                                    V2 = 0
+                                else:
+                                    V2 = float(NUB[line_ex+line_num][18*II+21-1:18*II+26])
+
+                                if (I == 0) or (I == 1):
+
+                                    # LC1 流出SPACのポインタ (+101は 所属グループのうち何番目のスペースか)
+                                    # LC2 流入SPACのポインタ (+101は 所属グループのうち何番目のスペースか)
+                                    # X(LC1+102)	所属グループの1番目のスペースからこのスペースへの流入する風量[m3/h]
+                                    # M(LC1+103)	CFLWスケジュールオプション（=2:CFLW入力どおりあるいはon･off指定、1:DSCH使用、0:未定義）
+                                    # M(LC1+104)	CFLW用DSCHポインタ（L+1、M(L+103)=1のときのみ定義・引用）
+                                    # X(LC1+105)	CFLW on･off指定用on時割合（0～1）‥M(L+103)=2のときのみ定義・引用
+                                    # X(LC1+106)	CFLW on･off指定用off時割合（0～1）‥M(L+103)=2のときのみ定義・引用
+                                    # 以下繰り返し、20番目のグループ用の X(LC+197)～X(LC+201)まで。
+
+                                    L1 = int( LC2+101 + 5*(M[int(LC1+101)]-1) )
+                                    X[L1+1] = V1*V2       # 流入SPACへ流入する風量[m3/h]
+                                    M[L1+2] = MFLWK[1]    # CFLWスケジュールオプション（=2:CFLW入力どおりあるいはon･off指定、1:DSCH使用、0:未定義）
+
+                                    if MFLWK[1] == 2:
+                                        X[L1+4] = XFLWK[1]   # 空調運転時の風量割合[%]
+                                        X[L1+5] = XFLWK[2]   # 空調停止時の風量割合[%]
+                                    else:
+                                        M[L1+3] = MFLWK[2]   # DSCH名
+                            
+                                if (I == 0) or (I == 2):   
+
+                                    # LC1とLC2を反転
+                                    L1 = int( LC1+101 + 5*(M[int(LC2+101)]-1) )
+                                    X[L1+1] = V1*V2       # 流入SPACへ流入する風量[m3/h]
+                                    M[L1+2] = MFLWK[1]    # CFLWスケジュールオプション（=2:CFLW入力どおりあるいはon･off指定、1:DSCH使用、0:未定義）
+
+                                    if MFLWK[1] == 2:
+                                        X[L1+4] = XFLWK[1]   # 空調運転時の風量割合[%]
+                                        X[L1+5] = XFLWK[2]   # 空調停止時の風量割合[%]
+                                    else:
+                                        M[L1+3] = MFLWK[2]   # DSCH名
+                            
+                            line_num += 1
+                            if NUB[line_ex+line_num][9:13] != "+    ":
+                                CFLW_flag = False
+
 
                     elif len(NUB[line_ex]) == 1:  # 空白行であった場合
 
-                        # display_XMQ_matrix(X,M,2000,3000)
                         if IZ >= 2:  # スペースの結合がある場合
                         
                             mprint("2.20. SPACE WEIGHTING FACTOR IZ",IZ)
@@ -3069,7 +3179,7 @@ def pyHASP(inputfile_name, climatefile_name, wndwtabl_filename, wcontabl_filenam
 
 if __name__ == '__main__':
 
-    folder = ".\\test\\test_021\\"
+    folder = ".\\test\\test_022\\"
 
     inputfile_name    = folder + "inputdata.txt"
     climatefile_name  = folder + "36300110_SI.hasH"
