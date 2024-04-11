@@ -303,14 +303,14 @@ def pyHASP(inputfile_name, climatefile_name, wndwtabl_filename, wcontabl_filenam
                             GLD[JJ,J,I,II]  = GLD[JJ,J,I,II]  * 0.86
 
     # 検証用
-    for II in [1,2,3,4,5,6]:  # 補正の種類
-        print(f"種類 {II}")
-        print( GLD[:,0,0,II] )
+    # for II in [1,2,3,4,5,6]:  # 補正の種類
+    #     print(f"種類 {II}")
+    #     print( GLD[:,0,0,II] )
                             
-        for I in range(1, L1+1):   # 種類
-            for J in range(0, NBLD+1):   # ブラインドの有無
-                print(f"ブラインドの有無 {J}, 種類 {I}, 補正の種類{II}")
-                print(GLD[:,J,I,II])
+    #     for I in range(1, L1+1):   # 種類
+    #         for J in range(0, NBLD+1):   # ブラインドの有無
+    #             print(f"ブラインドの有無 {J}, 種類 {I}, 補正の種類{II}")
+    #             print(GLD[:,J,I,II])
 
         
 
@@ -1491,7 +1491,7 @@ def pyHASP(inputfile_name, climatefile_name, wndwtabl_filename, wcontabl_filenam
                             IAP=2
                         else:
                             raise Exception("WNDWの窓種グループが不正です")
-                        
+
                     M1 = NUB[line_ex][14:17]  # 品種番号
                     if NUB[line_ex][17:20] == "   ":  # ブラインド番号
                         M2 = 0
@@ -1584,26 +1584,19 @@ def pyHASP(inputfile_name, climatefile_name, wndwtabl_filename, wcontabl_filenam
                                         GLD[:,M3,int(MGT[int(M1),ITB]/10),I1+2] # サンプリング値
                                     )
                                 
-                                print('--------------------------------------')
-                                print(f"IAP: {IAP}")
-                                print(f"M3: {M3}")
-                                print(f"W1: {W1}")
-                                print(f"W2: {W2}")
-                                print(f"NVS[I1]: {NVS[I1]}")
-                                print(f"GLD[:,0,0,I1]: {GLD[:,0,0,I1]}")
-                                print(f"int(MGT[int(M1),ITB]/10): {int(MGT[int(M1),ITB]/10)}")
-                                print(f"GLD[:,M3,int(MGT[int(M1),ITB]/10),I1]: {GLD[:,M3,int(MGT[int(M1),ITB]/10),I1]}")
-                                print(f"NVS[I1+2]: {NVS[I1+2]}")
-                                print(f"GLD[:,0,0,I1+2]: {GLD[:,0,0,I1+2]}")
-                                print(f"GLD[:,M3,int(MGT[int(M1),ITB]/10),I1+2]: {GLD[:,M3,int(MGT[int(M1),ITB]/10),I1+2]}")
+                                mprint("DLTGL IAP", IAP)
+                                mprint("DLTGL M3", M3)
+                                mprint("DLTGL W1", W1)
+                                mprint("DLTGL W2", W2)
+                                mprint("DLTGL NVS[I1]", NVS[I1])
+                                mprint("DLTGL GLD[:,0,0,I1]", GLD[:,0,0,I1])
+                                mprint("DLTGL int(MGT[int(M1),ITB]/10)", int(MGT[int(M1),ITB]/10))
+                                mprint("DLTGL GLD[:,M3,int(MGT[int(M1),ITB]/10),I1]", GLD[:,M3,int(MGT[int(M1),ITB]/10),I1])
+                                mprint("DLTGL NVS[I1+2]", NVS[I1+2])
+                                mprint("DLTGL GLD[:,0,0,I1+2]", GLD[:,0,0,I1+2])
+                                mprint("DLTGL GLD[:,M3,int(MGT[int(M1),ITB]/10),I1+2]", GLD[:,M3,int(MGT[int(M1),ITB]/10),I1+2])
 
-                        # GLWK[1,1] =  -3.96000
-                        # GLWK[1,2] = -62.43600
-                        # GLWK[2,1] =  -8.41500
-                        # GLWK[2,2] = -77.09900
-
-                        print("=-------------------^")
-                        print(GLWK)
+                        mprint("GLWK", GLWK)
 
                         if (IAP == 1):  # AFW
                             X[L+41] = GLWK[1,1] * X[L+45]
@@ -2900,12 +2893,11 @@ def pyHASP(inputfile_name, climatefile_name, wndwtabl_filename, wcontabl_filenam
                                 else:   # DSCHを使用
                                     WINCHR[I,II] = X[ int(M[L1+1]+(KSCH[1]-1)*24+J) ] * W
 
-                        if (M[L+38] >= 1) and ( (IOPTWK==1)or(IOPTWK==3) ):  # 稼動中あるいは停止時
+                        if (X[L+38] >= 1) and ( (IOPTWK==1)or(IOPTWK==3) ):  # 稼動中あるいは停止時
                             for II in [0,1]:        # ブラインド開閉ループ
                                 for I in [0,1,2]:   # K,SCC,SCRループ
                                     WINCHR[I,II] = WINCHR[I,II] + X[int(L+39+II*3+I)]
                     
-
                         if (X[LO+J] == 0):
 
                             # 641の処理
