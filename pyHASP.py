@@ -121,8 +121,8 @@ def pyHASP(inputfile_name, climatefile_name, wndwtabl_filename, wcontabl_filenam
     GLKR = np.zeros(MXGT)     # 長波放射成分係数kLR（内側ブラインドなし）
     # GLKRB          # 内側ブラインドのkLR
     # GLKRBO         # ブラインドの総合熱伝達率に対する放射熱伝達率の比
-    NVS = np.zeros(6+1)         # 通気量のサンプリング数（添字は「GLD」第4添字と同）
-    GLWK = np.zeros((2+1,2+1))      # Work array(第2添字=1:ΔSC, =2:ΔU,  第1添字=1:ブラインド開, =2:閉)
+    NVS  = np.zeros(6+1)         # 通気量のサンプリング数（添字は「GLD」第4添字と同）
+    GLWK = np.zeros((2+1,2+1))   # Work array(第2添字=1:ΔSC, =2:ΔU,  第1添字=1:ブラインド開, =2:閉)
 
     MCNTL = np.zeros(32+1)    # 「CNTL」カードのデータ内容(XMQ配列に相当)           rev 20200403(T.Nagai)
     MDW   = np.zeros(2+1)     # MDW(1)  :本日の曜日(=1:月,2:火,..,7:日,8:祝,9:特), MDW(2)  :明日の曜日
@@ -198,6 +198,7 @@ def pyHASP(inputfile_name, climatefile_name, wndwtabl_filename, wcontabl_filenam
             [194.,72.,-6.0],
             [227.,85.,-6.3],
             [329.,118.,-5.4] ]
+
 
     #-----------------------------------------------------------------------
     # ファイルの読み込み
@@ -311,8 +312,6 @@ def pyHASP(inputfile_name, climatefile_name, wndwtabl_filename, wcontabl_filenam
     #         for J in range(0, NBLD+1):   # ブラインドの有無
     #             print(f"ブラインドの有無 {J}, 種類 {I}, 補正の種類{II}")
     #             print(GLD[:,J,I,II])
-
-        
 
     # kLR等の読み込み
     sheets = wb.sheet_by_name("kLR")
@@ -2578,7 +2577,6 @@ def pyHASP(inputfile_name, climatefile_name, wndwtabl_filename, wcontabl_filenam
 
                 # 次のEXPSへ
                 L = int(M[L]) 
-                    
 
 
         # ***          3.5.5 OAHU PRE-PROCESS **********************************
@@ -3133,7 +3131,6 @@ def pyHASP(inputfile_name, climatefile_name, wndwtabl_filename, wcontabl_filenam
                     # mprint("EXTRC1: ISEAS[1]", ISEAS[1])
                     # mprint("EXTRC1: KSCH[1]", KSCH[1])
                     # mprint("EXTRC1: IOPTWK", IOPTWK)
-
                     # mprint("EXTRC1: IOPTG", IOPTG[1])
                     # mprint("EXTRC1: IOPVG", IOPVG[1])
                     # mprint("EXTRC1: SMRT1", SMRT1[1])
@@ -3162,7 +3159,9 @@ def pyHASP(inputfile_name, climatefile_name, wndwtabl_filename, wcontabl_filenam
     #-----------------------------------------------------------------------
 
     # XMQデータの出力
-    display_XMQ_matrix(X,M,2000,3000)
+    with open( resultfile_prefix + 'XMQ.txt', 'w') as file:
+        for i, (item1, item2) in enumerate(zip(X, M), start=1):
+            file.write(f"{i-1}: {item1}, {item2}\n")
 
     # 計算結果の出力
     cols = ["YEAR","MO","DY","YB","HR","IREP",
