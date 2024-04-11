@@ -27,9 +27,9 @@ def DLTGL(IOPGL,VV,XPULL,NVS0,VVB0,DSU0,NVS1,VVB1,DSU1):
         DSUWK[0] = DSU0[int(NVS0)]
     
     else:
-        for I in range(2,NVS0+1):
-            if (VV >= VVB0[I]):
-                DSUWK[0] = ((VV-VVB0[I-1])*DSU0(I) +(VVB0[I]-VV)*DSU0[I-1]) / (VVB0[I]-VVB0[I-1])
+        for I in range(2,int(NVS0+1)):
+            if (VV <= VVB0[I]):
+                DSUWK[0] = ((VV-VVB0[I-1])*DSU0[I] +(VVB0[I]-VV)*DSU0[I-1]) / (VVB0[I]-VVB0[I-1])
                 break
     
     # IOPGL =1:AFW、=2:PPW
