@@ -23,6 +23,7 @@ from WEOUT import WEOUT
 from EXTRC0 import EXTRC0
 from EXTRC1 import EXTRC1
 from EXTRC2 import EXTRC2
+from DLTGL import DLTGL
 
 from read_textfile import read_textfile
 from mprint import mprint
@@ -64,90 +65,76 @@ def pyHASP(inputfile_name, climatefile_name, wndwtabl_filename, wcontabl_filenam
     #-----------------------------------------------------------------------
     # 1. JOB START
     #-----------------------------------------------------------------------
+    NUOT = 20  # CSVファイル出力先装置番号
+    NUOW = 10  # 外気温・外気湿度テキスト出力先装置番号 （weath.dat）
 
-    NUB=1    # 建物データファイルの装置番号
-    NUW=11   # 気象データファイルの装置番号
-    NUO=12   # ACLD連携のためのファイルの装置番号
-    NUOT=20  # CSVファイル出力先装置番号
-    NUWN=2   # 窓データファイル装置番号
-    NUBW=3   # WCON物性値データ入力装置番号
-    NUOW=10  # 外気温・外気湿度テキスト出力先装置番号 （weath.dat）
-    NUOB=13  # BECSへの受け渡しファイル用装置番号
+    HC = 3.5
+    HR = 4.5
+    HT = HC+HR
+    FC = HC/HT
+    FR = HR/HT
+    HO = 20.0
+    DR = 0.0174533  # 度からラジアンに変換するための係数
 
-    NUDD=99  # デバッグ用（宮田追加）
+    # FURN(顕熱)による冷房負荷 GAS(0:9)
+    GAS = np.zeros(10)   
 
-    MX=30000
-    HC=3.5
-    HR=4.5
-    HT=HC+HR
-    FC=HC/HT
-    FR=HR/HT
-    HO=20.0
-    DR=0.0174533  # 度からラジアンに変換するための係数
+    # XMQ配列 X：実数, M：整数
+    MX  = 30000
+    X   = np.zeros(MX)
+    M   = np.zeros(MX)
 
-    GAS = np.zeros(10)   # FURN(顕熱)による冷房負荷 GAS(0:9)
-
-    # XMQ配列 X：実数, M：整数、Q：文字列（整数に変換）
-    X = np.zeros(MX)
-    M = np.zeros(MX)
-
-    MT = np.zeros(21)
-    TH = np.zeros(21)
-    G = np.zeros(10)  # G(0:9)
-    P = np.zeros(8+1)
-    WF = np.zeros((10,5))
-    GTR = np.zeros(10) # GTR(0:9)
-    GAD = np.zeros(10) # GAD(0:9)
-    GRM = np.zeros(10) # GRM(0:9)
-    GRL = np.zeros(10) # GRL(0:9)
-    WD = np.zeros((7+1,24+1))
-    ID = np.zeros((7+1,5+1))
-    SH = np.zeros(24+1)
+    MT   = np.zeros(21)
+    TH   = np.zeros(21)
+    G    = np.zeros(10)  # G(0:9)
+    P    = np.zeros(8+1)
+    WF   = np.zeros((10,5))
+    GTR  = np.zeros(10)  # GTR(0:9)
+    GAD  = np.zeros(10)  # GAD(0:9)
+    GRM  = np.zeros(10)  # GRM(0:9)
+    GRL  = np.zeros(10)  # GRL(0:9)
+    WD   = np.zeros((7+1,24+1))
+    ID   = np.zeros((7+1,5+1))
+    SH   = np.zeros(24+1)
     CHSA = np.zeros(24+1)
     CHCA = np.zeros(24+1)
-    WD8 = np.zeros(24+1)   # 外気飽和湿度－外気絶対湿度
-    ROH = np.zeros(3)
-    ROL = np.zeros(3)
+    WD8  = np.zeros(24+1)  # 外気飽和湿度－外気絶対湿度
+    ROH  = np.zeros(3)
+    ROL  = np.zeros(3)
 
-    MXGL=200   # MXGL    :特性値表1つあたり最大ガラス数
-    NBLD=3     # NBLD    :ブラインド色種別数
-    NTBL=4     # NTBL    :窓特性値表の数
-    MXVS=10    # MXVS    :通気量の最大サンプリング数
-    MXGT=100   # MXGT    :最大ガラス種別数
+    MXGL = 200   # MXGL    :特性値表1つあたり最大ガラス数
+    NBLD = 3     # NBLD    :ブラインド色種別数
+    NTBL = 4     # NTBL    :窓特性値表の数
+    MXVS = 10    # MXVS    :通気量の最大サンプリング数
+    MXGT = 100   # MXGT    :最大ガラス種別数
 
     # 第2引数が0のときはブラインドなし
     GLK = np.zeros((MXGL,NBLD+1,NTBL+1))   # K[kcal/m2hdeg]    (MXGL,0:NBLD,NTBL)
     GLR = np.zeros((MXGL,NBLD+1,NTBL+1))   # SCR   (MXGL,0:NBLD,NTBL)
     GLC = np.zeros((MXGL,NBLD+1,NTBL+1))   # SCC   (MXGL,0:NBLD,NTBL)
-    MGT = np.zeros((MXGL,NTBL+1))            # ガラス種別
+    MGT = np.zeros((MXGL,NTBL+1))          # ガラス種別
 
     GLD = np.zeros((MXVS+1,NBLD+1,int(MXGT/10)+1,6+1))   
-            # 第4添字
-            # =1:AFWのΔSC, =2:AFWのΔU,
-    #       # =3:PPWのΔSC(Xpull=0), =4:PPWのΔU(Xpull=0),
-    #       # =5:PPWのΔSC(Xpull=1), =6:PPWのΔU(Xpull=1)
+            # 第4添字 # =1:AFWのΔSC, =2:AFWのΔU, =3:PPWのΔSC(Xpull=0), =4:PPWのΔU(Xpull=0),
+            # =5:PPWのΔSC(Xpull=1), =6:PPWのΔU(Xpull=1)
 
     GLKR = np.zeros(MXGT)     # 長波放射成分係数kLR（内側ブラインドなし）
     # GLKRB          # 内側ブラインドのkLR
     # GLKRBO         # ブラインドの総合熱伝達率に対する放射熱伝達率の比
     NVS = np.zeros(6+1)         # 通気量のサンプリング数（添字は「GLD」第4添字と同）
-    GLWK = np.zeros((2,2))      # Work array(第2添字=1:ΔSC, =2:ΔU,  第1添字=1:ブラインド開, =2:閉)
+    GLWK = np.zeros((2+1,2+1))      # Work array(第2添字=1:ΔSC, =2:ΔU,  第1添字=1:ブラインド開, =2:閉)
 
-    MCNTL = np.zeros(32+1)   # 「CNTL」カードのデータ内容(XMQ配列に相当)           rev 20200403(T.Nagai)
+    MCNTL = np.zeros(32+1)    # 「CNTL」カードのデータ内容(XMQ配列に相当)           rev 20200403(T.Nagai)
+    MDW   = np.zeros(2+1)     # MDW(1)  :本日の曜日(=1:月,2:火,..,7:日,8:祝,9:特), MDW(2)  :明日の曜日
+    WDND  = np.zeros((7,24))  # WDND    :明日の気象データ
+    IDND  = np.zeros((7,5))   # IDND    :明日の日付データ
+    KSCH  = np.zeros(2+1)     # KSCH(1) :本日のスケジュール(=1:全日,2:半日,3:1日中0%), KSCH(2) :明日のスケジュール
+    ISEAS = np.zeros(2+1)     # ISEAS(1):本日の季節(=1:夏期,2:冬期,3:中間期), ISEAS(2):明日の季節
 
-    #  COMMON /ETC/MCNTL
-
-    MDW = np.zeros(2+1)    # MDW(1)  :本日の曜日(=1:月,2:火,..,7:日,8:祝,9:特), MDW(2)  :明日の曜日
-    WDND = np.zeros((7,24))    # WDND    :明日の気象データ
-    IDND = np.zeros((7,5))    # IDND    :明日の日付データ
-    KSCH = np.zeros(2+1)    # KSCH(1) :本日のスケジュール(=1:全日,2:半日,3:1日中0%), KSCH(2) :明日のスケジュール
-
-    ISEAS = np.zeros(2+1)    #  ISEAS(1):本日の季節(=1:夏期,2:冬期,3:中間期), ISEAS(2):明日の季節
-
-    NAZ=20   # NAZ     :1グループあたりの最大スペース数(変更の場合は関連ルーチンのPARAMETER文を全て変更する必要あり)
-    NHR=24   # NHR     :1日のステップ数(24以外不可)
-    NSL=2    # NSL     :顕熱と潜熱(2以外不可)
-    NWD=7    # NWD     :気象データの種類(7以外不可)
+    NAZ = 20   # NAZ     :1グループあたりの最大スペース数(変更の場合は関連ルーチンのPARAMETER文を全て変更する必要あり)
+    NHR = 24   # NHR     :1日のステップ数(24以外不可)
+    NSL = 2    # NSL     :顕熱と潜熱(2以外不可)
+    NWD = 7    # NWD     :気象データの種類(7以外不可)
 
     # EXTRC1 関連
     IOPTG = np.zeros([NAZ+1,NHR+1])       # 空調運転状態フラグ、=0:停止中,=1:運転中,=2:起動,=3:停止
@@ -163,52 +150,38 @@ def pyHASP(inputfile_name, climatefile_name, wndwtabl_filename, wcontabl_filenam
     SPCAP = np.zeros([NAZ+1,NSL+1])       # 各スペースの装置容量（加熱、0以上）
     RMMX  = np.zeros([NAZ+1,NSL+1])       # 各スペースの設定温湿度上限（RMMX,RMMNは基準温湿度からの偏差ではない）
     RMMN  = np.zeros([NAZ+1,NSL+1])       # 各スペースの設定温湿度下限（RMMX,RMMNは基準温湿度からの偏差ではない）
-    VFLOW = np.zeros([NAZ+1,NAZ+1,NHR+1]) # 第1添字目のスペースから第2添字目のスペースへの流入
+    VFLOW = np.zeros([NAZ+1,NAZ+1,NHR+1]) # 第1添字目のスペースから第2添字目のスペースへの流入風量（体積流量、0以上、対角項は0とする）
+
+    IDWK   = np.zeros(3+1)          # 年・月・日
+    WINCHR = np.zeros((3,2))        # 窓の物性値（第1添字=0:K, 1:SCC, 2:SCR、第2添字=0:ブラインド開時、1:閉時）
+    MFLWK  = np.zeros(2+1)          # CFLWデータセット用Work array
+    XFLWK  = np.zeros(2+1)          # CFLWデータセット用Work array
+    LSZSPC = np.zeros(5)            # XMQ配列のうち、(0):SPAC, (1):OWAL, (2):IWAL,(3):WNDW, (4):INFL の変数の数
+    IWFLG  = np.zeros(4+1)          # 気象データヘッダ行のデータ                add 20200403(T.Nagai)
+                                    # (1) =0:ヘッダ行がない、=1:ヘッダ行がある
+                                    # (2):日射・放射の単位 =0:10kJ/m2h,
+                                    #   =1:kcal/m2h, =2:kJ/m2h、
+                                    # (3) 雲量モード =0:雲量, =1:夜間放射、
+                                    # (4) 気象データのカラム数(3以上9以下)
+    RWFLG  = np.zeros(3+1)          # 気象データヘッダ行のデータ                add 20200403(T.Nagai)
+                                    # (1) 緯度[deg]（南緯の場合は負値）、
+                                    # (2) 経度[deg]（西経の場合は負値）、
+                                    # (3) 世界時と地方標準時の時差（日本の場合は9.0）
+
+    LSZSPC = [218,16,26,47,8]                                               
 
     # LOPC                  # OPCOデータへのポインタ(L)
-    # IZ                    # 当該スペースは現在のグループの何スペース目か
-
-    IDWK = np.zeros(3+1)               # 年・月・日
-
     # NZ                    # 現在のグループのスペース数
-
-                            #     風量（体積流量、0以上、対角項は0とする）
+    # IZ                    # 当該スペースは現在のグループの何スペース目か
     # ICYCL                 # 気象データをRewindした回数（Rewind後）
     # ICYCLO                # 気象データをRewindした回数（Rewind前）
     # ISTAT                 # 気象データファイルの状態 =1:通常  0:ファイル終了(IOPWE=1のとき)
     # ISTAT2                # SUBROUTINE RTVADJからの返り値
     # IOPTWK                # 空調運転状態フラグ、=0:停止中、=1:運転中、=2:起動、=3:停止
 
-    WINCHR = np.zeros((3,2))        # 窓の物性値（第1添字=0:K, 1:SCC, 2:SCR、第2添字=0:ブラインド開時、1:閉時）
-    MFLWK = np.zeros(2+1)           # CFLWデータセット用Work array
-    XFLWK = np.zeros(2+1)           # CFLWデータセット用Work array
-    LSZSPC = np.zeros(5)            # XMQ配列のうち、(0):SPAC, (1):OWAL, (2):IWAL,(3):WNDW, (4):INFL の変数の数
-    IWFLG = np.zeros(4+1)           # 気象データヘッダ行のデータ                add 20200403(T.Nagai)
-                                    # (1) =0:ヘッダ行がない、=1:ヘッダ行がある
-                                    # (2):日射・放射の単位 =0:10kJ/m2h,
-                                    #   =1:kcal/m2h, =2:kJ/m2h、
-                                    # (3) 雲量モード =0:雲量, =1:夜間放射、
-                                    # (4) 気象データのカラム数(3以上9以下)
-    RWFLG = np.zeros(3+1)              # 気象データヘッダ行のデータ                add 20200403(T.Nagai)
-                                    # (1) 緯度[deg]（南緯の場合は負値）、
-                                    # (2) 経度[deg]（西経の場合は負値）、
-                                    # (3) 世界時と地方標準時の時差
-                                    #  （日本の場合は9.0）
-
-    LSZSPC = [218,16,26,47,8]                                               
-
     # INSIDE SURFACE REFLECTANCE
     ROH = [0.7, 0.5, 0.3]
     ROL = [0.3, 0.2, 0.1]
-
-    # WINDOW GLASS DATA (Initialization)
-    # GLK = 3200*9.999
-    # GLR = 3200*9.999
-    # GLC = 3200*9.999
-    # GLD = 2640*9.999
-    # GLKR   = 102*9.999
-    # GLKRB  = 102*9.999
-    # GLKRBO = 102*9.999
 
     # WF FOR LIGHTING FIXTURE
     FL = [  [0.4438,0.0534,0.8972,0.0362,0.0000],
@@ -283,7 +256,7 @@ def pyHASP(inputfile_name, climatefile_name, wndwtabl_filename, wcontabl_filenam
             for j in range(0,NBLD):
 
                 if abs(float(row_data[3*j+2]) - 9.999) > 0.001:
-                    GLK[I1][j][II] = float(row_data[3*j+2])*0.86  # [W/m2K]から[kcal/m2hdeg]へ変換
+                    GLK[I1][j][II] = float(row_data[3*j+2]) * 0.86  # [W/m2K]から[kcal/m2hdeg]へ変換
                 else:
                     GLK[I1][j][II] = float(row_data[3*j+2])           
 
@@ -314,17 +287,32 @@ def pyHASP(inputfile_name, climatefile_name, wndwtabl_filename, wcontabl_filenam
         # 2行目
         row_data = sheets.row_values(1)
         IWK = float(row_data[0])
-        for JJ in range(1, int(NVS[II])):
+        for JJ in range(1, int(NVS[II])+1):
             GLD[JJ,0,0,II] = row_data[JJ]
 
         # 3行目以降
-        for I in range(0, L1):
-            for J in range(0, NBLD):
-                row_data = sheets.row_values(2 + NBLD*I + J)
+        for I in range(1, L1+1):   # 種類
+            for J in range(0, NBLD+1):  # NBLD = 3
+                row_data = sheets.row_values(2 + (NBLD+1)*(I-1) + J)
                 IWK = float(row_data[0])
-                for JJ in range(1, int(NVS[II])):
+                for JJ in range(1, int(NVS[II])+1):
                     GLD[JJ,J,I,II] = row_data[JJ]
-                    # 単位変換は省略
+                    # Uの単位変換
+                    if II in [2,4,6]:
+                        if abs(GLD[JJ,J,I,II] - 9.999) > 0.001:
+                            GLD[JJ,J,I,II]  = GLD[JJ,J,I,II]  * 0.86
+
+    # 検証用
+    for II in [1,2,3,4,5,6]:  # 補正の種類
+        print(f"種類 {II}")
+        print( GLD[:,0,0,II] )
+                            
+        for I in range(1, L1+1):   # 種類
+            for J in range(0, NBLD+1):   # ブラインドの有無
+                print(f"ブラインドの有無 {J}, 種類 {I}, 補正の種類{II}")
+                print(GLD[:,J,I,II])
+
+        
 
     # kLR等の読み込み
     sheets = wb.sheet_by_name("kLR")
@@ -339,7 +327,7 @@ def pyHASP(inputfile_name, climatefile_name, wndwtabl_filename, wcontabl_filenam
     # 熱伝達比率
     sheets = wb.sheet_by_name("熱伝達比率")
     row_data = sheets.row_values(1)
-    GLKRB = row_data[0]    # 内側ブラインドのkLR
+    GLKRB  = row_data[0]   # 内側ブラインドのkLR
     GLKRBO = row_data[1]   # PPWブラインドにおける放射熱伝達率／総合熱伝達率
 
 
@@ -1479,15 +1467,16 @@ def pyHASP(inputfile_name, climatefile_name, wndwtabl_filename, wcontabl_filenam
                     A = float(NUB[line_ex][41:])
                     ARM += A
 
+                    # 窓種グループ
                     if (NUB[line_ex][5:9] == "    ") or (NUB[line_ex][5:9] == "SNGL"):                    
                         ITB=1   # テーブル番号
-                        IAP=0   # IAP=0:普通,1:AFW,2:PPW
+                        IAP=0   # =0 単板ガラス
                     elif (NUB[line_ex][7:9] == "06"):
-                        ITB=2
+                        ITB=2   # テーブル番号
                     elif (NUB[line_ex][7:9] == "12"):
-                        ITB=3
+                        ITB=3   # テーブル番号
                     elif (NUB[line_ex][5:9] == "DLBT"):
-                        ITB=4
+                        ITB=4   # テーブル番号
                         IAP=0
                     elif (NUB[line_ex][5:9] == "AFWN"):
                         ITB=4
@@ -1548,78 +1537,102 @@ def pyHASP(inputfile_name, climatefile_name, wndwtabl_filename, wcontabl_filenam
                             raise Exception("WNDWの設定が不正です") 
                         X[L+46] = GLKRB
 
-                    if (IAP >= 1):  # # IAP=0:普通,1:AFW,2:PPW
+                    if (IAP >= 1):  # IAP=0:普通,1:AFW,2:PPW
                         
-                        print("省略")
+                        # 窓通気量 [m3/m2h]
+                        if NUB[line_ex][20:26] == "      ":
+                            W1 = 0
+                        else:
+                            W1 = float(NUB[line_ex][20:26])
+                            W1=W1/3.6   # [m3/m2h]から[L/m2s]への変換
 
-                        # # 窓通気量
-                        # if NUB[line_ex][20:26] == "      ":
-                        #     W1 = 0
-                        # else:
-                        #     W1 = float(NUB[line_ex][20:26])
-                        #     W1=W1/3.6   # [m3/m2h]から[L/m2s]への変換
+                        # 窓排気率 [%]
+                        if NUB[line_ex][26:30] == "   ":
+                            W2 = 0.4
+                        else:
+                            W2 = float(NUB[line_ex][26:30])
+                            W2 = W2*0.01
 
-                        # # 窓排気率
-                        # if NUB[line_ex][26:30] == "   ":
-                        #     W2 = 40
-                        # else:
-                        #     W2 = float(NUB[line_ex][26:30])
-                        #     W2 = W2*0.01
+                        for II in [1,2]:  # ΔSC,ΔU ループ
+                            for I in [1,2]:  # ブラインド開、閉 ループ
 
-                        # for II in [1,2]:  # ΔSC,ΔUループ
-                        #     for I in [1,2]:  # ブラインド開、閉ループ
-                        #         I1=(IAP-1)*2+II
-                        #         if (I == 1):
-                        #             M3=0
-                        #         else:
-                        #             M3=M2
-                        #
-                        #         GLWK[I,II] = A*DLTGL(IAP,W1,W2, \
-                        #             NVS(I1),GLD(1,0,0,I1),GLD(1,M3,MGT(M1,ITB)/10,I1),\
-                        #             NVS(I1+2),GLD(1,0,0,I1+2),GLD(1,M3,MGT(M1,ITB)/10,I1+2))
-                        #
-                        #        DO 258 II=1,2   ! ΔSC,ΔUループ
-                        #        DO 258 I=1,2    ! ブラインド開、閉ループ
-                        #         I1=(IAP-1)*2+II
-                        #         IF(I.EQ.1) THEN
-                        #          M3=0
-                        #         ELSE
-                        #          M3=M2
-                        #         END IF
-                        #         IF(ABS(GLD(1,0,0,I1)-9.999).LT.0.001) CALL ERROR(53,NERR)
-                        #         IF(ABS(GLD(1,0,0,I1+2)-9.999).LT.0.001) CALL ERROR(53,NERR)
-                        #         IF(ABS(GLD(1,M3,MGT(M1,ITB)/10,I1)-9.999).LT.0.001)
-                        #      -   CALL ERROR(53,NERR)
-                        #         IF(ABS(GLD(1,M3,MGT(M1,ITB)/10,I1+2)-9.999).LT.0.001)
-                        #      -   CALL ERROR(53,NERR)
-                        #         GLWK(I,II)=A*DLTGL(IAP,W1,W2,
-                        #      -         NVS(I1),GLD(1,0,0,I1),GLD(1,M3,MGT(M1,ITB)/10,I1),
-                        #      -         NVS(I1+2),GLD(1,0,0,I1+2),GLD(1,M3,MGT(M1,ITB)/10,I1+2))
-                        #         ! A*ΔSC, A*ΔU
-                        #   258  CONTINUE
-                        #        IF(IAP.EQ.1) THEN   ! AFW
-                        #         X(L+41)=GLWK(1,1)*X(L+45)
-                        #         X(L+44)=GLWK(2,1)*X(L+46)
-                        #        ELSE   ! PPW
-                        #         X(L+41)=0.0
-                        #         IF(M2.EQ.0) THEN
-                        #          X(L+44)=0.0
-                        #         ELSE
-                        #          I1=3
-                        #          IF(ABS(GLKRBO-9.999).LT.0.001) CALL ERROR(53,NERR)
-                        #          X(L+44)=(GLKRBO-GLKRB)*X(L+6)/(1-GLKRB)
-                        #      -   +GLKRBO*A*DLTGL(IAP,W1,1.0,
-                        #      -         NVS(I1),GLD(1,0,0,I1),GLD(1,M2,MGT(M1,ITB)/10,I1),
-                        #      -         NVS(I1+2),GLD(1,0,0,I1+2),GLD(1,M2,MGT(M1,ITB)/10,I1+2))
-                        #         END IF
-                        #        END IF
-                        #        DO 259 I=1,2   ! ブラインド開、閉ループ
-                        #         X(L+39+(I-1)*3)=GLWK(I,2)
-                        #         X(L+40+(I-1)*3)=GLWK(I,1)-X(L+41+(I-1)*3)
-                        #   259  CONTINUE
-                        #       END IF
+                                # IAP = 1(AFW), II = 1  のとき  I1  = 1 → AFW日射遮蔽補正
+                                # IAP = 1(AFW), II = 2  のとき  I1  = 2 → AFW熱貫流率補正
+                                # IAP = 2(PPW), II = 1  のとき  I1  = 3 → PPW日射遮蔽補正0
+                                # IAP = 2(PPW), II = 2  のとき  I1  = 4 → PPW熱貫流率補正0
+                                I1 = 2*(IAP-1)+II
+
+                                # M2: ブラインド番号
+                                if (I == 1):
+                                    M3 = int(0)
+                                else:
+                                    M3 = int(M2)
+
+                                # A*ΔSC, A*ΔU
+                                # 補正種別 1～9 のうちどのデータが適用されるかは、
+                                # 「ガラス種別No.」を10 で割った商、すなわちオリジナルデータでは1～9
+                                # のいずれかの数値に相当する補正種別が適用される。
+                                GLWK[I,II] = A * DLTGL(
+                                        IAP,                                    # IAP=1:AFW, 2:PPW
+                                        W1,                                     # 通気風量 [L/m2s]
+                                        W2,                                     # 窓排気率 [%] (PPWのみ)
+                                        NVS[I1],                                # 通気風量サンプリング数(>=1) 
+                                        GLD[:,0,0,I1],                          # 通気風量サンプリング値[L/m2s]
+                                        GLD[:,M3,int(MGT[int(M1),ITB]/10),I1],  # サンプリング値
+                                        NVS[I1+2],                              # 通気風量サンプリング数(>=1)
+                                        GLD[:,0,0,I1+2],                        # 通気風量サンプリング値[L/m2s]
+                                        GLD[:,M3,int(MGT[int(M1),ITB]/10),I1+2] # サンプリング値
+                                    )
+                                
+                                print('--------------------------------------')
+                                print(f"IAP: {IAP}")
+                                print(f"M3: {M3}")
+                                print(f"W1: {W1}")
+                                print(f"W2: {W2}")
+                                print(f"NVS[I1]: {NVS[I1]}")
+                                print(f"GLD[:,0,0,I1]: {GLD[:,0,0,I1]}")
+                                print(f"int(MGT[int(M1),ITB]/10): {int(MGT[int(M1),ITB]/10)}")
+                                print(f"GLD[:,M3,int(MGT[int(M1),ITB]/10),I1]: {GLD[:,M3,int(MGT[int(M1),ITB]/10),I1]}")
+                                print(f"NVS[I1+2]: {NVS[I1+2]}")
+                                print(f"GLD[:,0,0,I1+2]: {GLD[:,0,0,I1+2]}")
+                                print(f"GLD[:,M3,int(MGT[int(M1),ITB]/10),I1+2]: {GLD[:,M3,int(MGT[int(M1),ITB]/10),I1+2]}")
+
+                        # GLWK[1,1] =  -3.96000
+                        # GLWK[1,2] = -62.43600
+                        # GLWK[2,1] =  -8.41500
+                        # GLWK[2,2] = -77.09900
+
+                        print("=-------------------^")
+                        print(GLWK)
+
+                        if (IAP == 1):  # AFW
+                            X[L+41] = GLWK[1,1] * X[L+45]
+                            X[L+44] = GLWK[2,1] * X[L+46]
+                        else:           # PPW
+                            X[L+41] = 0.0
+
+                            if M2 == 0:  # ブラインドなし
+                                X[L+44] = 0.0
+                            else:
+                                I1 = 3
+                                X[L+44] = (GLKRBO-GLKRB)*X[L+6]/(1-GLKRB) \
+                                    + GLKRBO * A * DLTGL(
+                                            IAP,
+                                            W1,
+                                            1.0,
+                                            NVS[I1],
+                                            GLD[:,0,0,I1],
+                                            GLD[:,M2,int(MGT[int(M1),ITB]/10),I1],
+                                            NVS[I1+2],
+                                            GLD[:,0,0,I1+2],
+                                            GLD[:,M2,int(MGT[int(M1),ITB]/10),I1+2]
+                                        )
+
+                        for I in [1,2]:   # ブラインド開、閉ループ
+                            X[L+39+(I-1)*3] = GLWK[I,2]
+                            X[L+40+(I-1)*3] = GLWK[I,1]-X[L+41+(I-1)*3]
+
                             
-
                     # 限界日射取得[kcal/h]
                     # X[158] BUIL 限界日射量 [kcal/m2h]
                     X[L+8] = A * X[158]
@@ -3179,7 +3192,7 @@ def pyHASP(inputfile_name, climatefile_name, wndwtabl_filename, wcontabl_filenam
 
 if __name__ == '__main__':
 
-    folder = ".\\test\\test_022\\"
+    folder = ".\\test\\test_031\\"
 
     inputfile_name    = folder + "inputdata.txt"
     climatefile_name  = folder + "36300110_SI.hasH"
