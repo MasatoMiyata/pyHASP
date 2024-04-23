@@ -14,76 +14,76 @@ def EXTRC2(NHR,IPEAK,ISEAS,NAZ,IOPTG,NZ,IOPVG,SMRT1,SMRT2,
     """1日分の除去熱量を計算する
 
     引数：
-    INTEGER     NHR                     ! I   1日のステップ数（=時刻）
-    INTEGER     IPEAK                   ! I   1:ピーク計算モード、0:シミュレーションモード
-    INTEGER     ISEAS                   ! I   1:夏期、2:冬期、3:中間期
-    INTEGER     NAZ                     ! I   ゾーン数を表わす整合寸法
-    INTEGER     IOPTG(NAZ,NHR)          ! I   空調運転状態フラグ、=0:停止中、=1:運転中、=2:起動、=3:停止
-    INTEGER     NZ                      ! I   現在のグループのゾーン数
-    INTEGER     IOPVG(NAZ,NHR)          ! I   外気導入状態フラグ、=0:カット中、=1:導入中、=2:導入開始、=3:導入停止
-    REAL        SMRT1(NAZ,NHR)          ! I   面積を持たない部位からの冷房負荷
-    REAL        SMRT2(NAZ,NHR)          ! I   INFLの吸熱応答係数
-    REAL        VOAG(NZ)                ! I   導入時の外気量
-    INTEGER     LCG(NZ)                 ! I   XMQ配列のSPACデータへのポインタ（L）
-    REAL        CLDG(NAZ,NHR,NSL)       ! I   冷房負荷
-    INTEGER     NWD                     ! I   WDの整合寸法（=7）
-    REAL        WD(NWD,NHR)             ! I   外界気象（基準温湿度からの偏差ではない）
-    REAL        REFWD(NSL)              ! I   基準温湿度
-    REAL        P0(NAZ,0:1,NHR,NSL)     ! I   瞬時蓄熱応答係数（吸熱される側が正）第2添字=0:二等辺三角、=1:右側直角二等辺三角
-    INTEGER     NSTP                    ! I   予熱時間（ステップ）
-    REAL        VFLOW(NAZ,NAZ,NHR)      ! I   第1添字目のゾーンから第2添字目のゾーンへの流入風量（体積流量、0以上、対角項は0とする）
-    REAL        EXCAP(NAZ,NSL)          ! I   各スペースの装置容量（冷却、0以上）
-    REAL        SPCAP(NAZ,NSL)          ! I   各スペースの装置容量（加熱、0以上）
-    REAL        RMMX(NAZ,NSL)           ! I   各スペースの設定温湿度上限
-    REAL        RMMN(NAZ,NSL)           ! I   各スペースの設定温湿度下限（RMMX,RMMNは基準温湿度からの偏差ではない）
-    INTEGER     NITER                   ! I   収束計算における許容繰り返し計算数
-    INTEGER     NUOT1                   ! I   テキスト出力ファイルの装置番号（最初の装置番号）
-    INTEGER     ID(3)                   ! I   年・月・日（出力情報）
-    INTEGER     MDW                     ! I   曜日（出力情報）
-    INTEGER     MODE                    ! I   =1:助走、=2:本計算、=3:最終日
-    INTEGER     IOUT                    ! I   =0:簡易出力(1h1行)、=1:詳細出力(1h2行)
-    INTEGER     LSZSPC(0:4)             ! I   XMQ配列のうち、(0):SPAC, (1):OWAL, (2):IWAL, (3):WNDW, (4):INFL の変数の数
-    INTEGER     IBECS                   ! I   BECSへの受け渡しデータを、=1:出力する, 0:出力しない
-    INTEGER     NUOB                    ! I   BECSへの受け渡しファイル用装置番号
+    INTEGER     NHR                     1日のステップ数（=時刻）
+    INTEGER     IPEAK                   1:ピーク計算モード、0:シミュレーションモード
+    INTEGER     ISEAS                   1:夏期、2:冬期、3:中間期
+    INTEGER     NAZ                     ゾーン数を表わす整合寸法
+    INTEGER     IOPTG(NAZ,NHR)          空調運転状態フラグ、=0:停止中、=1:運転中、=2:起動、=3:停止
+    INTEGER     NZ                      現在のグループのゾーン数
+    INTEGER     IOPVG(NAZ,NHR)          外気導入状態フラグ、=0:カット中、=1:導入中、=2:導入開始、=3:導入停止
+    REAL        SMRT1(NAZ,NHR)          面積を持たない部位からの冷房負荷
+    REAL        SMRT2(NAZ,NHR)          INFLの吸熱応答係数
+    REAL        VOAG(NZ)                導入時の外気量
+    INTEGER     LCG(NZ)                 XMQ配列のSPACデータへのポインタ（L）
+    REAL        CLDG(NAZ,NHR,NSL)       冷房負荷
+    INTEGER     NWD                     WDの整合寸法（=7）
+    REAL        WD(NWD,NHR)             外界気象（基準温湿度からの偏差ではない）
+    REAL        REFWD(NSL)              基準温湿度
+    REAL        P0(NAZ,0:1,NHR,NSL)     瞬時蓄熱応答係数（吸熱される側が正）第2添字=0:二等辺三角、=1:右側直角二等辺三角
+    INTEGER     NSTP                    予熱時間（ステップ）
+    REAL        VFLOW(NAZ,NAZ,NHR)      第1添字目のゾーンから第2添字目のゾーンへの流入風量（体積流量、0以上、対角項は0とする）
+    REAL        EXCAP(NAZ,NSL)          各スペースの装置容量（冷却、0以上）
+    REAL        SPCAP(NAZ,NSL)          各スペースの装置容量（加熱、0以上）
+    REAL        RMMX(NAZ,NSL)           各スペースの設定温湿度上限
+    REAL        RMMN(NAZ,NSL)           各スペースの設定温湿度下限（RMMX,RMMNは基準温湿度からの偏差ではない）
+    INTEGER     NITER                   収束計算における許容繰り返し計算数
+    INTEGER     NUOT1                   テキスト出力ファイルの装置番号（最初の装置番号）
+    INTEGER     ID(3)                   年・月・日（出力情報）
+    INTEGER     MDW                     曜日（出力情報）
+    INTEGER     MODE                    =1:助走、=2:本計算、=3:最終日
+    INTEGER     IOUT                    =0:簡易出力(1h1行)、=1:詳細出力(1h2行)
+    INTEGER     LSZSPC(0:4)             XMQ配列のうち、(0):SPAC, (1):OWAL, (2):IWAL, (3):WNDW, (4):INFL の変数の数
+    INTEGER     IBECS                   BECSへの受け渡しデータを、=1:出力する, 0:出力しない
+    INTEGER     NUOB                    BECSへの受け渡しファイル用装置番号
 
     ローカル変数：
-    REAL        CRHO(NSL)               !     空気の容積比熱（潜熱の場合は密度に蒸発潜熱を掛けたもの）
-    INTEGER     NTRM(NSL)               !     蓄熱応答係数の項数
-    INTEGER     LSTP(MTRM,NSL)          !     蓄熱応答係数（瞬時分を除く）へのポインタ
-    INTEGER     LSTQ(MTRM,NSL)          !     蓄熱負荷（瞬時分を除く）へのポインタ
-    INTEGER     ISL                     !     =1:顕熱、=2:潜熱
-    INTEGER     KSTP                    !     予熱開始後の経過ステップ
-    INTEGER     JHR                     !     時刻
-    INTEGER     IWARM                   !     そのステップが予熱中(=1)かそれ以外(=0)か
-    INTEGER     JHR0                    !     予熱を開始した時刻
-    INTEGER     ICHNG                   !     そのステップでいずれかのゾーンで階段状の変化（空調発停、外気量の変化）があったかどうか
-    INTEGER     ISTOP                   !     そのステップで全てのゾーンで空調停止となるか
-    INTEGER     IDLT(MSTP)              !     予熱開始後、各ステップにおいて直後室温湿度を =0：未知数としない、=1：未知数とする
-    INTEGER     IZ                      !     現在のゾーンが何ゾーン目か（1<=IZ<=NZ）
-    INTEGER     IREP                    !     現在の時刻ステップの直前か直後か =0：直前あるいは二等辺三角、=1：直後
-    REAL        RMSET(MZ)               !     各ゾーンの一定除去熱量計算時設定温湿度
-    REAL        VOAWK(MZ,0:1,MHR)       !     各ゾーンの外気量（体積流量、0以上）
-    REAL        OATX(MZ,MHR)            !     導入外気温湿度（外調機考慮、基準温湿度からの偏差ではない）
-    INTEGER     IOPTWK(MZ)              !     各ゾーン・各段の空調運転状態（=1:運転、=0:停止）
-    INTEGER     IWARM1                  !     現在の段（直前･直後を区別する）が予熱時間帯か
-    REAL        FIXEDL(MZ)              !     各ゾーンの、未知変数に依存しない固定流入熱量
+    REAL        CRHO(NSL)               空気の容積比熱（潜熱の場合は密度に蒸発潜熱を掛けたもの）
+    INTEGER     NTRM(NSL)               蓄熱応答係数の項数
+    INTEGER     LSTP(MTRM,NSL)          蓄熱応答係数（瞬時分を除く）へのポインタ
+    INTEGER     LSTQ(MTRM,NSL)          蓄熱負荷（瞬時分を除く）へのポインタ
+    INTEGER     ISL                     =1:顕熱、=2:潜熱
+    INTEGER     KSTP                    予熱開始後の経過ステップ
+    INTEGER     JHR                     時刻
+    INTEGER     IWARM                   そのステップが予熱中(=1)かそれ以外(=0)か
+    INTEGER     JHR0                    予熱を開始した時刻
+    INTEGER     ICHNG                   そのステップでいずれかのゾーンで階段状の変化（空調発停、外気量の変化）があったかどうか
+    INTEGER     ISTOP                   そのステップで全てのゾーンで空調停止となるか
+    INTEGER     IDLT(MSTP)              予熱開始後、各ステップにおいて直後室温湿度を =0：未知数としない、=1：未知数とする
+    INTEGER     IZ                      現在のゾーンが何ゾーン目か（1<=IZ<=NZ）
+    INTEGER     IREP                    現在の時刻ステップの直前か直後か =0：直前あるいは二等辺三角、=1：直後
+    REAL        RMSET(MZ)               各ゾーンの一定除去熱量計算時設定温湿度
+    REAL        VOAWK(MZ,0:1,MHR)       各ゾーンの外気量（体積流量、0以上）
+    REAL        OATX(MZ,MHR)            導入外気温湿度（外調機考慮、基準温湿度からの偏差ではない）
+    INTEGER     IOPTWK(MZ)              各ゾーン・各段の空調運転状態（=1:運転、=0:停止）
+    INTEGER     IWARM1                  現在の段（直前･直後を区別する）が予熱時間帯か
+    REAL        FIXEDL(MZ)              各ゾーンの、未知変数に依存しない固定流入熱量
     INTEGER     LSTPWK  
     INTEGER     LSTQWK  
-    REAL        PV(0:MSTP-1,MZ)         !     予熱開始後各ステップにおける蓄熱応答係数（二等辺三角、吸熱側が正）PV(0),PR(0)は現在時刻のもの
-    REAL        PR(0:MSTP,MZ)           !     予熱開始後各ステップにおける蓄熱応答係数（右側直角三角、吸熱側が正）PV(0),PR(0)は現在時刻のもの
-    INTEGER     NSIZE                   !     方程式の数（未知数の数）
-    INTEGER     IPS(0:MSTP)             !     予熱開始後、各時刻ステップの室温湿度が、未知ベクトルの何次元目から始まるか（=IPS+1次元目から）
-    INTEGER     LMODE(MZ,0:1,MHR,NSL)   !     各ゾーンの負荷状態モード（-2：暖房過負荷,-1：暖房軽負荷,0：無負荷,1：冷房軽負荷,2：冷房過負荷,9：停止）
-    REAL        AN(MZ,0:1,MHR,NSL)      !     各ゾーンの装置除去熱量
-    REAL        RM(MZ,0:1,MHR,NSL)      !     各ゾーンの室温湿度（基準温湿度からの偏差）
-    REAL        EOA                     !     各ゾーンの外気負荷（実室温湿度基準）
-    REAL        RN(MZ,0:1,MHR,NSL)      !     各ゾーンの室除去熱量
-    REAL        AMRT(MZ,0:1,MHR)        !     MRT
-    REAL*8      AA(NA,NA)               !     Work Array （連立方程式左辺係数行列）
-    REAL*8      BB(NA)                  !     Work Array （連立方程式右辺係数ベクトル）
-    INTEGER     IP(NA)                  !     Work Array
+    REAL        PV(0:MSTP-1,MZ)         予熱開始後各ステップにおける蓄熱応答係数（二等辺三角、吸熱側が正）PV(0),PR(0)は現在時刻のもの
+    REAL        PR(0:MSTP,MZ)           予熱開始後各ステップにおける蓄熱応答係数（右側直角三角、吸熱側が正）PV(0),PR(0)は現在時刻のもの
+    INTEGER     NSIZE                   方程式の数（未知数の数）
+    INTEGER     IPS(0:MSTP)             予熱開始後、各時刻ステップの室温湿度が、未知ベクトルの何次元目から始まるか（=IPS+1次元目から）
+    INTEGER     LMODE(MZ,0:1,MHR,NSL)   各ゾーンの負荷状態モード（-2：暖房過負荷,-1：暖房軽負荷,0：無負荷,1：冷房軽負荷,2：冷房過負荷,9：停止）
+    REAL        AN(MZ,0:1,MHR,NSL)      各ゾーンの装置除去熱量
+    REAL        RM(MZ,0:1,MHR,NSL)      各ゾーンの室温湿度（基準温湿度からの偏差）
+    REAL        EOA                     各ゾーンの外気負荷（実室温湿度基準）
+    REAL        RN(MZ,0:1,MHR,NSL)      各ゾーンの室除去熱量
+    REAL        AMRT(MZ,0:1,MHR)        MRT
+    REAL*8      AA(NA,NA)               連立方程式左辺係数行列
+    REAL*8      BB(NA)                  連立方程式右辺係数ベクトル
+    INTEGER     IP(NA)                  
     INTEGER     INFO    
-    REAL*8      WK(MTRM)                !     Work Array
+    REAL*8      WK(MTRM) 
     REAL        FF
     REAL        EOUT(4,NSL)
     REAL        EMRT

@@ -1,14 +1,8 @@
 import math
 import numpy as np
 
-# ***          4.4. CONVOLUTION PARAMETERS *****************************
-# *
-# *     数値Laplace逆変換し，convolution parametersを求める．
-# *     HASP/ACLD/8501の収束計算でしばしばエラーになるのを改良
-# *     2001-06-25, Akihiro Nagata (Revised by T.Nagai)
-
 def CPARAM(nt, g):
-    """伝達関数の数値逆変換
+    """伝達関数の数値逆変換 CONVOLUTION PARAMETERS
     数値Laplace逆変換し，convolution parametersを求める．
 
     Args:
@@ -33,12 +27,6 @@ def CPARAM(nt, g):
 
     n = 1
 
-    # print("----s-----")
-    # print(s)
-    # print("----g-----")
-    # print(g)
-
-#    12 continue
     goto12 = True
 
     while True:

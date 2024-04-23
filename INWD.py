@@ -2,18 +2,14 @@ import numpy as np
 
 def INWD(NUW,IOPWE,NCLM,ICYCL,NUW_day):
     """
-    **************** READ STANDARD WEATHER DATA **************************
-    *     LATEST REVISION     - 2004.02.07
-    *                         - 2020.04.03                                          ! add 20000403(T.Nagai)
-    *     ARGUMENTS NUW       - I    気象データファイルの装置番号
-    *               IOPWE     - I    =0:周期データ、=1:実在データ
-    *               NCLM      - I    データカラム数（3以上9以下）                   ! add 20000403(T.Nagai)
-    *               ICYCL     - I/O  現在のファイル読み込みサイクル数
-    *               WD(7,24)  - O    気象データ（加工前）
-    *               ID(7,5)   - O    日付データ（4桁で返す。ただしIOPWE=0のときの年は"0"）
-    *               ISTAT     - O    =1:通常  0:ファイル終了(IOPWE=1のとき)
-    *     REQ. ROUTINES       - NDATE
-    *********************************************************************
+    引数:
+    NUW       気象データファイルの装置番号
+    IOPWE     =0:周期データ、=1:実在データ
+    NCLM      データカラム数（3以上9以下）
+    ICYCL     現在のファイル読み込みサイクル数
+    WD(7,24)  気象データ（加工前）
+    ID(7,5)   日付データ（4桁で返す。ただしIOPWE=0のときの年は"0"）
+    ISTAT     =1:通常  0:ファイル終了(IOPWE=1のとき)
     """
 
     WD = np.zeros([8,25])

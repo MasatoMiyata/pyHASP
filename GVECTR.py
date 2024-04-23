@@ -9,16 +9,13 @@ def GVECTR(QWL,NL,MT,TH,HT,HO,TCM=np.zeros([2,100])):
     ★引数にリストがあるため参照渡しになる点に注意！
 
     Args:
-        QWL (_type_): 識別子（文字列4）
-        NL (_type_): 層の数
-        MT (_type_): 建材番号のリスト
-        TH (_type_): 長さのリスト
-        HT (_type_): HC+HR
-        HO (_type_): 建材データベースのファイル、H0=20 （QWLによって変わる）
-        TCM (_type_, optional): 建材データベースを読みとった値. Defaults to np.zeros([2,100]).
-
-    Returns:
-        _type_: _description_
+        QWL : 識別子（文字列4）
+        NL  : 層の数
+        MT  : 建材番号のリスト
+        TH  : 長さのリスト
+        HT  : HC+HR
+        HO  : 建材データベースのファイル、H0=20 （QWLによって変わる）
+        TCM : 建材データベースを読みとった値. Defaults to np.zeros([2,100]).
     """
 
     TRNS = np.zeros(10)

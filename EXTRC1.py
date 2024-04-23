@@ -1,55 +1,49 @@
 def EXTRC1(JHR,NHR,LOPC,LC,NAZ,ISEAS,KSCH,IOPTWK,IOPTG,IOPVG,SMRT1,SMRT2,LCG,VOAG,CLDG,P0,RMMN,RMMX,SPCAP,EXCAP,VFLOW,X,M):
     """装置容量を季節別に設定する
 
-    引数
-    INTEGER     JHR                 ! I   時刻
-    INTEGER     NHR                 ! I   1日のステップ数
-    INTEGER     LOPC                ! I   OPCOデータへのポインタ(L)
-    INTEGER     LC                  ! I   SPACデータへのポインタ(L)
-    INTEGER     NAZ                 ! I   ゾーン数を表わす整合寸法
-    INTEGER     ISEAS               ! I   (本日の)翌日の季節 値=1:夏期、2:冬期、3:中間期
-    INTEGER     KSCH                ! I   (本日の)スケジュール値(1～3)
-    INTEGER     IOPTWK              ! I   IOPTGと同じ（現在のスペースについての値）
-    INTEGER     IOPTG(NAZ,NHR)      ! 0   空調運転状態フラグ、=0:停止中、
-                                    !     =1:運転中、=2:起動、=3:停止
-    INTEGER     IOPVG(NAZ,NHR)      ! O   外気導入状態フラグ、=0:カット中
-                                    !     =1:導入中、=2:導入開始、=3:導入停止
-    REAL        SMRT1(NAZ,NHR)      ! O   面積を持たない部位からの冷房負荷
-    REAL        SMRT2(NAZ,NHR)      ! O   INFLの吸熱応答係数
-    INTEGER     LCG(*)              ! O   XMQ配列のSPACデータへのポインタ（L）
-                                    !     添字は現在のゾーンのグループ内における順番(=IZ)
-    REAL        VOAG(*)             ! O   導入時の外気量(添字はグループ内の順番=IZ)
-    REAL        CLDG(NAZ,NHR,NSL)   ! O   冷房負荷
-    REAL        P0(NAZ,0:1,NHR,NSL) ! O   瞬時蓄熱応答係数（吸熱される側が正）
-                                    !     第2添字=0:二等辺三角
-                                    !     第2添字=1:右側直角二等辺三角
-    REAL        RMMN(NAZ,NSL)       ! O   各スペースの設定温湿度下限
-    REAL        RMMX(NAZ,NSL)       ! O   各スペースの設定温湿度上限
-    REAL        SPCAP(NAZ,NSL)      ! O   各スペースの装置容量（加熱、0以上）
-    REAL        EXCAP(NAZ,NSL)      ! O   各スペースの装置容量（冷却、0以上）
-    REAL        VFLOW(NAZ,NAZ,NHR)  ! O   第1添字目のスペースから第2添字目のスペースへの流入
-                                    !     風量（体積流量、0以上、対角項は0とする）
+    引数:
+    INTEGER     JHR                     時刻
+    INTEGER     NHR                     1日のステップ数
+    INTEGER     LOPC                    OPCOデータへのポインタ(L)
+    INTEGER     LC                      SPACデータへのポインタ(L)
+    INTEGER     NAZ                     ゾーン数を表わす整合寸法
+    INTEGER     ISEAS                   (本日の)翌日の季節 値=1:夏期、2:冬期、3:中間期
+    INTEGER     KSCH                    (本日の)スケジュール値(1～3)
+    INTEGER     IOPTWK                  IOPTGと同じ（現在のスペースについての値）
+    INTEGER     IOPTG(NAZ,NHR)          空調運転状態フラグ、=0:停止中、=1:運転中、=2:起動、=3:停止
+    INTEGER     IOPVG(NAZ,NHR)          外気導入状態フラグ、=0:カット中、=1:導入中、=2:導入開始、=3:導入停止
+    REAL        SMRT1(NAZ,NHR)          面積を持たない部位からの冷房負荷
+    REAL        SMRT2(NAZ,NHR)          INFLの吸熱応答係数
+    INTEGER     LCG(*)                  XMQ配列のSPACデータへのポインタ（L）添字は現在のゾーンのグループ内における順番(=IZ)
+    REAL        VOAG(*)                 導入時の外気量(添字はグループ内の順番=IZ)
+    REAL        CLDG(NAZ,NHR,NSL)       冷房負荷
+    REAL        P0(NAZ,0:1,NHR,NSL)     瞬時蓄熱応答係数（吸熱される側が正）第2添字=0:二等辺三角、第2添字=1:右側直角二等辺三角
+    REAL        RMMN(NAZ,NSL)           各スペースの設定温湿度下限
+    REAL        RMMX(NAZ,NSL)           各スペースの設定温湿度上限
+    REAL        SPCAP(NAZ,NSL)          各スペースの装置容量（加熱、0以上）
+    REAL        EXCAP(NAZ,NSL)          各スペースの装置容量（冷却、0以上）
+    REAL        VFLOW(NAZ,NAZ,NHR)      第1添字目のスペースから第2添字目のスペースへの流入
+                                        風量（体積流量、0以上、対角項は0とする）
+    X(JHR)                              冷房負荷（顕熱）
+    X(24+JHR)                           瞬時蓄熱応答係数補正項（顕熱）
+    X(48+JHR)                           冷房負荷（潜熱）
+    X(72+JHR)                           瞬時蓄熱応答係数補正項（潜熱）
+    M(LOPC+164)                         外気導入開始時刻 [時]
+    X(LOPC+165)                         外気導入量 [m3/m2h]
+    X(LOPC+4*ISEAS+i), i = -2, 1        現在の季節の設定温湿度の上下限
+    X(LC+2)                             床面積 [m2]
+    X(LC+i), i = 15, 16                 瞬時蓄熱応答係数固定成分（顕熱、二等辺・直角三角）
+    X(LC+i), i = 25, 26                 瞬時蓄熱応答係数固定成分（潜熱、二等辺・直角三角）
+    X(LC+i), i = 56, 59                 装置容量（加熱・冷却、顕熱・潜熱）
+    X(LC+74)                            面積を持たない部位の冷房負荷（=INFLと強制空冷のHEAT）
+    X(LC+75)                            INFLの吸熱応答係数（瞬時） Σ0.288V （時変数）
+    M(LC+61)                            前日からの外気導入継続状態(=1:継続, =0:途切れた)
+    M(LC+101)                           現在のゾーンが同一グループの何ゾーン目か
+    XMQ(LC+102～201)                    CFLW関連データ
 
-    X(JHR)                            I   冷房負荷（顕熱）
-    X(24+JHR)                         !   瞬時蓄熱応答係数補正項（顕熱）
-    X(48+JHR)                         I   冷房負荷（潜熱）
-    X(72+JHR)                         !   瞬時蓄熱応答係数補正項（潜熱）
-    M(LOPC+164)                       I   外気導入開始時刻 [時]
-    X(LOPC+165)                       I   外気導入量 [m3/m2h]
-    X(LOPC+4*ISEAS+i), i = -2, 1      I   現在の季節の設定温湿度の上下限
-    X(LC+2)                           !   床面積 [m2]
-    X(LC+i), i = 15, 16               !   瞬時蓄熱応答係数固定成分（顕熱、二等辺・直角三角）
-    X(LC+i), i = 25, 26               !   瞬時蓄熱応答係数固定成分（潜熱、二等辺・直角三角）
-    X(LC+i), i = 56, 59               I   装置容量（加熱・冷却、顕熱・潜熱）
-    X(LC+74)                          I   面積を持たない部位の冷房負荷（=INFLと強制空冷のHEAT）
-    X(LC+75)                          I   INFLの吸熱応答係数（瞬時） Σ0.288V （時変数）
-    M(LC+61)                          I/O 前日からの外気導入継続状態(=1:継続, =0:途切れた)
-    M(LC+101)                         I   現在のゾーンが同一グループの何ゾーン目か
-    XMQ(LC+102～201)                  I   CFLW関連データ
-
-    ローカル変数
-        INTEGER     IZ                !     現在のゾーンが同一グループの何ゾーン目か
-        REAL        RFLW              !     流入風量比率
+    ローカル変数:
+        INTEGER     IZ                  現在のゾーンが同一グループの何ゾーン目か
+        REAL        RFLW                流入風量比率
         INTEGER     IOPVWK
         INTEGER     I
         INTEGER     L1

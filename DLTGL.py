@@ -1,20 +1,16 @@
 import numpy as np
 
 def DLTGL(IOPGL,VV,XPULL,NVS0,VVB0,DSU0,NVS1,VVB1,DSU1):
-    """WINDOW DATA INTERPOLATION
-    ***************  ***************************
-    *     LATEST REVISION     - 2006.03.30
-    *     ARGUMENTS IOPGL      - I   1:AFW指定、2:PPW指定
-    *               VV         - I   通気風量[L/m2s]
-    *               XPULL      - I   窓排気率[-](IOPGL=2のときのみ引用)
-    *               NVS0       - I   通気風量サンプリング数(>=1) (IOPGL=2のときはXPULL=0)
-    *               VVB0(NVS0) - I   通気風量サンプリング値[L/m2s](同上)
-    *               DSU0(NVS0) - I   ΔSC, ΔUのサンプリング値 (同上)
-    *               NVS1       - I   通気風量サンプリング数(>=1) (IOPGL=2のときのみ引用、XPULL=1)
-    *               VVB1(NVS1) - I   通気風量サンプリング値[L/m2s](同上)
-    *               DSU1(NVS1) - I   ΔSC, ΔUのサンプリング値 (同上)
-    *     REQ. ROUTINES       - NONE
-    *********************************************************************
+    """ WINDOW DATA INTERPOLATION
+    IOPGL      : 1:AFW指定、2:PPW指定
+    VV         : 通気風量[L/m2s]
+    XPULL      : 窓排気率[-](IOPGL=2のときのみ引用)
+    NVS0       : 通気風量サンプリング数(>=1) (IOPGL=2のときはXPULL=0)
+    VVB0(NVS0) : 通気風量サンプリング値[L/m2s](同上)
+    DSU0(NVS0) : ΔSC, ΔUのサンプリング値 (同上)
+    NVS1       : 通気風量サンプリング数(>=1) (IOPGL=2のときのみ引用、XPULL=1)
+    VVB1(NVS1) : 通気風量サンプリング値[L/m2s](同上)
+    DSU1(NVS1) : ΔSC, ΔUのサンプリング値 (同上)
     """
 
     DSUWK = np.zeros(2+1)

@@ -25,9 +25,7 @@ from EXTRC1 import EXTRC1
 from EXTRC2 import EXTRC2
 from DLTGL import DLTGL
 
-from read_textfile import read_textfile
 from mprint import mprint
-from display_XMQ_matrix import display_XMQ_matrix
 
 # SATURATION HUMIDITY
 def SATX(T):
@@ -59,6 +57,24 @@ def input_default(X, dtype, default_value):
 
     return Y
 
+def read_textfile(filename:str, split_method=None):
+    """
+    テキストファイルを読み込む関数
+    Args:
+        filename (str): ファイル名称
+    Returns:
+        _type_: 行毎のデータ
+    """
+    with open(filename, 'r', encoding='shift_jis') as f:
+        line_data = f.readlines()
+
+    if split_method == None:
+        data = line_data
+    else:
+        for line_num in range(0,len(line_data)):
+            data = line_data[line_num].split(split_method)
+    return data
+
 
 def pyHASP(inputfile_name, climatefile_name, wndwtabl_filename, wcontabl_filename, resultfile_prefix=""):
 
@@ -77,12 +93,12 @@ def pyHASP(inputfile_name, climatefile_name, wndwtabl_filename, wcontabl_filenam
     DR = 0.0174533  # 度からラジアンに変換するための係数
 
     # FURN(顕熱)による冷房負荷 GAS(0:9)
-    GAS = np.zeros(10)   
+    GAS  = np.zeros(10)   
 
     # XMQ配列 X：実数, M：整数
-    MX  = 30000
-    X   = np.zeros(MX)
-    M   = np.zeros(MX)
+    MX   = 30000
+    X    = np.zeros(MX)
+    M    = np.zeros(MX)
 
     MT   = np.zeros(21)
     TH   = np.zeros(21)
@@ -124,7 +140,7 @@ def pyHASP(inputfile_name, climatefile_name, wndwtabl_filename, wcontabl_filenam
     NVS  = np.zeros(6+1)         # 通気量のサンプリング数（添字は「GLD」第4添字と同）
     GLWK = np.zeros((2+1,2+1))   # Work array(第2添字=1:ΔSC, =2:ΔU,  第1添字=1:ブラインド開, =2:閉)
 
-    MCNTL = np.zeros(32+1)    # 「CNTL」カードのデータ内容(XMQ配列に相当)           rev 20200403(T.Nagai)
+    MCNTL = np.zeros(32+1)    # 「CNTL」カードのデータ内容(XMQ配列に相当)
     MDW   = np.zeros(2+1)     # MDW(1)  :本日の曜日(=1:月,2:火,..,7:日,8:祝,9:特), MDW(2)  :明日の曜日
     WDND  = np.zeros((7,24))  # WDND    :明日の気象データ
     IDND  = np.zeros((7,5))   # IDND    :明日の日付データ
@@ -157,13 +173,13 @@ def pyHASP(inputfile_name, climatefile_name, wndwtabl_filename, wcontabl_filenam
     MFLWK  = np.zeros(2+1)          # CFLWデータセット用Work array
     XFLWK  = np.zeros(2+1)          # CFLWデータセット用Work array
     LSZSPC = np.zeros(5)            # XMQ配列のうち、(0):SPAC, (1):OWAL, (2):IWAL,(3):WNDW, (4):INFL の変数の数
-    IWFLG  = np.zeros(4+1)          # 気象データヘッダ行のデータ                add 20200403(T.Nagai)
+    IWFLG  = np.zeros(4+1)          # 気象データヘッダ行のデータ
                                     # (1) =0:ヘッダ行がない、=1:ヘッダ行がある
                                     # (2):日射・放射の単位 =0:10kJ/m2h,
                                     #   =1:kcal/m2h, =2:kJ/m2h、
                                     # (3) 雲量モード =0:雲量, =1:夜間放射、
                                     # (4) 気象データのカラム数(3以上9以下)
-    RWFLG  = np.zeros(3+1)          # 気象データヘッダ行のデータ                add 20200403(T.Nagai)
+    RWFLG  = np.zeros(3+1)          # 気象データヘッダ行のデータ
                                     # (1) 緯度[deg]（南緯の場合は負値）、
                                     # (2) 経度[deg]（西経の場合は負値）、
                                     # (3) 世界時と地方標準時の時差（日本の場合は9.0）
@@ -303,16 +319,6 @@ def pyHASP(inputfile_name, climatefile_name, wndwtabl_filename, wcontabl_filenam
                         if abs(GLD[JJ,J,I,II] - 9.999) > 0.001:
                             GLD[JJ,J,I,II]  = GLD[JJ,J,I,II]  * 0.86
 
-    # 検証用
-    # for II in [1,2,3,4,5,6]:  # 補正の種類
-    #     print(f"種類 {II}")
-    #     print( GLD[:,0,0,II] )
-                            
-    #     for I in range(1, L1+1):   # 種類
-    #         for J in range(0, NBLD+1):   # ブラインドの有無
-    #             print(f"ブラインドの有無 {J}, 種類 {I}, 補正の種類{II}")
-    #             print(GLD[:,J,I,II])
-
     # kLR等の読み込み
     sheets = wb.sheet_by_name("kLR")
     row_data = sheets.row_values(1)
@@ -329,14 +335,8 @@ def pyHASP(inputfile_name, climatefile_name, wndwtabl_filename, wcontabl_filenam
     GLKRB  = row_data[0]   # 内側ブラインドのkLR
     GLKRBO = row_data[1]   # PPWブラインドにおける放射熱伝達率／総合熱伝達率
 
-
     # 入力ファイル 5行目 建材のファイル 
     NUBW = xlrd.open_workbook(wcontabl_filename)
-    # print(NUBW.sheet_by_name("Sheet1").cell(0,0).value)
-
-
-    # 入力ファイル 6行目 ACSSへの連携のためのファイル ＜省略＞
-    # 入力ファイル 7行目 BECSへの連携のためのファイル ＜省略＞
 
 
     #-----------------------------------------------------------------------
@@ -376,8 +376,6 @@ def pyHASP(inputfile_name, climatefile_name, wndwtabl_filename, wcontabl_filenam
         mprint("KEY", KEY)
 
         if KEY == "BUIL":
-
-            # DCHECK(QD,560,NERR)
 
             W1 = float(NUB[line][11:17])  # 緯度
             W2 = float(NUB[line][17:23])  # 経度
@@ -423,8 +421,8 @@ def pyHASP(inputfile_name, climatefile_name, wndwtabl_filename, wcontabl_filenam
                 X[152] = W2/15 - W3        # 標準時との時差          
 
 
-            X[154] = 0.01 * X[154]                    # 反射率を % から 比率 に。
-            X[157] = SATX(X[155]) * X[156] / 100   # 基準湿度（絶対湿度）
+            X[154] = 0.01 * X[154]                    # 反射率を % から 比率 に
+            X[157] = SATX(X[155]) * X[156] / 100      # 基準湿度（絶対湿度）
             X[158] = 0.860 * X[158]                   # W/m2 を kcal/m2h に変換
 
             REFWD[1] = X[155]   # 基準温度
@@ -432,8 +430,6 @@ def pyHASP(inputfile_name, climatefile_name, wndwtabl_filename, wcontabl_filenam
 
 
         elif KEY == "CNTL":
-
-            # CALL DCHECK(QD,1001,NERR)
 
             MCNTL[1]  = float(NUB[line][11:14]) # 計算モード         
             MCNTL[2]  = float(NUB[line][14:17]) # 出力形式
@@ -485,8 +481,6 @@ def pyHASP(inputfile_name, climatefile_name, wndwtabl_filename, wcontabl_filenam
 
         elif KEY == "HRAT":
 
-            # CALL DCHECK(QD,1341,NERR)
-
             for i in range(0,9):
                 L1 = 11 + 3*i
                 if NUB[line][L1:L1+3] != "   ":
@@ -494,8 +488,6 @@ def pyHASP(inputfile_name, climatefile_name, wndwtabl_filename, wcontabl_filenam
 
 
         elif KEY == "EXPS":
-
-            # CALL DCHECK(QD,597,NERR)
 
             # 名称の数値化と起点（初期値100）の検索
             # NNAMは数値化された EXPS名称 QD(6:9) 
@@ -599,8 +591,6 @@ def pyHASP(inputfile_name, climatefile_name, wndwtabl_filename, wcontabl_filenam
 
 
         elif KEY == "WCON":
-
-            # DCHECK(QD,615,NERR)
         
             # 名称の数値化と起点（初期値102）の検索
             (NNAM,LC,LD) = RETRIV(102,NUB[line][5:9],M)
@@ -648,8 +638,6 @@ def pyHASP(inputfile_name, climatefile_name, wndwtabl_filename, wcontabl_filenam
 
         elif KEY == "WSCH":
 
-            # CALL DCHECK(QD,661,NERR)        
-
             # WSCH名称の数値化と起点の検索
             (NNAM,LC,LD) = RETRIV(108,NUB[line][5:9],M)
             
@@ -670,7 +658,7 @@ def pyHASP(inputfile_name, climatefile_name, wndwtabl_filename, wcontabl_filenam
             M[int(L+7)] = int(NUB[line][26:29])  # 土曜
             M[int(L+8)] = int(NUB[line][29:32])  # 日曜
             M[int(L+9)] = int(NUB[line][32:35])  # 祝日
-            M[int(L+10)] = int(NUB[line][35:38])  # 特別日
+            M[int(L+10)] = int(NUB[line][35:38]) # 特別日
 
             # Lの更新
             L = L + 11
@@ -735,13 +723,13 @@ def pyHASP(inputfile_name, climatefile_name, wndwtabl_filename, wcontabl_filenam
 
             # 特別日のカウント
             N = 1
-            for i in range(1,35): # ! データ行のループ(34:365日を特別日とする場合の最大行数)
+            for i in range(1,35): # データ行のループ(34:365日を特別日とする場合の最大行数)
                 if (len(NUB[line+i]) > 4) and (NUB[line+i][0:4] == "+   "):
                     N += 1
                 else:
                     break
 
-            for i in range(1,N+1): # ! データ行のループ(34:365日を特別日とする場合の最大行数)
+            for i in range(1,N+1): # データ行のループ(34:365日を特別日とする場合の最大行数)
 
                 # 読み込む行数
                 n = line + (i-1)
@@ -768,15 +756,11 @@ def pyHASP(inputfile_name, climatefile_name, wndwtabl_filename, wcontabl_filenam
 
         elif KEY == "SEAS":
 
-            # CALL DCHECK(QD,894,NERR)
-
             for i in range(0,12):
                 L1 = 3*i + 11
                 M[980+i+1] = int(NUB[line][L1:L1+3])
 
         elif KEY == "OPCO":
-
-            # CALL DCHECK(QD,1131,NERR)
 
             # 名称の数値化と起点（初期値145）の検索
             (NNAM,LC,LD) = RETRIV(145,NUB[line][5:9],M)
@@ -785,9 +769,6 @@ def pyHASP(inputfile_name, climatefile_name, wndwtabl_filename, wcontabl_filenam
                 print(f"OPCO: " + {NUB[line][5:9]})
                 raise Exception("LDが0以外になります")
         
-            # print(f"OPCOの起点番号 LC: {LC}")
-            # print(f"OPCOの行番号 L: {L}")
-
             M[int(LC)] = L
             M[int(L)] = LD
 
@@ -851,11 +832,6 @@ def pyHASP(inputfile_name, climatefile_name, wndwtabl_filename, wcontabl_filenam
                 NUB[line][56:59] = 2
 
             # ! DB上限、下限、RH上限、下限、予熱時間 （中間期） のデフォルト値
-            # IF(QD(63:65).EQ.'   ') QD(63:65)='24.'
-            # IF(QD(66:68).EQ.'   ') QD(66:68)='24.'
-            # IF(QD(69:71).EQ.'   ') QD(69:71)='50.'
-            # IF(QD(72:74).EQ.'   ') QD(72:74)='50.'
-
             if NUB[line][62:65] == "   ":
                 NUB[line][62:65] = 24
 
@@ -874,10 +850,6 @@ def pyHASP(inputfile_name, climatefile_name, wndwtabl_filename, wcontabl_filenam
 
                 IWK=26+(II-1)*18
                 L1=L+1+(II-1)*4
-
-                # print(f"OPCO II: {II}")
-                # print(f"OPCO IWK: {IWK}")
-                # print(f"OPCO L1: {L1}")
 
                 # DB上限 X(L+2), X(L+6), X(L+10)
                 # DB下限 X(L+3), X(L+7), X(L+11) 
@@ -900,14 +872,12 @@ def pyHASP(inputfile_name, climatefile_name, wndwtabl_filename, wcontabl_filenam
                 # 予熱時間を読み込む    ：newHASPのコメントが間違っている？
                 if II <= 2:
                     M[L+165+II] = NUB[line][IWK+12:IWK+15]
-                    # print(f"OPCO L+165+II: {L+165+II}")
 
                 # 運転開始時刻
                 IWK=23+(II-1)*18
                 (NNAM,LC,LD) = RETRIV(147,NUB[line][IWK:IWK+3]+" ",M)
 
                 I=L+14+(II-1)*50    # スケジュール2種類（24時間×2=48）
-                # print(f"OPCO I: {I}")
 
                 if LD != LC:  # 該当するOSCHデータが見つからない場合
 
@@ -971,8 +941,6 @@ def pyHASP(inputfile_name, climatefile_name, wndwtabl_filename, wcontabl_filenam
             L=L+22
 
         elif KEY == "OAHU":
-
-            # CALL DCHECK(QD,1370,NERR)
 
             # 名称の数値化と起点（初期値98）の検索
             (NNAM,LC,LD) = RETRIV(98,NUB[line][5:9],M)
@@ -1201,9 +1169,6 @@ def pyHASP(inputfile_name, climatefile_name, wndwtabl_filename, wcontabl_filenam
                         # 長さ
                         TH[I]=X[int(L1+1)]
 
-                    # print("---TCM---")
-                    # print(TCM)
-
                     GTR,GAD = GVECTR('OWAL',NL,MT,TH,HT,HOX,TCM)
 
                     mprint('-----  2.10. OWAL DATA -----',"")
@@ -1308,15 +1273,7 @@ def pyHASP(inputfile_name, climatefile_name, wndwtabl_filename, wcontabl_filenam
                         MT[I]=M[int(L1)]
                         # 長さ
                         TH[I]=X[int(L1+1)]
-                    
-                    # print(NUB[line_ex][5:9])
-                    # print("---NL---")
-                    # print(NL)
-                    # print("---MT---")
-                    # print(MT)
-                    # print("---TH---")
-                    # print(TH)
-                    
+
                     GTR,GAD = GVECTR('IWAL',NL,MT,TH,HT,HT,TCM)
 
                     if NUB[line_ex][11:14] != "   ":
@@ -1404,14 +1361,6 @@ def pyHASP(inputfile_name, climatefile_name, wndwtabl_filename, wcontabl_filenam
 
                     MT[NL] = M[int(M[int(LC+2)])-1]
                     TH[NL] = W
-
-                    # print(NUB[line_ex][5:9])
-                    # print("---NL---")
-                    # print(NL)
-                    # print("---MT---")
-                    # print(MT)
-                    # print("---TH---")
-                    # print(TH)
                     
                     GTR,GAD = GVECTR('GWAL',NL,MT,TH,HT,0,TCM)
 
@@ -1569,8 +1518,7 @@ def pyHASP(inputfile_name, climatefile_name, wndwtabl_filename, wcontabl_filenam
 
                                 # A*ΔSC, A*ΔU
                                 # 補正種別 1～9 のうちどのデータが適用されるかは、
-                                # 「ガラス種別No.」を10 で割った商、すなわちオリジナルデータでは1～9
-                                # のいずれかの数値に相当する補正種別が適用される。
+                                # 「ガラス種別No.」を10 で割った商で決まる。
                                 GLWK[I,II] = A * DLTGL(
                                         IAP,                                    # IAP=1:AFW, 2:PPW
                                         W1,                                     # 通気風量 [L/m2s]
@@ -2025,9 +1973,9 @@ def pyHASP(inputfile_name, climatefile_name, wndwtabl_filename, wcontabl_filenam
 
                 else:
 
-                    # ***          2.20. SPACE WEIGHTING FACTOR ****************************
+                    # 2.20. SPACE WEIGHTING FACTOR
                     # KEY_SPAC が "    ", ":   ", "CFLW"のとき
-                                                    
+
                     mprint(f"2.20. SPACE WEIGHTING FACTOR 室名", QSP)
 
                     M[L] = 5
@@ -2243,11 +2191,9 @@ def pyHASP(inputfile_name, climatefile_name, wndwtabl_filename, wcontabl_filenam
                         LCGB = L+1
 
                     L += 1
-                    # print(f"L: {L}")
-                    # print(f"LCGB: {LCGB}")
 
 
-    # ***          2.21. OUTPUT 1 (JOB NAME AND SPACE WF) ******************
+    # 2.21. OUTPUT 1 (JOB NAME AND SPACE WF)
 
     LL = int(M[106])  # SPACポインタ
     NRM = 0
@@ -2413,7 +2359,7 @@ def pyHASP(inputfile_name, climatefile_name, wndwtabl_filename, wcontabl_filenam
                     MODE = 3   # 計算終了
 
 
-        # ***          3.2 WEATHER DATA ****************************************
+        # 3.2 WEATHER DATA
 
         for J in range(1,25):
             
@@ -2454,8 +2400,7 @@ def pyHASP(inputfile_name, climatefile_name, wndwtabl_filename, wcontabl_filenam
         mprint("WD[7,J]",WD[7,:])
         mprint("WD8[j]",WD8)
             
-        # ***          3.3. OUTPUT 2 (WEATHER DATA) ****************************
-        # skip
+        # 3.3. OUTPUT 2 (WEATHER DATA)
 
         # M1：週番号, KDY (1/1からの通算日数)  
         M1 = int((KDY+6)/7)
@@ -2465,7 +2410,7 @@ def pyHASP(inputfile_name, climatefile_name, wndwtabl_filename, wcontabl_filenam
 
             KWK = M1
 
-            # **           3.4. SOLAR POSITION ******************************
+            # 3.4. SOLAR POSITION
             W  = 0.0171672*(KDY+3)
             W1 = 0.362213-23.2476*math.cos(W+0.153231)-0.336891*math.cos(2.*W+0.207099)-0.185265*math.cos(3.*W+0.620129)
             W2 = -0.000279+0.122772*math.cos(W+1.49831)-0.165458*math.cos(2.*W-1.26155)-0.005354*math.cos(3.*W-1.1571)
@@ -2489,7 +2434,7 @@ def pyHASP(inputfile_name, climatefile_name, wndwtabl_filename, wcontabl_filenam
             mprint("CHCA[J]",CHCA[:])
 
 
-            # ***          3.5. 'EXPS' UPDATE **************************************
+            # 3.5. 'EXPS' UPDATE
 
             # M[100]はEXPSのポインタ
             L = int(M[100])
@@ -2579,7 +2524,7 @@ def pyHASP(inputfile_name, climatefile_name, wndwtabl_filename, wcontabl_filenam
                 L = int(M[L]) 
 
 
-        # ***          3.5.5 OAHU PRE-PROCESS **********************************
+        # 3.5.5 OAHU PRE-PROCESS
 
         LL = M[98]
 
@@ -2618,7 +2563,7 @@ def pyHASP(inputfile_name, climatefile_name, wndwtabl_filename, wcontabl_filenam
 
                 LL = int(M[LL])
 
-        # ***          3.6. SPACE LOOP START ***********************************
+        # 3.6. SPACE LOOP START
 
         # SPACのポインタ
         LC = int(M[106])
@@ -2637,8 +2582,6 @@ def pyHASP(inputfile_name, climatefile_name, wndwtabl_filename, wcontabl_filenam
             # KSPAC：既に処理したSPACの数
             # LC：次に処理するSPACポインタ（終了時は0となる）、LCO：既に処理したSPACポインタ
             # LC+101 は「グループ内の連番」
-            # print(f'LC: {LC}, LCO: {LCO}')
-            # print(f'M[LC+101]: {M[LC+101]}, M[LCO+101]+1: {M[LCO+101]+1}')
 
             if (KSPAC != 0) and (M[LC+101] != M[LCO+101]+1):
                 
@@ -2659,7 +2602,7 @@ def pyHASP(inputfile_name, climatefile_name, wndwtabl_filename, wcontabl_filenam
                             LC1 = M[LC1]
                             NZ = NZ+1
 
-                    # #  ISEAS[1]:本日の季節(=1:夏期,2:冬期,3:中間期), ISEAS[2]:明日の季節
+                    # ISEAS[1]:本日の季節(=1:夏期,2:冬期,3:中間期), ISEAS[2]:明日の季節
                     II = min(2,ISEAS[1])
 
                     mprint("EXTRC2 NHR: ", NHR)                 # 1日のステップ数 (24で固定)
@@ -2729,7 +2672,7 @@ def pyHASP(inputfile_name, climatefile_name, wndwtabl_filename, wcontabl_filenam
                 # MDW(2)  :明日の曜日(=1:月,2:火,..,7:日,8:祝,9:特)
                 KSCH[2] = M[int(M1+MDW[2])]
 
-            # ***          3.7. HOURLY LOOP START **********************************
+            # 3.7. HOURLY LOOP START
 
             for J in range(1,25):
 
@@ -2752,18 +2695,11 @@ def pyHASP(inputfile_name, climatefile_name, wndwtabl_filename, wcontabl_filenam
                     # IOPTWK 空調運転状態フラグ =0:停止中、=1:運転中、=2:起動、=3:停止
                     IOPTWK,M = EXTRC0(J,LOPC,LC,ISEAS,KSCH,X,M)   # 空調運転状態(IOPTWK,M(LC+60))
 
-                    # mprint("J")
-                    # mprint("LOPC")
-                    # mprint("LC")
-                    # mprint("ISEAS")
-                    # mprint("KSCH")
-                    # mprint("IOPTWK")
-
                 while M[L] != 5:
 
                     if M[L] == 1:
 
-                        # ***          3.8. HEAT GAIN THROUGH OUTSIDE WALL **********************
+                        # 3.8. HEAT GAIN THROUGH OUTSIDE WALL
 
                         mprint(" -----(1) 3.8. HEAT GAIN THROUGH OUTSIDE WALL", "")
 
@@ -2816,12 +2752,11 @@ def pyHASP(inputfile_name, climatefile_name, wndwtabl_filename, wcontabl_filenam
                         mprint("3.8 外壁 X[L+7]", X[L+7] )
                         mprint("3.8 外壁 X[L+8]", X[L+8] )
 
-
                         L = L+LSZSPC[1]
 
                     elif M[L] == 2:
 
-                        # ***          3.9. HEAT GAIN THROUGH INSIDE WALL **********************
+                        # 3.9. HEAT GAIN THROUGH INSIDE WALL
 
                         if M[L+1] != 3:
 
@@ -2845,7 +2780,7 @@ def pyHASP(inputfile_name, climatefile_name, wndwtabl_filename, wcontabl_filenam
 
                     elif M[L] == 3:
 
-                        # ***          3.10. HEAT GAIN THROUGH WINDOW **************************
+                        # 3.10. HEAT GAIN THROUGH WINDOW
 
                         LE = int(M[L+1])  # EXPSへのポインタ
 
@@ -2898,7 +2833,6 @@ def pyHASP(inputfile_name, climatefile_name, wndwtabl_filename, wcontabl_filenam
                     
                         if (X[LO+J] == 0):
 
-                            # 641の処理
                             W1   = EXC1 * WINCHR[0,1]
                             ACC1 = ACC1 + W1 * (1.0-X[L+46]) + EXC2*WINCHR[1,1]
                             ACC2 = ACC2 + W1 * X[L+46] + EXC2*WINCHR[2,1]
@@ -2913,7 +2847,6 @@ def pyHASP(inputfile_name, climatefile_name, wndwtabl_filename, wcontabl_filenam
 
                             if  W > X[L+8]:
 
-                                # 641の処理
                                 W1   = EXC1 * WINCHR[0,1]
                                 ACC1 += W1 * (1.0-X[L+46]) + EXC2*WINCHR[1,1]
                                 ACC2 += W1 * X[L+46] + EXC2*WINCHR[2,1]
@@ -2941,7 +2874,7 @@ def pyHASP(inputfile_name, climatefile_name, wndwtabl_filename, wcontabl_filenam
 
                     elif M[L] == 4:
 
-                        # ***          3.11. INFILTRATION **************************************
+                        # 3.11. INFILTRATION
 
                         # EXPSへのポインタ
                         LE = int(M[L+1])
@@ -2992,7 +2925,7 @@ def pyHASP(inputfile_name, climatefile_name, wndwtabl_filename, wcontabl_filenam
 
                 if M[L] == 5:
 
-                    # ***          3.12. INTERNAL HEAT *************************************
+                    # 3.12. INTERNAL HEAT
 
                     if (LL != 0):   # 照明
 
@@ -3071,7 +3004,7 @@ def pyHASP(inputfile_name, climatefile_name, wndwtabl_filename, wcontabl_filenam
 
                     mprint(" -----(5) 3.12. INTERNAL HEAT: ACC1", ACC1)
 
-                # ***          3.13 CONVERT HEAT GAIN TO COOLING LOAD ******************
+                # 3.13 CONVERT HEAT GAIN TO COOLING LOAD
                 
                 # X[LC+8] : 冷房負荷重み係数：P0 瞬時応答係数[kcal/h℃]
                 # X[LC+9] : 冷房負荷重み係数：P1 1ステップ後の応答係数[kcal/h℃]
@@ -3097,7 +3030,7 @@ def pyHASP(inputfile_name, climatefile_name, wndwtabl_filename, wcontabl_filenam
                 mprint("3.13: X[J+72]", X[J+72])
 
 
-                # ***                CALCULATION EXTRACTING LOAD   *********************
+                # CALCULATION EXTRACTING LOAD
 
                 if (LOPC != 0 ):
 

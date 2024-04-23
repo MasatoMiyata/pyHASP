@@ -3,50 +3,46 @@ from RTVADJ import RTVADJ
 
 def COEFFP(IZ,KSTP,NZ,IREP,NSTP,IDLT,VFLOW,PV,PR,CRHO,VOA,FIXEDL,RMSET,REFWD,ISL,LSTRT,LSZSPC,NA,II,AA,BB,IPS,X,M):
     """
-    C     一定除去熱量計算のための方程式を作成する
-    C     LATEST REVISION   2012.03.05
-    C     ・ このルーチンは、予熱時間が終了するまで、他のグループなど
-    C        から同時に呼ばれてはならない
-    C     ・ 引数のうち出力（II, AA, BB,IPS）については予熱時間終了時に
-    C        正しい値となる。それまで、親ルーチンにおいてこれらの
-    C        変数を引用・定義してはならない。
-    C     ・ 時間ループの中の、直前・直後ループの中の、
-    C        ゾーンループの中で呼ばれることを想定している。
+    一定除去熱量計算のための方程式を作成する
+    ・ このルーチンは、予熱時間が終了するまで、他のグループなどから同時に呼ばれてはならない
+    ・ 引数のうち出力（II, AA, BB,IPS）については予熱時間終了時に正しい値となる。
+        それまで、親ルーチンにおいてこれらの変数を引用・定義してはならない。
+    ・ 時間ループの中の、直前・直後ループの中のゾーンループの中で呼ばれることを想定している。
 
-    C     引数
-    INTEGER     IZ              ! I   現在のゾーンが何ゾーン目か（1<=IZ<=NZ）
-    INTEGER     KSTP            ! I   予熱開始後何ステップ目か(0<=KSTP<=NSTP)
-    INTEGER     NZ              ! I   現在のグループのゾーン数
-    INTEGER     IREP            ! I   現在の時刻ステップの直前か直後か
-                                !     =0：直前あるいは二等辺三角、=1：直後
-    INTEGER     NSTP            ! I   予熱時間（NSTP>=1）
-    INTEGER     IDLT(NSTP)      ! I   予熱開始後、各ステップにおいて直後室温湿度を
-                                !     =0：未知数としない、=1：未知数とする
-                                !     （KSTPを含んでそれ以前の値のみ引用される）
-    REAL        VFLOW(NZ)       ! I   各ゾーンからの流入風量（体積流量、正値）
-    REAL        PV(0:NSTP-1)    ! I   予熱開始後各ステップにおける蓄熱応答係数
-                                !     （二等辺三角、吸熱側が正）
-    REAL        PR(0:NSTP)      ! I   予熱開始後各ステップにおける蓄熱応答係数
-                                !     （右側直角三角、吸熱側が正）
-                                !     PV(0), PR(0)はそれぞれ現在時刻のものを入力する
-    REAL        CRHO            ! I   空気の容積比熱（潜熱の場合は密度に蒸発潜熱を掛けたもの）
-    REAL        VOA             ! I   現在のゾーンに対する外気量（体積流量、0以上）
-    REAL        FIXEDL          ! I   現在のゾーンの、未知変数に依存しない固定流入熱量
-    REAL        RMSET(NZ)       ! I   各ゾーンの設定温湿度（予熱終了後に必ず達成される）
-                                ! I   （基準温湿度からの偏差ではない）
-    REAL        REFWD           ! I   基準温湿度
-    INTEGER     ISL             ! I   =1:顕熱、=2:潜熱
-    INTEGER     LSTRT           ! I   SPACデータのうち、OWAL, IWAL等の先頭ポインタ(検索開始点)
-    INTEGER     LSZSPC(0:4)     ! I   XMQ配列のうち、(0):SPAC, (1):OWAL, (2):IWAL,
-                                !     (3):WNDW, (4):INFL の変数の数
-    INTEGER     NA              ! I   行列AAの整合寸法
-    INTEGER     II              ! I/O 未知数の数（行列のサイズ）
-    REAL*8      AA(NA,NA)       ! I/O 連立方程式左辺係数行列
-    REAL*8      BB(NA)          ! I/O 連立方程式右辺係数ベクトル
-    INTEGER     IPS(0:NSTP)     ! I/O 予熱開始後、各時刻ステップの室温湿度が、未知ベクトルの
-                                !     何次元目から始まるか（=IPS+1次元目から）
+    引数:
+    INTEGER     IZ              ! 現在のゾーンが何ゾーン目か（1<=IZ<=NZ）
+    INTEGER     KSTP            ! 予熱開始後何ステップ目か(0<=KSTP<=NSTP)
+    INTEGER     NZ              ! 現在のグループのゾーン数
+    INTEGER     IREP            ! 現在の時刻ステップの直前か直後か
+                                ! =0：直前あるいは二等辺三角、=1：直後
+    INTEGER     NSTP            ! 予熱時間（NSTP>=1）
+    INTEGER     IDLT(NSTP)      ! 予熱開始後、各ステップにおいて直後室温湿度を
+                                ! =0：未知数としない、=1：未知数とする
+                                ! （KSTPを含んでそれ以前の値のみ引用される）
+    REAL        VFLOW(NZ)       ! 各ゾーンからの流入風量（体積流量、正値）
+    REAL        PV(0:NSTP-1)    ! 予熱開始後各ステップにおける蓄熱応答係数
+                                ! （二等辺三角、吸熱側が正）
+    REAL        PR(0:NSTP)      ! 予熱開始後各ステップにおける蓄熱応答係数
+                                ! （右側直角三角、吸熱側が正）
+                                ! PV(0), PR(0)はそれぞれ現在時刻のものを入力する
+    REAL        CRHO            ! 空気の容積比熱（潜熱の場合は密度に蒸発潜熱を掛けたもの）
+    REAL        VOA             ! 現在のゾーンに対する外気量（体積流量、0以上）
+    REAL        FIXEDL          ! 現在のゾーンの、未知変数に依存しない固定流入熱量
+    REAL        RMSET(NZ)       ! 各ゾーンの設定温湿度（予熱終了後に必ず達成される）
+                                ! （基準温湿度からの偏差ではない）
+    REAL        REFWD           ! 基準温湿度
+    INTEGER     ISL             ! =1:顕熱、=2:潜熱
+    INTEGER     LSTRT           ! SPACデータのうち、OWAL, IWAL等の先頭ポインタ(検索開始点)
+    INTEGER     LSZSPC(0:4)     ! XMQ配列のうち、(0):SPAC, (1):OWAL, (2):IWAL,
+                                ! (3):WNDW, (4):INFL の変数の数
+    INTEGER     NA              ! 行列AAの整合寸法
+    INTEGER     II              ! 未知数の数（行列のサイズ）
+    REAL*8      AA(NA,NA)       ! 連立方程式左辺係数行列
+    REAL*8      BB(NA)          ! 連立方程式右辺係数ベクトル
+    INTEGER     IPS(0:NSTP)     ! 予熱開始後、各時刻ステップの室温湿度が、未知ベクトルの
+                                ! 何次元目から始まるか（=IPS+1次元目から）
 
-    C     ローカル変数
+    ローカル変数:
     INTEGER     I
     INTEGER     J
     REAL*8      VSUM            !     現在のゾーンに流入する風量の合計

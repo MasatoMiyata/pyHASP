@@ -1,16 +1,11 @@
 from NDATE import NDATE
 
 def NDATF(IYR,MON,IDY):
-    """
-    **************** 2004.02.07 BASE DATING ******************************
-    *     1899年12月31日を1とした通算日数
-    *     ARGUMENTS IYR       - INPUT.  YEAR.(1951-2050あるいは0)
-    *               MON       - INPUT.  MONTH.
-    *               IDY       - INPUT.  DAY OF THE MONTH.
-    *     FUNCTION  NDATF               CUMULATIVE DAY.
-    *     REQ. ROUTINES       - NONE.
-    *     REMARKS   IYR=0のときは1999の月日に対する通算日数を返す
-    **********************************************************************
+    """1899年12月31日を1とした通算日数（IYR=0のときは1999の月日に対する通算日数を返す）
+    IYR         YEAR.(1951-2050あるいは0)
+    MON         MONTH.
+    IDY         DAY OF THE MONTH.
+    NDATF       CUMULATIVE DAY.
     """
 
     NDS_x = range(1951,2051)

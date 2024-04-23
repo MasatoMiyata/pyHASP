@@ -2,12 +2,8 @@ from NDATE import NDATE
 
 def MKMDW(ID, M):
     """
-    **************** DATING (DAY OF THE WEEK) ****************************
-    *     LATEST REVISION     - 1996.06.15
-    *     ARGUMENTS ID(7,5)   - INPUT   DATE.
-    *     FUNCTION  MKMDW               DAY OF THE WEEK.
-    *     REQ. ROUTINES       - NDATE
-    **********************************************************************
+    ID(7,5)  DATE
+    MKMDW    DAY OF THE WEEK
     """
 
     KDY = NDATE(ID[1,2],ID[1,3])

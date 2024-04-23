@@ -3,28 +3,20 @@ from RETRIV import RETRIV
 
 from mprint import mprint
 
-#-----------------------------------------------------------------------
-#  SPACデータのうち、次のIWALデータを探して先頭ポインタ等を返す
-#-----------------------------------------------------------------------
+
 def RTVADJ(LSZSPC, L, M):
+    """SPACデータのうち、次のIWALデータを探して先頭ポインタ等を返す
 
-    #       INTEGER     LSZSPC(0:4)          ! I   XMQ配列のうち、(0):SPAC, (1):OWAL, (2):IWAL,
-    #                                        !     (3):WNDW, (4):INFL の変数の数
-    #       INTEGER     L                    ! I   SPACデータのうち、OWAL, IWAL等の先頭ポインタ
-    #                                        !     （検索開始点）
-    #                                        ! O   同 検索されたIWAL(adjacent)の先頭ポインタ
-    #                                        !     (ISTAT=1,-2のときのみ有効)
-    #       INTEGER     JZ                   ! O   検索されたIWAL(adjacent)の隣接スペースは、当該
-    #                                        !     グループの何スペース目か(ISTAT=1のときのみ有効）
-    #       INTEGER     ISTAT                ! O   =1 : IWAL(adjacent)が見つかった
-    #                                        !     =0 : IWAL(adjacent)は見つからずに正常終了
-    #                                        !     =-1: 異常終了
-    #                                        !     =-2: adjacent wallにも関わらず隣接SPACが見つからない
-    # C     M(L)                             I   =1:OWAL, =2:IWAL, =3:WNDW, 4:INFL, 5:SPAC終了
-    # C     M(L+1) (IWALデータ)              I   隣室モード(=3のときadjacent wall)
-    # C     Q(L+2) (IWALデータ)              I   隣室SPAC名(M(L+1)=3のとき有効)
+    # INTEGER     LSZSPC(0:4)  XMQ配列のうち、(0):SPAC, (1):OWAL, (2):IWAL,(3):WNDW, (4):INFL の変数の数
+    # INTEGER     L            SPACデータのうち、OWAL, IWAL等の先頭ポインタ（検索開始点）
+    #                          同 検索されたIWAL(adjacent)の先頭ポインタ(ISTAT=1,-2のときのみ有効)
+    # INTEGER     JZ           検索されたIWAL(adjacent)の隣接スペースは、当該グループの何スペース目か(ISTAT=1のときのみ有効）
+    # INTEGER     ISTAT        =1 : IWAL(adjacent)が見つかった=0 : IWAL(adjacent)は見つからずに正常終了=-1: 異常終了=-2: adjacent wallにも関わらず隣接SPACが見つからない
+    # M(L)                     =1:OWAL, =2:IWAL, =3:WNDW, 4:INFL, 5:SPAC終了
+    # M(L+1) (IWALデータ)      隣室モード(=3のときadjacent wall)
+    # Q(L+2) (IWALデータ)      隣室SPAC名(M(L+1)=3のとき有効)
+    """
 
-    # ローカル変数
     JZ = 0
     ISTAT = 0
 

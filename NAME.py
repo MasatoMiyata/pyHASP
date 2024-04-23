@@ -2,8 +2,6 @@ def NAME(NNAM):
     """
     RETRIVの逆処理
     数値を文字列化
-
-    NAME("15010101")
     """
     QLIT = " ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789=+-*/(),.:"
 
@@ -22,3 +20,8 @@ def NAME(NNAM):
         NN = int(NN)-N*100**(4-I)
 
     return QNAM
+
+
+if __name__ == '__main__':
+
+    print(NAME("15010101"))

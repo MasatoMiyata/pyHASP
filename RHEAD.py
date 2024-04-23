@@ -3,7 +3,7 @@ def RHEAD(QA, IWFLG, RWFLG):
     気象データのヘッダー部分の読み込み
     """
 
-    # IWFLG[2]　日射・放射の単位 =0:10kJ/m2h, =1:kcal/m2h, =2:kJ/m2h、
+    # IWFLG[2] 日射・放射の単位 =0:10kJ/m2h, =1:kcal/m2h, =2:kJ/m2h、
     if (QA[15:19] == '10kJ'):
         IWFLG[2] = 0
     elif (QA[15:19] == 'kcal'):
@@ -13,7 +13,7 @@ def RHEAD(QA, IWFLG, RWFLG):
     else:
         raise Exception("ERROR: RHEAD")
 
-    # IWFLG[3]　雲量モード =0:雲量, =1:夜間放射、
+    # IWFLG[3] 雲量モード =0:雲量, =1:夜間放射、
     if (QA[20:23] ==  'CA '):
         IWFLG[3] = 0
     elif (QA[20:23] == 'LNR'):
@@ -21,7 +21,7 @@ def RHEAD(QA, IWFLG, RWFLG):
     else:
         raise Exception("ERROR: RHEAD")
 
-    # IWFLG[4]　気象データのカラム数(3以上9以下)
+    # IWFLG[4] 気象データのカラム数(3以上9以下)
     IWFLG[4] = QA[24]
     if IWFLG[4] <= 3 or IWFLG[4] >= 9:
         raise Exception("ERROR: RHEAD")

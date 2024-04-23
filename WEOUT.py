@@ -1,24 +1,19 @@
 import numpy as np
 
-#-----------------------------------------------------------------------
-# 外気温湿度の出力
-#-----------------------------------------------------------------------
-
 def WEOUT(NHR,NWD,WD,ID,MDW,MODE,IOUT,NUOW,WOUT,weather_data):
+    """外気温湿度の出力
 
-    #   INTEGER     NHR                  ! I   1日のステップ数
-    #   INTEGER     NWD                  ! I   WDの整合寸法（=7）
-    #   REAL        WD(NWD,NHR)          ! I   外界気象（基準温湿度からの偏差ではない）
-    #   INTEGER     ID(3)                ! I   年・月・日（出力情報）
-    #   INTEGER     MDW                  ! I   曜日（出力情報）
-    #   INTEGER     MODE                 ! I   =1:助走、=2:本計算、=3:最終日
-    #   INTEGER     IOUT                 ! I   =0:簡易出力(1h1行)、=1:詳細出力(1h2行)
-    #   INTEGER     NUOW                 ! I   装置番号（外気温・外気湿度ファイル出力）
-    # 
-    #   REAL        WETH(0:1,MHR,NSL)    !     外気温・絶対湿度（基準温湿度からの偏差ではない）
-    #                                    !     (第一添字はIREP)
-    #   REAL        WOUT(-1:0,NSL)       !     外気温・絶対湿度（基準温湿度からの偏差ではない）
-    #                                    !     (第一添字は0:1ステップ前, 1:現ステップ)
+    INTEGER     NHR                1日のステップ数
+    INTEGER     NWD                WDの整合寸法（=7）
+    REAL        WD(NWD,NHR)        外界気象（基準温湿度からの偏差ではない）
+    INTEGER     ID(3)              年・月・日（出力情報）
+    INTEGER     MDW                曜日（出力情報）
+    INTEGER     MODE               =1:助走、=2:本計算、=3:最終日
+    INTEGER     IOUT               =0:簡易出力(1h1行)、=1:詳細出力(1h2行)
+    INTEGER     NUOW               装置番号（外気温・外気湿度ファイル出力）
+    REAL        WETH(0:1,MHR,NSL)  外気温・絶対湿度（基準温湿度からの偏差ではない）(第一添字はIREP)
+    REAL        WOUT(-1:0,NSL)     外気温・絶対湿度（基準温湿度からの偏差ではない）(第一添字は0:1ステップ前, 1:現ステップ)
+    """
 
     NSL = 2    # 顕熱と潜熱
     MHR = 24   # 整合寸法（=NHR）

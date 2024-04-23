@@ -3,24 +3,23 @@ import numpy as np
 def EXTRC0(JHR,LOPC,LC,ISEAS,KSCH,X,M):
     """除去熱量計算のための前処理（その1）
 
-    引数
-    INTEGER     JHR                 I   時刻
-    INTEGER     LOPC                I   OPCOデータへのポインタ(L)
-    INTEGER     LC                  I   SPACデータへのポインタ(L)
-    INTEGER     ISEAS(2)            I   本日、翌日の季節 値=1:夏期、2:冬期、3:中間期
-    INTEGER     KSCH(2)             I   本日、翌日のスケジュール値(1～3、3は空調は停止)
-    INTEGER     IOPTWK              0   空調運転状態フラグ、=0:停止中、
-                                        =1:運転中、=2:起動、=3:停止
-    X(119,120,...,143)              I   空調用ダミースケジュール（=-1,0,0,..,0）
-    X(LOPC+14,15,...,163)           I   空調発停操作（=1:起動、=-1:停止、=0:状態継続）
-    M(LC+60)                        I   1時間前から現時刻までの運転状態（0 or 1)
-    M(LC+60)                        O   現時刻から1時間後までの運転状態（0 or 1)
+    引数:
+    INTEGER     JHR          時刻
+    INTEGER     LOPC         OPCOデータへのポインタ(L)
+    INTEGER     LC           SPACデータへのポインタ(L)
+    INTEGER     ISEAS(2)     本日、翌日の季節 値=1:夏期、2:冬期、3:中間期
+    INTEGER     KSCH(2)      本日、翌日のスケジュール値(1～3、3は空調は停止)
+    INTEGER     IOPTWK       空調運転状態フラグ、=0:停止中、=1:運転中、=2:起動、=3:停止
+    X(119,120,...,143)       空調用ダミースケジュール（=-1,0,0,..,0）
+    X(LOPC+14,15,...,163)    空調発停操作（=1:起動、=-1:停止、=0:状態継続）
+    M(LC+60)                 1時間前から現時刻までの運転状態（0 or 1)
+    M(LC+60)                 現時刻から1時間後までの運転状態（0 or 1)
 
-    ローカル変数
-    INTEGER     LPNT(2)             !     今日、明日の空調スケジュールポインタ(0:00の操作)
-    INTEGER     ISTATB              !     1時間前から現時刻までの運転状態（0 or 1)
-    INTEGER     ISTATA              !     現時刻から1時間後までの運転状態（0 or 1)
-    INTEGER     ISW                 !     =1:空調停止時はon, -1:空調時はoff, 0:状態継続
+    ローカル変数:
+    INTEGER     LPNT(2)      今日、明日の空調スケジュールポインタ(0:00の操作)
+    INTEGER     ISTATB       1時間前から現時刻までの運転状態（0 or 1)
+    INTEGER     ISTATA       現時刻から1時間後までの運転状態（0 or 1)
+    INTEGER     ISW          =1:空調停止時はon, -1:空調時はoff, 0:状態継続
     INTEGER     I
     """
 
