@@ -3092,9 +3092,9 @@ def pyHASP(inputfile_name, climatefile_name, wndwtabl_filename, wcontabl_filenam
     #-----------------------------------------------------------------------
 
     # XMQデータの出力
-    with open( resultfile_prefix + 'XMQ.txt', 'w') as file:
-        for i, (item1, item2) in enumerate(zip(X, M), start=1):
-            file.write(f"{i-1}: {item1}, {item2}\n")
+    # with open( resultfile_prefix + 'XMQ.txt', 'w') as file:
+    #     for i, (item1, item2) in enumerate(zip(X, M), start=1):
+    #         file.write(f"{i-1}: {item1}, {item2}\n")
 
     # 計算結果の出力
     cols = ["YEAR","MO","DY","YB","HR","IREP",

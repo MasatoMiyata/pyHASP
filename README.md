@@ -18,14 +18,27 @@ https://www.jabmee.or.jp/hasp/
 
 ## 実行方法
 
-次のコマンドで実行が可能です。
+1. 必要となるパッケージのインストール
 ```
-# inputfile_name    : 入力データの名称
-# climatefile_name  : 気象データの名称
-# wndwtabl_filename : 窓データファイルの名称
-# wcontabl_filename : 壁体構造データファイルの名称
+$ pip install -r requirements.txt
+```
 
-pyHASP(inputfile_name, climatefile_name, wndwtabl_filename, wcontabl_filename)
+2. run.pyを開き、以下の4箇所（ファイル名称）を調整
+
+```
+# 入力データの名称
+input_filename    = "inputdata.txt"
+# 気象データ（hasp形式）の名称
+cliname_filename  = "36300110_SI.hasH"
+# 窓データファイルの名称
+wndwtabl_filename = "./database/wndwtabl.xlsx"
+# 壁体構造データファイルの名称
+wcontabl_filename = "./database/wcontabl.xlsx"
+```
+
+3. run.pyを実行
+```
+$ python run.py
 ```
 
 実行後、NewHASP/ACLDと同様に、以下のファイルが生成されます。
