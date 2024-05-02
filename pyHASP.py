@@ -899,11 +899,11 @@ def pyHASP(inputfile_name, climatefile_name, wndwtabl_filename, wcontabl_filenam
 
                     for M4 in [1,2]:  # スケジュール1か2
                         for M5 in [1,2,3,4,5]:  # 各スケジュールにおいて、5セットの開始時刻と終了時刻を指定可能
-                            L1=LC+1+(M4-1)*10+(M5-1)*2
+                            L1=int( LC+1+(M4-1)*10+(M5-1)*2 )
                             if M[L1+1] != -1:
-                                X[I+(M4-1)*25+M(L1+1)] = 1.
+                                X[ int(I+(M4-1)*25+M[L1+1]) ] = 1.
                             if M[L1+2] != -1:
-                                X[I+(M4-1)*25+M(L1+2)] = -1.
+                                X[ int(I+(M4-1)*25+M[L1+2]) ] = -1.
 
             L=L+168
 
@@ -925,19 +925,20 @@ def pyHASP(inputfile_name, climatefile_name, wndwtabl_filename, wcontabl_filenam
             for II in [1,2]:  # スケジュール1か2
                 for I in [1,2,3,4,5]: # 各スケジュールにおいて、5セットの開始時刻と終了時刻を指定可能
 
-                    IWK=11+(II-1)*36+(I-1)*6
-
-                    if NUB[line][IWK:IWK+3] == "   ":
-                        NUB[line][IWK:IWK+3] = " -1"
-                    if NUB[line][IWK+3:IWK+6] == "   ":
-                        NUB[line][IWK+3:IWK+6] = " -1"
+                    IWK = 11 + (II-1)*36 + (I-1)*6
 
                     # 開始時刻
-                    M[L+1+(II-1)*10+(I-1)*2+1] = int(NUB[line][IWK:IWK+3])
-                    # 終了時刻
-                    M[L+1+(II-1)*10+(I-1)*2+2] = int(NUB[line][IWK+3:IWK+6])
+                    if NUB[line][IWK:IWK+3] == "   ":
+                        M[L+1+(II-1)*10+(I-1)*2+1] = -1
+                    else:
+                        M[L+1+(II-1)*10+(I-1)*2+1] = int(NUB[line][IWK:IWK+3])
 
-        
+                    # 終了時刻
+                    if NUB[line][IWK+3:IWK+6] == "   ":
+                        M[L+1+(II-1)*10+(I-1)*2+2] = -1
+                    else:
+                        M[L+1+(II-1)*10+(I-1)*2+2] = int(NUB[line][IWK+3:IWK+6])
+
             L=L+22
 
         elif KEY == "OAHU":
