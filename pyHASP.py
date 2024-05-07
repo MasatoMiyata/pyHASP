@@ -1078,15 +1078,15 @@ def pyHASP(inputfile_name, climatefile_name, wndwtabl_filename, wcontabl_filenam
                 X[L+7] = 1
 
             if NUB[line][35:38] == "   ":
-                NUB[line][35:38] = "  3"
+                X[L+44] = 3
+            else:
+                X[L+44] = int(NUB[line][35:38])
             
             if NUB[line][32:35] == "   ":   # エラーが出るので処理を追加
                 M[L+43] = 0
             else:
                 M[L+43] = int(NUB[line][32:35])
                 
-            X[L+44] = NUB[line][35:38]
-
             # 昼光利用 (なし：0、あり：1/2設計照度 = LIGHを読み込んだ時に入力）
             M1 = M[L+43]
             if M1 == 0:
