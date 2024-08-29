@@ -2,13 +2,13 @@ import subprocess
 from pyHASP import pyHASP
 
 # 入力データの名称
-input_filename    = "./database/inputdata.txt"
+input_filename    = "./sample/inputdata.txt"
 # 気象データ（hasp形式）の名称
-cliname_filename  = "./database/36300110_SI.hasH"
+cliname_filename  = "./sample/36300110_SI.hasH"
 # 窓データファイルの名称
-wndwtabl_filename = "./database/wndwtabl.xlsx"
+wndwtabl_filename = "./sample/wndwtabl_builelib.xlsx"
 # 壁体構造データファイルの名称
-wcontabl_filename = "./database/wcontabl.xlsx"
+wcontabl_filename = "./sample/wcontabl_builelib.xlsx"
 
 #------------------------------------------------------
 # pyHASPの実行
