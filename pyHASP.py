@@ -215,9 +215,10 @@ def pyHASP(inputfile_name, climatefile_name, wndwtabl_filename, wcontabl_filenam
             [227.,85.,-6.3],
             [329.,118.,-5.4] ]
 
-    # 発熱比率（HRAT）デフォルト設定
+    # 発熱比率（HRAT）デフォルト値
     MCNTL[22:31] = [100,100,100,100,100,100,100,100,100]
-
+    # 気象データカラム数 デフォルト値
+    MCNTL[31] = 3   
 
     #-----------------------------------------------------------------------
     # ファイルの読み込み
@@ -419,9 +420,9 @@ def pyHASP(inputfile_name, climatefile_name, wndwtabl_filename, wcontabl_filenam
 
             else:
 
-                X[150] = math.sin(DR*W1)   # 気象データに記された緯度の正弦
-                X[151] = math.cos(DR*W1)   # 気象データに記された緯度の余弦
-                X[152] = W2/15 - W3        # 標準時との時差          
+                X[150] = math.sin(DR*W1)
+                X[151] = math.cos(DR*W1)
+                X[152] = W2/15 - W3        
 
 
             X[154] = 0.01 * X[154]                    # 反射率を % から 比率 に
@@ -3120,10 +3121,10 @@ def pyHASP(inputfile_name, climatefile_name, wndwtabl_filename, wcontabl_filenam
 
 if __name__ == '__main__':
 
-    folder = ".\\test\\test_031\\"
+    folder = ".\\sample\\"
 
     inputfile_name    = folder + "inputdata.txt"
-    climatefile_name  = folder + "36300110_SI.hasH"
+    climatefile_name  = folder + "C1_6158195.has"
     wndwtabl_filename = folder + "wndwtabl.xlsx"
     wcontabl_filename = folder + "wcontabl.xlsx"
     resultfile_prefix = folder + "pyHASP_"
